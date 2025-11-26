@@ -1,0 +1,17 @@
+pmd_mesh-demonstrator/secrets/*
+token.txt
+tokens.json
+endpoints.json
+_toc.yml
+pyiron.db
+pyiron.log
+.ipynb_checkpoints/
+.ipynb_checkpoints/*
+__pycache__/
+__pycache__/*
+notebooks/__pycache__/
+notebooks/__pycache__/*
+Untitled.ipynb
+tests.ipynb
+*.egg-info
+partners.json

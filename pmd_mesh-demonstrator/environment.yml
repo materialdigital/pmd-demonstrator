@@ -1,0 +1,19 @@
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python >=3.11
+  - pyiron_workflow
+  - pyironflow
+  - openssh
+  - git
+  - nano
+  - sparqlwrapper
+  - pandas
+  - tabulate
+  - rdflib
+  - iputils-ping
+  - curl
+  - jq
+  - importlib
+  - scipy
