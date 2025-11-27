@@ -12,8 +12,6 @@ dependencies:
   - pandas
   - tabulate
   - rdflib
-  - iputils-ping
   - curl
   - jq
-  - importlib
   - scipy
