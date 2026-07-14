@@ -1,0 +1,1131 @@
+@prefix csvw: <http://www.w3.org/ns/csvw#> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix ns1: <https://w3id.org/pmd/co/> .
+@prefix ns2: <http://purl.org/spar/datacite/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix prov: <http://www.w3.org/ns/prov#> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix skos: <http://www.w3.org/2004/02/skos/core#> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+<_:t694> rdf:first <_:t710> ;
+    rdf:rest <_:t729> .
+
+<_:t702> rdf:first <_:t684> ;
+    rdf:rest <_:t708> .
+
+<_:t707> rdf:first <_:t685> ;
+    rdf:rest <_:t717> .
+
+<_:t715> rdf:first <_:t728> ;
+    rdf:rest <_:t724> .
+
+<_:t716> rdf:first <_:t739> ;
+    rdf:rest <_:t703> .
+
+<_:t720> rdf:first <_:t735> ;
+    rdf:rest <_:t701> .
+
+<_:t726> rdf:first <_:t698> ;
+    rdf:rest <_:t743> .
+
+<_:t745> rdf:first <_:t675> ;
+    rdf:rest <_:t742> .
+
+<https://w3id.org/pmd/ao/tte/> a owl:Ontology ;
+    dc:creator <https://orcid.org/0000-0001-7192-7143>,
+        <https://orcid.org/0000-0002-3717-7104>,
+        <https://orcid.org/0000-0002-7094-5371>,
+        <https://orcid.org/0000-0003-4971-3645> ;
+    dc:title "Tensile Test Ontology (TTO) data mapping example" ;
+    owl:imports ns1: .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_process> a ns1:TensileTest ;
+    ns1:characteristic <https://w3id.org/pmd/ao/tte/Zd3_dataset>,
+        <https://w3id.org/pmd/ao/tte/_extensometer>,
+        <https://w3id.org/pmd/ao/tte/_institute_BAM>,
+        <https://w3id.org/pmd/ao/tte/_standard>,
+        <https://w3id.org/pmd/ao/tte/caliper>,
+        <https://w3id.org/pmd/ao/tte/load_cell>,
+        <https://w3id.org/pmd/ao/tte/machine>,
+        <https://w3id.org/pmd/ao/tte/micrometer_gauge>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_crossSectionArea_S0>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_crossSectionArea_Su>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_crossSectionArea_s1>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_crossSectionArea_s2>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_crossSectionArea_s3>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_date>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_environmentalTemperature>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_extensometerGaugeLength>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_finalGaugeLengthAfterFracture_Lu>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_materialDescription>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_maximumForce>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_modulusOfElasticity>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_note>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_operator>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_originalGaugeLength_L0>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_percentageElongationAfterFracture>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_percentageReductionOfArea>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_project>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_proofStrength_Rp02>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_rollingDirection>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_specimenShape>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_strainRate>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_tensileStrength>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_thicknessAfterFracture_au>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_thickness_a1>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_thickness_a2>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_thickness_a3>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_transitionPoint>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_upperYieldStrength>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_widthAfterFracture_bu>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_width_b1>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_width_b2>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_width_b3> ;
+    ns1:input <https://w3id.org/pmd/ao/tte/testpiece_name/Zd3testpiece/Zd3> ;
+    ns1:output <https://w3id.org/pmd/ao/tte/testpiece_name/Zd3testpiece/Zd3_testpiece_afterTest_1>,
+        <https://w3id.org/pmd/ao/tte/testpiece_name/Zd3testpiece/Zd3_testpiece_afterTest_2> .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_process> a ns1:TensileTest ;
+    ns1:characteristic <https://w3id.org/pmd/ao/tte/Zd2_dataset>,
+        <https://w3id.org/pmd/ao/tte/_extensometer>,
+        <https://w3id.org/pmd/ao/tte/_institute_BAM>,
+        <https://w3id.org/pmd/ao/tte/_standard>,
+        <https://w3id.org/pmd/ao/tte/caliper>,
+        <https://w3id.org/pmd/ao/tte/load_cell>,
+        <https://w3id.org/pmd/ao/tte/machine>,
+        <https://w3id.org/pmd/ao/tte/micrometer_gauge>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_crossSectionArea_S0>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_crossSectionArea_Su>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_crossSectionArea_s1>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_crossSectionArea_s2>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_crossSectionArea_s3>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_date>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_environmentalTemperature>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_extensometerGaugeLength>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_finalGaugeLengthAfterFracture_Lu>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_materialDescription>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_maximumForce>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_modulusOfElasticity>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_note>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_operator>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_originalGaugeLength_L0>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_percentageElongationAfterFracture>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_percentageReductionOfArea>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_project>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_proofStrength_Rp02>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_rollingDirection>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_specimenShape>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_strainRate>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_tensileStrength>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_thicknessAfterFracture_au>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_thickness_a1>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_thickness_a2>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_thickness_a3>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_transitionPoint>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_upperYieldStrength>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_widthAfterFracture_bu>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_width_b1>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_width_b2>,
+        <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_width_b3> ;
+    ns1:input <https://w3id.org/pmd/ao/tte/testpiece_name/Zd2testpiece/Zd2> ;
+    ns1:output <https://w3id.org/pmd/ao/tte/testpiece_name/Zd2testpiece/Zd2_testpiece_afterTest_1>,
+        <https://w3id.org/pmd/ao/tte/testpiece_name/Zd2testpiece/Zd2_testpiece_afterTest_2> .
+
+<_:t675> a csvw:Column,
+        ns1:Duration ;
+    dc:title "Time" ;
+    csvw:datatype "1.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Time" ;
+    ns1:unit <http://qudt.org/vocab/unit/SEC> .
+
+<_:t676> rdf:first <_:t709> ;
+    rdf:rest <_:t696> .
+
+<_:t677> rdf:first <_:t754> ;
+    rdf:rest <_:t704> .
+
+<_:t678> a csvw:Column,
+        ns1:CrossheadSeparation ;
+    dc:title "Crosshead Separation" ;
+    csvw:datatype "2.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Crosshead travel" ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM> .
+
+<_:t679> a csvw:Column,
+        ns1:PercentageExtension ;
+    dc:title "Percentage Extension" ;
+    csvw:datatype "4.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Strain" ;
+    ns1:unit <http://qudt.org/vocab/unit/PERCENT> .
+
+<_:t680> rdf:first <_:t681> ;
+    rdf:rest <_:t747> .
+
+<_:t681> a csvw:Column,
+        ns1:Duration ;
+    dc:title "Time" ;
+    csvw:datatype "1.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Time" ;
+    ns1:unit <http://qudt.org/vocab/unit/SEC> .
+
+<_:t682> rdf:first <_:t738> ;
+    rdf:rest <_:t727> .
+
+<_:t683> a csvw:Column,
+        ns1:PercentageExtension ;
+    dc:title "Percentage Extension" ;
+    csvw:datatype "4.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Strain" ;
+    ns1:unit <http://qudt.org/vocab/unit/PERCENT> .
+
+<_:t684> a csvw:Column,
+        ns1:Duration ;
+    dc:title "Time" ;
+    csvw:datatype "1.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Time" ;
+    ns1:unit <http://qudt.org/vocab/unit/SEC> .
+
+<_:t685> a csvw:Column,
+        ns1:Duration ;
+    dc:title "Time" ;
+    csvw:datatype "1.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Time" ;
+    ns1:unit <http://qudt.org/vocab/unit/SEC> .
+
+<_:t686> a csvw:Column,
+        ns1:PercentageExtension ;
+    dc:title "Percentage Extension" ;
+    csvw:datatype "4.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Strain" ;
+    ns1:unit <http://qudt.org/vocab/unit/PERCENT> .
+
+<_:t687> a csvw:Column,
+        ns1:CrossheadSeparation ;
+    dc:title "Crosshead Separation" ;
+    csvw:datatype "2.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Crosshead travel" ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM> .
+
+<_:t688> a csvw:Column,
+        ns1:CrossheadSeparation ;
+    dc:title "Crosshead Separation" ;
+    csvw:datatype "2.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Crosshead travel" ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM> .
+
+<_:t689> a csvw:Column,
+        ns1:PercentageExtension ;
+    dc:title "Percentage Extension" ;
+    csvw:datatype "4.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Strain" ;
+    ns1:unit <http://qudt.org/vocab/unit/PERCENT> .
+
+<_:t690> a csvw:Column,
+        ns1:PercentageExtension ;
+    dc:title "Percentage Extension" ;
+    csvw:datatype "4.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Strain" ;
+    ns1:unit <http://qudt.org/vocab/unit/PERCENT> .
+
+<_:t691> rdf:first <_:t749> ;
+    rdf:rest () .
+
+<_:t692> a csvw:Column,
+        ns1:CrossheadSeparation ;
+    dc:title "Crosshead Separation" ;
+    csvw:datatype "2.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Crosshead travel" ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM> .
+
+<_:t693> rdf:first <_:t723> ;
+    rdf:rest <_:t695> .
+
+<_:t695> rdf:first <_:t679> ;
+    rdf:rest () .
+
+<_:t696> rdf:first <_:t753> ;
+    rdf:rest <_:t748> .
+
+<_:t697> a csvw:Column,
+        ns1:Force ;
+    dc:title "Force" ;
+    csvw:datatype "3.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Force" ;
+    ns1:unit <http://qudt.org/vocab/unit/KiloN> .
+
+<_:t698> a csvw:Column,
+        ns1:Duration ;
+    dc:title "Time" ;
+    csvw:datatype "1.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Time" ;
+    ns1:unit <http://qudt.org/vocab/unit/SEC> .
+
+<_:t699> a csvw:Column,
+        ns1:CrossheadSeparation ;
+    dc:title "Crosshead Separation" ;
+    csvw:datatype "2.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Crosshead travel" ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM> .
+
+<_:t700> rdf:first <_:t697> ;
+    rdf:rest <_:t712> .
+
+<_:t701> rdf:first <_:t699> ;
+    rdf:rest <_:t700> .
+
+<_:t703> rdf:first <_:t725> ;
+    rdf:rest <_:t693> .
+
+<_:t704> rdf:first <_:t751> ;
+    rdf:rest () .
+
+<_:t705> a csvw:Column,
+        ns1:Force ;
+    dc:title "Force" ;
+    csvw:datatype "3.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Force" ;
+    ns1:unit <http://qudt.org/vocab/unit/KiloN> .
+
+<_:t706> rdf:first <_:t732> ;
+    rdf:rest () .
+
+<_:t708> rdf:first <_:t692> ;
+    rdf:rest <_:t744> .
+
+<_:t709> a csvw:Column,
+        ns1:Duration ;
+    dc:title "Time" ;
+    csvw:datatype "1.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Time" ;
+    ns1:unit <http://qudt.org/vocab/unit/SEC> .
+
+<_:t710> a csvw:Column,
+        ns1:Duration ;
+    dc:title "Time" ;
+    csvw:datatype "1.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Time" ;
+    ns1:unit <http://qudt.org/vocab/unit/SEC> .
+
+<_:t711> a csvw:Column,
+        ns1:Force ;
+    dc:title "Force" ;
+    csvw:datatype "3.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Force" ;
+    ns1:unit <http://qudt.org/vocab/unit/KiloN> .
+
+<_:t712> rdf:first <_:t689> ;
+    rdf:rest () .
+
+<_:t713> a csvw:Column,
+        ns1:CrossheadSeparation ;
+    dc:title "Crosshead Separation" ;
+    csvw:datatype "2.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Crosshead travel" ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM> .
+
+<_:t714> a csvw:Column,
+        ns1:Force ;
+    dc:title "Force" ;
+    csvw:datatype "3.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Force" ;
+    ns1:unit <http://qudt.org/vocab/unit/KiloN> .
+
+<_:t717> rdf:first <_:t687> ;
+    rdf:rest <_:t677> .
+
+<_:t718> a csvw:Column,
+        ns1:PercentageExtension ;
+    dc:title "Percentage Extension" ;
+    csvw:datatype "4.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Strain" ;
+    ns1:unit <http://qudt.org/vocab/unit/PERCENT> .
+
+<_:t719> rdf:first <_:t718> ;
+    rdf:rest () .
+
+<_:t721> rdf:first <_:t714> ;
+    rdf:rest <_:t731> .
+
+<_:t722> rdf:first <_:t705> ;
+    rdf:rest <_:t752> .
+
+<_:t723> a csvw:Column,
+        ns1:Force ;
+    dc:title "Force" ;
+    csvw:datatype "3.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Force" ;
+    ns1:unit <http://qudt.org/vocab/unit/KiloN> .
+
+<_:t724> rdf:first <_:t713> ;
+    rdf:rest <_:t734> .
+
+<_:t725> a csvw:Column,
+        ns1:CrossheadSeparation ;
+    dc:title "Crosshead Separation" ;
+    csvw:datatype "2.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Crosshead travel" ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM> .
+
+<_:t727> rdf:first <_:t690> ;
+    rdf:rest () .
+
+<_:t728> a csvw:Column,
+        ns1:Duration ;
+    dc:title "Time" ;
+    csvw:datatype "1.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Time" ;
+    ns1:unit <http://qudt.org/vocab/unit/SEC> .
+
+<_:t729> rdf:first <_:t730> ;
+    rdf:rest <_:t750> .
+
+<_:t730> a csvw:Column,
+        ns1:CrossheadSeparation ;
+    dc:title "Crosshead Separation" ;
+    csvw:datatype "2.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Crosshead travel" ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM> .
+
+<_:t731> rdf:first <_:t741> ;
+    rdf:rest () .
+
+<_:t732> a csvw:Column,
+        ns1:PercentageExtension ;
+    dc:title "Percentage Extension" ;
+    csvw:datatype "4.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Strain" ;
+    ns1:unit <http://qudt.org/vocab/unit/PERCENT> .
+
+<_:t733> a csvw:Column,
+        ns1:CrossheadSeparation ;
+    dc:title "Crosshead Separation" ;
+    csvw:datatype "2.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Crosshead travel" ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM> .
+
+<_:t734> rdf:first <_:t711> ;
+    rdf:rest <_:t706> .
+
+<_:t735> a csvw:Column,
+        ns1:Duration ;
+    dc:title "Time" ;
+    csvw:datatype "1.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Time" ;
+    ns1:unit <http://qudt.org/vocab/unit/SEC> .
+
+<_:t736> a csvw:Column,
+        ns1:Force ;
+    dc:title "Force" ;
+    csvw:datatype "3.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Force" ;
+    ns1:unit <http://qudt.org/vocab/unit/KiloN> .
+
+<_:t737> a csvw:Column,
+        ns1:Force ;
+    dc:title "Force" ;
+    csvw:datatype "3.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Force" ;
+    ns1:unit <http://qudt.org/vocab/unit/KiloN> .
+
+<_:t738> a csvw:Column,
+        ns1:Force ;
+    dc:title "Force" ;
+    csvw:datatype "3.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Force" ;
+    ns1:unit <http://qudt.org/vocab/unit/KiloN> .
+
+<_:t739> a csvw:Column,
+        ns1:Duration ;
+    dc:title "Time" ;
+    csvw:datatype "1.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Time" ;
+    ns1:unit <http://qudt.org/vocab/unit/SEC> .
+
+<_:t740> a csvw:Column,
+        ns1:Force ;
+    dc:title "Force" ;
+    csvw:datatype "3.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Force" ;
+    ns1:unit <http://qudt.org/vocab/unit/KiloN> .
+
+<_:t741> a csvw:Column,
+        ns1:PercentageExtension ;
+    dc:title "Percentage Extension" ;
+    csvw:datatype "4.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Strain" ;
+    ns1:unit <http://qudt.org/vocab/unit/PERCENT> .
+
+<_:t742> rdf:first <_:t678> ;
+    rdf:rest <_:t721> .
+
+<_:t743> rdf:first <_:t688> ;
+    rdf:rest <_:t682> .
+
+<_:t744> rdf:first <_:t737> ;
+    rdf:rest <_:t691> .
+
+<_:t746> rdf:first <_:t683> ;
+    rdf:rest () .
+
+<_:t747> rdf:first <_:t733> ;
+    rdf:rest <_:t722> .
+
+<_:t748> rdf:first <_:t736> ;
+    rdf:rest <_:t719> .
+
+<_:t749> a csvw:Column,
+        ns1:PercentageExtension ;
+    dc:title "Percentage Extension" ;
+    csvw:datatype "4.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Strain" ;
+    ns1:unit <http://qudt.org/vocab/unit/PERCENT> .
+
+<_:t750> rdf:first <_:t740> ;
+    rdf:rest <_:t746> .
+
+<_:t751> a csvw:Column,
+        ns1:PercentageExtension ;
+    dc:title "Percentage Extension" ;
+    csvw:datatype "4.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Strain" ;
+    ns1:unit <http://qudt.org/vocab/unit/PERCENT> .
+
+<_:t752> rdf:first <_:t686> ;
+    rdf:rest () .
+
+<_:t753> a csvw:Column,
+        ns1:CrossheadSeparation ;
+    dc:title "Crosshead Separation" ;
+    csvw:datatype "2.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Crosshead travel" ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM> .
+
+<_:t754> a csvw:Column,
+        ns1:Force ;
+    dc:title "Force" ;
+    csvw:datatype "3.0" ;
+    csvw:headerCount "2.0" ;
+    csvw:name "Force" ;
+    ns1:unit <http://qudt.org/vocab/unit/KiloN> .
+
+ns2:FunderIdentifierScheme rdfs:subClassOf ns2:IdentifierScheme .
+
+ns2:Wikidata a ns2:IdentifierScheme .
+
+ns2:local-funder-identifier-scheme a ns2:FunderIdentifierScheme .
+
+<https://orcid.org/0000-0002-3717-7104> rdfs:label "Bernd Bayerlein",
+        "Jörg Waitelonis",
+        "Markus Schilling",
+        "Philipp von Hartrott" .
+
+<https://w3id.org/pmd/ao/tte/Zd2_csv> a csvw:Table ;
+    dc:format "text/csv" ;
+    dc:title "process/pmdao-tto-tt-S355-9testpiece_id/Zd2" ;
+    csvw:tableSchema <https://w3id.org/pmd/ao/tte/Zd2_schema> ;
+    csvw:url "https://ckan.iwm.pmd.internal/en/dataset/1bae2004-1729-46c1-8aeb-25e2652b8485/resource/c6d930b7-e06b-42f0-8a6e-c2ec5f721b21/download/zd2.csv"^^xsd:anyURI .
+
+<https://w3id.org/pmd/ao/tte/Zd2_dataset> a ns1:Dataset,
+        ns1:Measurement ;
+    ns1:resource <https://w3id.org/pmd/ao/tte/Zd2_csv> .
+
+<https://w3id.org/pmd/ao/tte/Zd2_schema> a csvw:Schema ;
+    csvw:column <_:t680> .
+
+<https://w3id.org/pmd/ao/tte/Zd3_csv> a csvw:Table ;
+    dc:format "text/csv" ;
+    dc:title "process/pmdao-tto-tt-S355-10testpiece_id/Zd3" ;
+    csvw:tableSchema <https://w3id.org/pmd/ao/tte/Zd3_schema> ;
+    csvw:url "https://ckan.iwm.pmd.internal/en/dataset/1bae2004-1729-46c1-8aeb-25e2652b8485/resource/4ee98330-c256-4c0c-abed-08ff8df6af0f/download/zd3.csv"^^xsd:anyURI .
+
+<https://w3id.org/pmd/ao/tte/Zd3_dataset> a ns1:Dataset,
+        ns1:Measurement ;
+    ns1:resource <https://w3id.org/pmd/ao/tte/Zd3_csv> .
+
+<https://w3id.org/pmd/ao/tte/Zd3_schema> a csvw:Schema ;
+    csvw:column <_:t676> .
+
+<https://w3id.org/pmd/ao/tte/_extensometerName> a ns1:Metadata,
+        ns1:NodeName ;
+    ns1:value "HBM" .
+
+<https://w3id.org/pmd/ao/tte/_extensometerStandard> a ns1:Metadata,
+        ns1:Norm ;
+    ns1:value "DIN EN ISO 17025" .
+
+<https://w3id.org/pmd/ao/tte/_institute_BAM_address> a ns1:Address,
+        ns1:Metadata ;
+    ns1:value "Unter den Eichen 87. 12205 Berlin" .
+
+<https://w3id.org/pmd/ao/tte/_location_Berlin> a prov:Location,
+        ns1:Metadata ;
+    rdfs:label "Berlin" .
+
+<https://w3id.org/pmd/ao/tte/_machineManufacturer> a ns1:Manufacturer,
+        ns1:Metadata ;
+    ns1:value "Instron" .
+
+<https://w3id.org/pmd/ao/tte/_machineName> a ns1:Metadata,
+        ns1:NodeName ;
+    ns1:value "Maschine 1" .
+
+<https://w3id.org/pmd/ao/tte/_machineStandard> a ns1:Metadata,
+        ns1:Norm ;
+    ns1:value "DIN EN ISO 7500-1:2018, DIN EN ISO 9513" .
+
+<https://w3id.org/pmd/ao/tte/caliperManufacturer_Orion> a ns1:Manufacturer,
+        ns1:Metadata ;
+    ns1:value "Orion" .
+
+<https://w3id.org/pmd/ao/tte/caliperSerialNumber_AK807114> a ns1:Metadata,
+        ns1:NodeSerialNumber ;
+    ns1:value "AK807114" .
+
+<https://w3id.org/pmd/ao/tte/caliperSerialNumber_BA606983> a ns1:Metadata,
+        ns1:NodeSerialNumber ;
+    ns1:value "BA606983" .
+
+<https://w3id.org/pmd/ao/tte/extensometerSerialNumber_28023/28024> a ns1:Metadata,
+        ns1:NodeSerialNumber ;
+    ns1:value "28023/28024" .
+
+<https://w3id.org/pmd/ao/tte/extensometerSerialNumber_28323/28324> a ns1:Metadata,
+        ns1:NodeSerialNumber ;
+    ns1:value "28323/28324" .
+
+<https://w3id.org/pmd/ao/tte/loadCellMaxForce_100> a ns1:LoadCellCapacity,
+        ns1:Metadata ;
+    ns1:unit <http://qudt.org/vocab/unit/PERCENT> ;
+    ns1:value "100.0" .
+
+<https://w3id.org/pmd/ao/tte/machineSerialNumber_h2486> a ns1:Metadata,
+        ns1:NodeSerialNumber ;
+    ns1:value "h2486" .
+
+<https://w3id.org/pmd/ao/tte/machineType_4505> a ns1:Metadata,
+        ns1:NodeType ;
+    ns1:value "4505" .
+
+<https://w3id.org/pmd/ao/tte/micrometerGaugeManufacturer_Orion> a ns1:Manufacturer,
+        ns1:Metadata ;
+    ns1:value "Orion" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10> a ns1:ProcessIdentifier ;
+    ns1:value "pmdao-tto-tt-S355-10" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_crossSectionArea_S0> a ns1:CrossSectionArea,
+        ns1:Measurement,
+        ns1:PrimaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM2> ;
+    ns1:value "120.707" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_crossSectionArea_Su> a ns1:CrossSectionArea,
+        ns1:Measurement,
+        ns1:PrimaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM2> ;
+    ns1:value "43.924" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_crossSectionArea_s1> a ns1:CrossSectionArea,
+        ns1:Measurement,
+        ns1:PrimaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM2> ;
+    ns1:value "120.867" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_crossSectionArea_s2> a ns1:CrossSectionArea,
+        ns1:Measurement,
+        ns1:PrimaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM2> ;
+    ns1:value "120.544" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_crossSectionArea_s3> a ns1:CrossSectionArea,
+        ns1:Measurement,
+        ns1:PrimaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM2> ;
+    ns1:value "120.71" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_date> a ns1:Date,
+        ns1:Metadata ;
+    ns1:value "20.12.2021" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_environmentalTemperature> a ns1:EnvironmentalTemperature,
+        ns1:Measurement,
+        ns1:Metadata ;
+    ns1:unit <http://qudt.org/vocab/unit/DEG_C> ;
+    ns1:value "20.0" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_extensometerGaugeLength> a ns1:ExtensometerGaugeLength,
+        ns1:Measurement,
+        ns1:Metadata ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM> ;
+    ns1:value "50.0" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_finalGaugeLengthAfterFracture_Lu> a ns1:FinalGaugeLengthAfterFracture,
+        ns1:Measurement,
+        ns1:PrimaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM> ;
+    ns1:value "79.97" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_materialDescription> a ns1:Metadata,
+        ns1:materialDesignation ;
+    ns1:value "S355" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_maximumForce> a ns1:MaximumForce,
+        ns1:Measurement,
+        ns1:SecondaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/kiloN> ;
+    ns1:value "61.681" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_modulusOfElasticity> a ns1:Measurement,
+        ns1:ModulusOfElasticity,
+        ns1:SecondaryData,
+        ns1:SlopeOfTheElasticPart ;
+    ns1:unit <http://qudt.org/vocab/unit/GigaPa> ;
+    ns1:value "195.0" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_note> a ns1:Metadata,
+        ns1:Note ;
+    ns1:value "Proben aus Stahlblech entnommen, diagonal der Walzrichtung" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_operator> a ns1:Metadata,
+        ns1:Operator ;
+    ns1:value "M./S./G." .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_originalGaugeLength_L0> a ns1:Measurement,
+        ns1:OriginalGaugeLength,
+        ns1:PrimaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM> ;
+    ns1:value "60.0" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_percentageElongationAfterFracture> a ns1:Measurement,
+        ns1:PercentageElongationAfterFracture,
+        ns1:SecondaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/PERCENT> ;
+    ns1:value "33.0" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_percentageReductionOfArea> a ns1:Measurement,
+        ns1:PercentageReductionOfArea,
+        ns1:SecondaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/PERCENT> ;
+    ns1:value "64.0" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_project> a ns1:Metadata,
+        ns1:Project ;
+    ns2:hasIdentifier <https://w3id.org/pmd/ao/tte/BMBF>,
+        <https://w3id.org/pmd/ao/tte/Funder_Identifier> ;
+    ns1:characteristic <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_project_ID> .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_project_ID> a ns1:Metadata,
+        ns1:ProjectIdentifier ;
+    ns1:value "PMDao-onto_1" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_proofStrength_Rp02> a ns1:Measurement,
+        ns1:Rp02,
+        ns1:SecondaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/MegaPa> ;
+    ns1:value "NaN" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_rollingDirection> a ns1:MaterialRelated,
+        ns1:Metadata ;
+    ns1:value "diagonal to rolling direction" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_specimenShape> a ns1:GeometryShape,
+        ns1:Metadata ;
+    ns1:value "E6x20x60" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_strainRate> a ns1:Metadata,
+        ns1:SetPoint,
+        ns1:StrainRate ;
+    ns1:value "2.5E-4" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_tensileStrength> a ns1:Measurement,
+        ns1:SecondaryData,
+        ns1:TensileStrength ;
+    ns1:unit <http://qudt.org/vocab/unit/MegaPa> ;
+    ns1:value "511.0" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_thicknessAfterFracture_au> a ns1:Measurement,
+        ns1:PrimaryData,
+        ns1:ThicknessAfterFracture ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM> ;
+    ns1:value "3.16" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_thickness_a1> a ns1:Measurement,
+        ns1:OriginalThickness,
+        ns1:PrimaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM> ;
+    ns1:value "5.993" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_thickness_a2> a ns1:Measurement,
+        ns1:OriginalThickness,
+        ns1:PrimaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM> ;
+    ns1:value "5.985" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_thickness_a3> a ns1:Measurement,
+        ns1:OriginalThickness,
+        ns1:PrimaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM> ;
+    ns1:value "5.99" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_transitionPoint> a ns1:Metadata,
+        ns1:SetPoint,
+        ns1:TransitionPointTestingRate ;
+    ns1:unit <http://qudt.org/vocab/unit/PERCENT> ;
+    ns1:value "4.0" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_upperYieldStrength> a ns1:Measurement,
+        ns1:SecondaryData,
+        ns1:UpperYieldStrength ;
+    ns1:unit <http://qudt.org/vocab/unit/MegaPa> ;
+    ns1:value "396.0" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_widthAfterFracture_bu> a ns1:Measurement,
+        ns1:PrimaryData,
+        ns1:WidthAfterFracture ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM> ;
+    ns1:value "13.9" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_width_b1> a ns1:Measurement,
+        ns1:OriginalWidth,
+        ns1:PrimaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM> ;
+    ns1:value "20.168" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_width_b2> a ns1:Measurement,
+        ns1:OriginalWidth,
+        ns1:PrimaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM> ;
+    ns1:value "20.141" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-10_width_b3> a ns1:Measurement,
+        ns1:OriginalWidth,
+        ns1:PrimaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM> ;
+    ns1:value "20.152" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9> a ns1:ProcessIdentifier ;
+    ns1:value "pmdao-tto-tt-S355-9" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_crossSectionArea_S0> a ns1:CrossSectionArea,
+        ns1:Measurement,
+        ns1:PrimaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM2> ;
+    ns1:value "120.715" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_crossSectionArea_Su> a ns1:CrossSectionArea,
+        ns1:Measurement,
+        ns1:PrimaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM2> ;
+    ns1:value "48.813" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_crossSectionArea_s1> a ns1:CrossSectionArea,
+        ns1:Measurement,
+        ns1:PrimaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM2> ;
+    ns1:value "120.649" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_crossSectionArea_s2> a ns1:CrossSectionArea,
+        ns1:Measurement,
+        ns1:PrimaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM2> ;
+    ns1:value "120.683" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_crossSectionArea_s3> a ns1:CrossSectionArea,
+        ns1:Measurement,
+        ns1:PrimaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM2> ;
+    ns1:value "120.813" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_date> a ns1:Date,
+        ns1:Metadata ;
+    ns1:value "20.12.2021" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_environmentalTemperature> a ns1:EnvironmentalTemperature,
+        ns1:Measurement,
+        ns1:Metadata ;
+    ns1:unit <http://qudt.org/vocab/unit/DEG_C> ;
+    ns1:value "20.0" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_extensometerGaugeLength> a ns1:ExtensometerGaugeLength,
+        ns1:Measurement,
+        ns1:Metadata ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM> ;
+    ns1:value "50.0" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_finalGaugeLengthAfterFracture_Lu> a ns1:FinalGaugeLengthAfterFracture,
+        ns1:Measurement,
+        ns1:PrimaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM> ;
+    ns1:value "80.02" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_materialDescription> a ns1:Metadata,
+        ns1:materialDesignation ;
+    ns1:value "S355" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_maximumForce> a ns1:MaximumForce,
+        ns1:Measurement,
+        ns1:SecondaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/kiloN> ;
+    ns1:value "62.168" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_modulusOfElasticity> a ns1:Measurement,
+        ns1:ModulusOfElasticity,
+        ns1:SecondaryData,
+        ns1:SlopeOfTheElasticPart ;
+    ns1:unit <http://qudt.org/vocab/unit/GigaPa> ;
+    ns1:value "201.0" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_note> a ns1:Metadata,
+        ns1:Note ;
+    ns1:value "Proben aus Stahlblech entnommen, diagonal der Walzrichtung" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_operator> a ns1:Metadata,
+        ns1:Operator ;
+    ns1:value "M./S./G." .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_originalGaugeLength_L0> a ns1:Measurement,
+        ns1:OriginalGaugeLength,
+        ns1:PrimaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM> ;
+    ns1:value "60.0" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_percentageElongationAfterFracture> a ns1:Measurement,
+        ns1:PercentageElongationAfterFracture,
+        ns1:SecondaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/PERCENT> ;
+    ns1:value "33.5" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_percentageReductionOfArea> a ns1:Measurement,
+        ns1:PercentageReductionOfArea,
+        ns1:SecondaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/PERCENT> ;
+    ns1:value "60.0" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_project> a ns1:Metadata,
+        ns1:Project ;
+    ns2:hasIdentifier <https://w3id.org/pmd/ao/tte/BMBF>,
+        <https://w3id.org/pmd/ao/tte/Funder_Identifier> ;
+    ns1:characteristic <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_project_ID> .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_project_ID> a ns1:Metadata,
+        ns1:ProjectIdentifier ;
+    ns1:value "PMDao-onto_1" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_proofStrength_Rp02> a ns1:Measurement,
+        ns1:Rp02,
+        ns1:SecondaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/MegaPa> ;
+    ns1:value "390.0" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_rollingDirection> a ns1:MaterialRelated,
+        ns1:Metadata ;
+    ns1:value "diagonal to rolling direction" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_specimenShape> a ns1:GeometryShape,
+        ns1:Metadata ;
+    ns1:value "E6x20x60" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_strainRate> a ns1:Metadata,
+        ns1:SetPoint,
+        ns1:StrainRate ;
+    ns1:value "2.5E-4" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_tensileStrength> a ns1:Measurement,
+        ns1:SecondaryData,
+        ns1:TensileStrength ;
+    ns1:unit <http://qudt.org/vocab/unit/MegaPa> ;
+    ns1:value "515.0" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_thicknessAfterFracture_au> a ns1:Measurement,
+        ns1:PrimaryData,
+        ns1:ThicknessAfterFracture ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM> ;
+    ns1:value "3.55" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_thickness_a1> a ns1:Measurement,
+        ns1:OriginalThickness,
+        ns1:PrimaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM> ;
+    ns1:value "5.992" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_thickness_a2> a ns1:Measurement,
+        ns1:OriginalThickness,
+        ns1:PrimaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM> ;
+    ns1:value "5.991" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_thickness_a3> a ns1:Measurement,
+        ns1:OriginalThickness,
+        ns1:PrimaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM> ;
+    ns1:value "5.993" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_transitionPoint> a ns1:Metadata,
+        ns1:SetPoint,
+        ns1:TransitionPointTestingRate ;
+    ns1:unit <http://qudt.org/vocab/unit/PERCENT> ;
+    ns1:value "4.0" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_upperYieldStrength> a ns1:Measurement,
+        ns1:SecondaryData,
+        ns1:UpperYieldStrength ;
+    ns1:unit <http://qudt.org/vocab/unit/MegaPa> ;
+    ns1:value "399.0" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_widthAfterFracture_bu> a ns1:Measurement,
+        ns1:PrimaryData,
+        ns1:WidthAfterFracture ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM> ;
+    ns1:value "13.75" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_width_b1> a ns1:Measurement,
+        ns1:OriginalWidth,
+        ns1:PrimaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM> ;
+    ns1:value "20.135" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_width_b2> a ns1:Measurement,
+        ns1:OriginalWidth,
+        ns1:PrimaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM> ;
+    ns1:value "20.144" .
+
+<https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-9_width_b3> a ns1:Measurement,
+        ns1:OriginalWidth,
+        ns1:PrimaryData ;
+    ns1:unit <http://qudt.org/vocab/unit/MilliM> ;
+    ns1:value "20.159" .
+
+<https://w3id.org/pmd/ao/tte/testpiece_name/Zd2> a ns1:Metadata,
+        ns1:TestPieceName ;
+    ns1:value "Zd2" .
+
+<https://w3id.org/pmd/ao/tte/testpiece_name/Zd2_afterTest_1> a ns1:Metadata,
+        ns1:TestPieceName ;
+    ns1:value "Zd2_afterTest_1" .
+
+<https://w3id.org/pmd/ao/tte/testpiece_name/Zd2_afterTest_2> a ns1:Metadata,
+        ns1:TestPieceName ;
+    ns1:value "Zd2_afterTest_2" .
+
+<https://w3id.org/pmd/ao/tte/testpiece_name/Zd2testpiece/Zd2> a ns1:TestPiece ;
+    ns1:characteristic <https://w3id.org/pmd/ao/tte/testpiece_name/Zd2> .
+
+<https://w3id.org/pmd/ao/tte/testpiece_name/Zd2testpiece/Zd2_testpiece_afterTest_1> a ns1:TestPiece ;
+    ns1:characteristic <https://w3id.org/pmd/ao/tte/testpiece_name/Zd2_afterTest_1> .
+
+<https://w3id.org/pmd/ao/tte/testpiece_name/Zd2testpiece/Zd2_testpiece_afterTest_2> a ns1:TestPiece ;
+    ns1:characteristic <https://w3id.org/pmd/ao/tte/testpiece_name/Zd2_afterTest_2> .
+
+<https://w3id.org/pmd/ao/tte/testpiece_name/Zd3> a ns1:Metadata,
+        ns1:TestPieceName ;
+    ns1:value "Zd3" .
+
+<https://w3id.org/pmd/ao/tte/testpiece_name/Zd3_afterTest_1> a ns1:Metadata,
+        ns1:TestPieceName ;
+    ns1:value "Zd3_afterTest_1" .
+
+<https://w3id.org/pmd/ao/tte/testpiece_name/Zd3_afterTest_2> a ns1:Metadata,
+        ns1:TestPieceName ;
+    ns1:value "Zd3_afterTest_2" .
+
+<https://w3id.org/pmd/ao/tte/testpiece_name/Zd3testpiece/Zd3> a ns1:TestPiece ;
+    ns1:characteristic <https://w3id.org/pmd/ao/tte/testpiece_name/Zd3> .
+
+<https://w3id.org/pmd/ao/tte/testpiece_name/Zd3testpiece/Zd3_testpiece_afterTest_1> a ns1:TestPiece ;
+    ns1:characteristic <https://w3id.org/pmd/ao/tte/testpiece_name/Zd3_afterTest_1> .
+
+<https://w3id.org/pmd/ao/tte/testpiece_name/Zd3testpiece/Zd3_testpiece_afterTest_2> a ns1:TestPiece ;
+    ns1:characteristic <https://w3id.org/pmd/ao/tte/testpiece_name/Zd3_afterTest_2> .
+
+<https://w3id.org/pmd/ao/tte/BMBF> a ns2:OrganizationIdentifier ;
+    ns2:usesIdentifierScheme ns2:Wikidata ;
+    skos:altLabel "Federal Ministry of Education and Research@en" ;
+    skos:prefLabel "Bundesministerium für Bildung und Forschung (BMBF)@de" ;
+    ns1:value "Q492234" .
+
+<https://w3id.org/pmd/ao/tte/Funder_Identifier> a ns2:FunderIdentifier ;
+    ns2:usesIdentifierScheme ns2:local-funder-identifier-scheme ;
+    ns1:value "13XP5094" .
+
+<https://w3id.org/pmd/ao/tte/_extensometer> ns1:characteristic <https://w3id.org/pmd/ao/tte/_extensometerName>,
+        <https://w3id.org/pmd/ao/tte/_extensometerStandard>,
+        <https://w3id.org/pmd/ao/tte/extensometerSerialNumber_28023/28024>,
+        <https://w3id.org/pmd/ao/tte/extensometerSerialNumber_28323/28324> .
+
+<https://w3id.org/pmd/ao/tte/_institute_BAM> a prov:Organization,
+        ns1:Metadata ;
+    rdfs:label "Bundesanstalt für Materialforschung und -prüfung (BAM)" ;
+    ns1:characteristic <https://w3id.org/pmd/ao/tte/_institute_BAM_address>,
+        <https://w3id.org/pmd/ao/tte/_location_Berlin> .
+
+<https://w3id.org/pmd/ao/tte/_standard> a ns1:Metadata,
+        ns1:Norm ;
+    ns1:value "DIN EN ISO 6892-1" .
+
+<https://w3id.org/pmd/ao/tte/caliper> a ns1:Caliper,
+        ns1:Metadata ;
+    ns1:characteristic <https://w3id.org/pmd/ao/tte/caliperManufacturer_Orion>,
+        <https://w3id.org/pmd/ao/tte/caliperSerialNumber_AK807114>,
+        <https://w3id.org/pmd/ao/tte/caliperSerialNumber_BA606983> .
+
+<https://w3id.org/pmd/ao/tte/load_cell> a ns1:LoadCell,
+        ns1:Metadata ;
+    ns1:characteristic <https://w3id.org/pmd/ao/tte/loadCellMaxForce_100> .
+
+<https://w3id.org/pmd/ao/tte/machine> a ns1:Extensometer,
+        ns1:Metadata,
+        ns1:TensileTestingMachine ;
+    ns1:characteristic <https://w3id.org/pmd/ao/tte/_machineManufacturer>,
+        <https://w3id.org/pmd/ao/tte/_machineName>,
+        <https://w3id.org/pmd/ao/tte/_machineStandard>,
+        <https://w3id.org/pmd/ao/tte/machineSerialNumber_h2486>,
+        <https://w3id.org/pmd/ao/tte/machineType_4505> .
+
+<https://w3id.org/pmd/ao/tte/micrometer_gauge> a ns1:Metadata,
+        ns1:MicrometerGauge ;
+    ns1:characteristic <https://w3id.org/pmd/ao/tte/micrometerGaugeManufacturer_Orion> .
+
