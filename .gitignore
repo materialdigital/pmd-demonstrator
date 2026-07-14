@@ -1,4 +1,6 @@
 pmd_mesh-demonstrator/secrets/*
+pmd_public-infrastructure-demonstrator/secrets/*
+.env
 token.txt
 tokens.json
 endpoints.json
