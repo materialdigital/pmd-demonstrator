@@ -660,7 +660,7 @@ ns2:local-funder-identifier-scheme a ns2:FunderIdentifierScheme .
     dc:format "text/csv" ;
     dc:title "process/pmdao-tto-tt-S355-1testpiece_id/Zx1" ;
     csvw:tableSchema <https://w3id.org/pmd/ao/tte/Zx1_schema> ;
-    csvw:url "https://data.mpi-susmat.pmd.internal/Zx1.csv"^^xsd:anyURI .
+    csvw:url "https://data.pmds-mpcdf-2.pyiron.com/Zx1.csv"^^xsd:anyURI .
 
 <https://w3id.org/pmd/ao/tte/Zx1_dataset> a ns1:Dataset,
         ns1:Measurement ;
@@ -673,7 +673,7 @@ ns2:local-funder-identifier-scheme a ns2:FunderIdentifierScheme .
     dc:format "text/csv" ;
     dc:title "process/pmdao-tto-tt-S355-2testpiece_id/Zx2" ;
     csvw:tableSchema <https://w3id.org/pmd/ao/tte/Zx2_schema> ;
-    csvw:url "https://data.mpi-susmat.pmd.internal/Zx2.csv"^^xsd:anyURI .
+    csvw:url "https://data.pmds-mpcdf-2.pyiron.com/Zx2.csv"^^xsd:anyURI .
 
 <https://w3id.org/pmd/ao/tte/Zx2_dataset> a ns1:Dataset,
         ns1:Measurement ;
@@ -686,7 +686,7 @@ ns2:local-funder-identifier-scheme a ns2:FunderIdentifierScheme .
     dc:format "text/csv" ;
     dc:title "process/pmdao-tto-tt-S355-3testpiece_id/Zx3" ;
     csvw:tableSchema <https://w3id.org/pmd/ao/tte/Zx3_schema> ;
-    csvw:url "https://data.mpi-susmat.pmd.internal/Zx3.csv"^^xsd:anyURI .
+    csvw:url "https://data.pmds-mpcdf-2.pyiron.com/Zx3.csv"^^xsd:anyURI .
 
 <https://w3id.org/pmd/ao/tte/Zx3_dataset> a ns1:Dataset,
         ns1:Measurement ;
@@ -699,7 +699,7 @@ ns2:local-funder-identifier-scheme a ns2:FunderIdentifierScheme .
     dc:format "text/csv" ;
     dc:title "process/pmdao-tto-tt-S355-4testpiece_id/Zx4" ;
     csvw:tableSchema <https://w3id.org/pmd/ao/tte/Zx4_schema> ;
-    csvw:url "https://data.mpi-susmat.pmd.internal/Zx4.csv"^^xsd:anyURI .
+    csvw:url "https://data.pmds-mpcdf-2.pyiron.com/Zx4.csv"^^xsd:anyURI .
 
 <https://w3id.org/pmd/ao/tte/Zx4_dataset> a ns1:Dataset,
         ns1:Measurement ;
@@ -1676,4 +1676,3 @@ ns2:local-funder-identifier-scheme a ns2:FunderIdentifierScheme .
 <https://w3id.org/pmd/ao/tte/micrometer_gauge> a ns1:Metadata,
         ns1:MicrometerGauge ;
     ns1:characteristic <https://w3id.org/pmd/ao/tte/micrometerGaugeManufacturer_Orion> .
-

@@ -566,7 +566,7 @@ ns2:local-funder-identifier-scheme a ns2:FunderIdentifierScheme .
     dc:format "text/csv" ;
     dc:title "process/pmdao-tto-tt-S355-9testpiece_id/Zd2" ;
     csvw:tableSchema <https://w3id.org/pmd/ao/tte/Zd2_schema> ;
-    csvw:url "https://ckan.iwm.pmd.internal/en/dataset/1bae2004-1729-46c1-8aeb-25e2652b8485/resource/c6d930b7-e06b-42f0-8a6e-c2ec5f721b21/download/zd2.csv"^^xsd:anyURI .
+    csvw:url "https://data.pmds-mpcdf-2.pyiron.com/Zd2.csv"^^xsd:anyURI .
 
 <https://w3id.org/pmd/ao/tte/Zd2_dataset> a ns1:Dataset,
         ns1:Measurement ;
@@ -579,7 +579,7 @@ ns2:local-funder-identifier-scheme a ns2:FunderIdentifierScheme .
     dc:format "text/csv" ;
     dc:title "process/pmdao-tto-tt-S355-10testpiece_id/Zd3" ;
     csvw:tableSchema <https://w3id.org/pmd/ao/tte/Zd3_schema> ;
-    csvw:url "https://ckan.iwm.pmd.internal/en/dataset/1bae2004-1729-46c1-8aeb-25e2652b8485/resource/4ee98330-c256-4c0c-abed-08ff8df6af0f/download/zd3.csv"^^xsd:anyURI .
+    csvw:url "https://data.pmds-mpcdf-2.pyiron.com/Zd3.csv"^^xsd:anyURI .
 
 <https://w3id.org/pmd/ao/tte/Zd3_dataset> a ns1:Dataset,
         ns1:Measurement ;
@@ -1128,4 +1128,3 @@ ns2:local-funder-identifier-scheme a ns2:FunderIdentifierScheme .
 <https://w3id.org/pmd/ao/tte/micrometer_gauge> a ns1:Metadata,
         ns1:MicrometerGauge ;
     ns1:characteristic <https://w3id.org/pmd/ao/tte/micrometerGaugeManufacturer_Orion> .
-
