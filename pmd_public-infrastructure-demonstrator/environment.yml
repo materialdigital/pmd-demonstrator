@@ -1,0 +1,12 @@
+name: pmd-demonstrator
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python =3.12
+  - pip
+  - git
+  - jupyterlab
+  - ipykernel
+  - pip:
+      - praeco @ git+https://github.com/pyiron/praeco.git@dd733c07ab6786bb322139f673a804c19bc51ed4
