@@ -153,6 +153,20 @@ def test_specimen_record_node(pmdco2_source):
     assert run.outputs.record == acquisition.build_specimen_record(PROFILE, pmdco2_source, "Zy3")
 
 
+def test_test_with_two_specimen_ids_raises(tmp_path):
+    # Give Zx1's test piece a second name; the test then maps to two IDs.
+    text = PMDCO2_ORIENTATION_FILES["parallel"].read_text(encoding="utf-8")
+    text += (
+        "\n<https://w3id.org/pmd/ao/tte/testpiece_name/Zx1testpiece/Zx1> "
+        "<https://w3id.org/pmd/co/characteristic> <urn:test:second-name> .\n"
+        "<urn:test:second-name> a <https://w3id.org/pmd/co/TestPieceName> ;\n"
+        '    <https://w3id.org/pmd/co/value> "Zx1-alias" .\n'
+    )
+    source = _source_with(tmp_path, "parallel", text)
+    with pytest.raises(ValueError, match="several specimen IDs"):
+        exploration.specimen_table(PROFILE, source)
+
+
 def test_unknown_specimen_raises(pmdco2_source):
     with pytest.raises(LookupError, match="Zq9"):
         acquisition.build_specimen_record(PROFILE, pmdco2_source, "Zq9")

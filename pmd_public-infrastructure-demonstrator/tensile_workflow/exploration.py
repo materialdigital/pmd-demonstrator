@@ -39,13 +39,17 @@ def is_conformant(profile_id: str, source: dict) -> bool:
 def specimen_table(profile_id: str, source: dict) -> pd.DataFrame:
     """One row per specimen: ``specimen_id``, ``orientation``, ``process``.
 
-    Raises if a specimen ID occurs in more than one test, or if a test has no
-    or more than one orientation.
+    Raises if a specimen ID occurs in more than one test, a test has more than
+    one specimen ID, or a test has no or more than one orientation.
     """
     profile = get_profile(profile_id)
     rows = sources.select(source, profile.specimens.query, profile.specimens.columns)
     if rows.empty:
         raise LookupError(f"no specimens found with profile {profile_id!r}")
+    for process, group in rows.groupby("process", sort=False):
+        ids = sorted(set(group["specimen_id"]))
+        if len(ids) != 1:
+            raise ValueError(f"test {process} has several specimen IDs: {ids}")
     records = []
     for specimen_id, group in rows.groupby("specimen_id", sort=False):
         processes = sorted(set(group["process"]))
