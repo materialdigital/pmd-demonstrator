@@ -38,6 +38,8 @@ QUANTITY_KINDS: dict[str, str] = {
     "Su": "area",
     "L0": "length",
     "Lu": "length",
+    # test-control set point (diagnostic only): strain at the test-speed switch
+    "eps_sw": "strain",
     # lab-reported results (comparison only)
     "E": "modulus",
     "Rp0.2": "stress",

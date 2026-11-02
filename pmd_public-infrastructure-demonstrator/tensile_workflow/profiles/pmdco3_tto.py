@@ -26,6 +26,10 @@ How the concepts are expressed (observed in that graph):
   output); the reported results are qualities of the material. The bearer is
   required here too: the load cell's force range is also typed
   ``tto:TTO_0000023`` (maximum force).
+- The test-speed switch point is a process attribute
+  (``pmdco:PMD_0000009``) of the test typed ``tto:TTO_0000058`` (transition
+  point testing rate), measured like the other quantities (unit ``PERCENT``),
+  and queried as ``eps_sw``.
 - Orientation: the material (``pmdco:PMD_0020005`` from the test piece) bears
   a quality typed only as ``obo:BFO_0000019`` (quality), whose value
   specification holds the rolling-direction text. No specific concept marks it
@@ -161,6 +165,14 @@ WHERE {
     ?test_piece pmdco:PMD_0020005 ?material .
     ?material obo:RO_0000086 ?individual .
   }
+  UNION
+  {
+    # Process attributes of the test (test-control set points).
+    VALUES (?class ?quantity) {
+      (tto:TTO_0000058 "eps_sw")
+    }
+    ?process pmdco:PMD_0000009 ?individual .   # has process attribute
+  }
   ?individual a ?class .
   ?process obo:OBI_0000299 ?datum .          # has specified output
   ?datum a obo:IAO_0000109 ;                 # measurement datum
@@ -248,6 +260,7 @@ IRI_LABELS: tuple[tuple[str, str, str], ...] = (
     ("pmdco:PMD_0000974", "tensile testing process", ""),
     ("pmdco:PMD_0000006", "has value", ""),
     ("pmdco:PMD_0000618", "elastic modulus", "reported E"),
+    ("pmdco:PMD_0000009", "has process attribute", "test -> rate-switch point"),
     ("pmdco:PMD_0020005", "porosity", "owl:Class in the pinned files, used as test piece -> material property in the data"),
     ("obo:OBI_0000293", "has specified input", ""),
     ("obo:OBI_0000299", "has specified output", ""),
@@ -270,6 +283,7 @@ IRI_LABELS: tuple[tuple[str, str, str], ...] = (
     ("tto:TTO_0000023", "maximum force", "reported Fm"),
     ("tto:TTO_0000033", "percentage elongation after fracture", "reported A; deprecated in src"),
     ("tto:TTO_0000038", "percentage reduction of area", "reported Z; deprecated in src"),
+    ("tto:TTO_0000058", "transition point testing rate", "strain at the test-speed switch (diagnostic)"),
 )
 
 PROFILE = OntologyProfile(

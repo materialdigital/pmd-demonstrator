@@ -12,6 +12,9 @@ How the concepts are expressed (observed in the local Turtle files):
   ``pmd:value`` (a plain literal) and ``pmd:unit`` (a QUDT unit IRI).
 - Orientation: the ``pmd:MaterialRelated`` characteristic.
 - Lab notes: ``pmd:Note`` characteristics.
+- Test-speed switch point: the ``pmd:TransitionPointTestingRate``
+  characteristic (``..._transitionPoint``, unit ``PERCENT``; e.g. 1.6 % for
+  S355-1), queried as ``eps_sw`` (strain kind, so it arrives as a ratio).
 - Curves: CSVW. Test -> ``pmd:Dataset`` -> ``pmd:resource`` -> ``csvw:Table``
   with ``csvw:url`` and a ``csvw:tableSchema`` whose ``csvw:column`` RDF list
   holds one column node per channel, typed ``pmd:Duration``,
@@ -101,6 +104,7 @@ WHERE {
     VALUES (?class ?quantity) {
       (pmd:OriginalGaugeLength               "L0")
       (pmd:FinalGaugeLengthAfterFracture     "Lu")
+      (pmd:TransitionPointTestingRate        "eps_sw")
       (pmd:ModulusOfElasticity               "E")
       (pmd:Rp02                              "Rp0.2")
       (pmd:UpperYieldStrength                "ReH")

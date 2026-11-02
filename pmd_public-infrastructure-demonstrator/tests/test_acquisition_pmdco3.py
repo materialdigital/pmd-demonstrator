@@ -21,8 +21,9 @@ import pyiron_workflow as pwf
 import pytest
 
 from tensile_workflow import acquisition, exploration, sources
-from tensile_workflow.contract import UnitError
+from tensile_workflow.contract import UnitError, to_contract_unit
 from tensile_workflow.profiles import available_profiles, get_profile, pmdco3_tto
+from tensile_workflow.profiles.base import QUANTITY_KINDS
 
 PROFILE = "pmdco3-tto"
 
@@ -37,12 +38,23 @@ _PREFIXES = """\
 """
 
 
-def _measured(test: str, name: str, cls: str, bearer: str, value: str, unit: str | None) -> str:
-    """A quality, its measurement datum (output of the test) and its value spec."""
+def _measured(
+    test: str,
+    name: str,
+    cls: str,
+    bearer: str,
+    value: str,
+    unit: str | None,
+    relation: str = "obo:RO_0000086",
+) -> str:
+    """A quality, its measurement datum (output of the test) and its value spec.
+
+    ``relation`` links the bearer to the quality (default: has quality).
+    """
     unit_line = f"    obo:IAO_0000039 {unit} ;\n" if unit else ""
     return f"""
 ex:{test}_{name} a {cls} .
-{bearer} obo:RO_0000086 ex:{test}_{name} .
+{bearer} {relation} ex:{test}_{name} .
 ex:{test} obo:OBI_0000299 ex:{test}_{name}_datum .
 ex:{test}_{name}_datum a obo:IAO_0000109 ;
     obo:IAO_0000136 ex:{test}_{name} ;
@@ -53,7 +65,9 @@ ex:{test}_{name}_value a obo:OBI_0001931 ;
 """
 
 
-def _test(test: str, piece: str, orientation: str, s0_unit: str = "unit:MilliM2") -> str:
+def _test(
+    test: str, piece: str, orientation: str, s0_unit: str = "unit:MilliM2", switch: str = "3.8"
+) -> str:
     tp, broken, material = f"ex:{piece}", f"ex:{piece}_after", f"ex:{piece}_material"
     extensometer, load_cell = f"ex:{test}_extensometer", f"ex:{test}_load_cell"
     text = f"""
@@ -99,13 +113,17 @@ ex:{test}_note_value pmdco:PMD_0000006 "note of {piece}"^^xsd:string .
     text += _measured(test, "load_range", "tto:TTO_0000023", load_cell, "100.0", "unit:KiloN")
     text += _measured(test, "A", "tto:TTO_0000033", material, "34.0", "unit:PERCENT")
     text += _measured(test, "Z", "tto:TTO_0000038", material, "55.0", "unit:PERCENT")
+    text += _measured(
+        test, "switch", "tto:TTO_0000058", f"ex:{test}", switch, "unit:PERCENT",
+        relation="pmdco:PMD_0000009",  # has process attribute
+    )
     return text
 
 
 FIXTURE = (
     _PREFIXES
-    + _test("test_1", "Za1", "in rolling direction")
-    + _test("test_2", "Zb7", "diagonal to rolling direction")
+    + _test("test_1", "Za1", "in rolling direction", switch="1.6")
+    + _test("test_2", "Zb7", "diagonal to rolling direction", switch="4.0")
 )
 
 CSV = (
@@ -221,6 +239,32 @@ def test_reported_properties(fixture_source):
     assert (reported.a_percent, reported.z_percent) == (34.0, 55.0)
 
 
+def _rate_switch_strain(profile_id: str, source: dict, specimen_id: str) -> float | None:
+    """The profile's ``eps_sw`` value of one specimen as a ratio (``None`` if absent).
+
+    ``acquisition.build_specimen_record`` does not fill
+    ``SpecimenRecord.rate_switch_strain`` yet, so this checks the profile's
+    query and its unit conversion directly.
+    """
+    profile = get_profile(profile_id)
+    table = exploration.specimen_table(profile_id, source)
+    process = table[table["specimen_id"] == specimen_id]["process"].item()
+    rows = sources.select(source, profile.quantities.query, profile.quantities.columns)
+    rows = rows[(rows["process"] == process) & (rows["quantity"] == "eps_sw")]
+    if rows.empty:
+        return None
+    assert len(rows) == 1
+    row = rows.iloc[0]
+    return to_contract_unit(float(row["value"]), profile.unit_symbol(row["unit"]), QUANTITY_KINDS["eps_sw"])
+
+
+def test_rate_switch_strain_is_a_ratio(fixture_source):
+    assert _rate_switch_strain(PROFILE, fixture_source, "Za1") == pytest.approx(0.016, rel=1e-12)
+    assert _rate_switch_strain(PROFILE, fixture_source, "Zb7") == pytest.approx(0.040, rel=1e-12)
+    # Acquisition still succeeds with the extra quantity in the graph.
+    assert acquisition.build_specimen_record(PROFILE, fixture_source, "Za1").specimen_id == "Za1"
+
+
 def test_unknown_unit_raises(tmp_path):
     text = _PREFIXES + _test("test_1", "Za1", "in rolling direction", s0_unit="unit:FURLONG2")
     with pytest.raises(UnitError, match="FURLONG2"):
@@ -274,3 +318,6 @@ def test_real_pinned_graph_matches_pmdco2(pmdco2_source):
         q3 = acquisition.build_reported_properties(PROFILE, source, sid)
         q2 = acquisition.build_reported_properties("pmdco2-tto", pmdco2_source, sid)
         assert q3 == q2, sid
+        switch3 = _rate_switch_strain(PROFILE, source, sid)
+        assert switch3 is not None, sid
+        assert switch3 == _rate_switch_strain("pmdco2-tto", pmdco2_source, sid), sid

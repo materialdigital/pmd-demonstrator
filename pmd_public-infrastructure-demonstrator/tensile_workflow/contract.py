@@ -13,7 +13,7 @@ quantity kind          unit    used for
 ``length``             mm      crosshead separation, L0, Lu
 ``area``               mm2     S0, s1..sn, Su
 ``force``              N       curve force, reported Fm
-``strain``             1       curve strain as a ratio (not percent)
+``strain``             1       curve strain, rate-switch strain (ratio)
 ``stress``             MPa     reported Rp0.2, ReH, ReL, Rm
 ``modulus``            GPa     reported E
 ``percent``            %       reported A, Z
@@ -123,6 +123,11 @@ class SpecimenRecord:
     ontology profiles. ``provenance_iri`` is opaque (reporting only).
     ``curve_columns`` maps each of :data:`CURVE_ROLES` to a :class:`ColumnSpec`.
     Optional values are ``None`` when the graph does not provide them.
+
+    ``rate_switch_strain`` is the strain (ratio, not percent) at which the lab
+    switched the test speed. It is diagnostic only (method-spec M3/A2): the
+    analysis uses it for the ``near_rate_switch`` flag and never to change a
+    value.
     """
 
     specimen_id: str
@@ -136,6 +141,7 @@ class SpecimenRecord:
     notes: tuple[str, ...]
     curve_url: str
     curve_columns: Mapping[str, ColumnSpec]
+    rate_switch_strain: float | None = None
 
     def __post_init__(self) -> None:
         if not self.specimen_id:

@@ -16,6 +16,7 @@ from conftest import PMDCO2_ORIENTATION_FILES
 from tensile_workflow import acquisition, exploration, sources
 from tensile_workflow.contract import CURVE_ROLES, SpecimenRecord, UnitError, to_contract_unit
 from tensile_workflow.profiles import available_profiles, get_profile
+from tensile_workflow.profiles.base import QUANTITY_KINDS
 from tensile_workflow.profiles.units import qudt_unit_symbol
 
 PROFILE = "pmdco2-tto"
@@ -213,6 +214,31 @@ def test_reported_properties_present_or_none(pmdco2_source):
         assert 370.0 <= r.reh_mpa <= 410.0
         assert 500.0 <= r.rm_mpa <= 520.0
         assert 59_000.0 <= r.fm_n <= 64_000.0
+
+
+def _rate_switch_strain(source: dict, specimen_id: str) -> float:
+    """The profile's ``eps_sw`` value of one specimen, in contract units (ratio).
+
+    ``acquisition.build_specimen_record`` does not fill
+    ``SpecimenRecord.rate_switch_strain`` yet, so this checks the profile's
+    query and its unit conversion directly.
+    """
+    profile = get_profile(PROFILE)
+    table = exploration.specimen_table(PROFILE, source)
+    process = table[table["specimen_id"] == specimen_id]["process"].item()
+    rows = sources.select(source, profile.quantities.query, profile.quantities.columns)
+    rows = rows[(rows["process"] == process) & (rows["quantity"] == "eps_sw")]
+    assert len(rows) == 1
+    row = rows.iloc[0]
+    return to_contract_unit(float(row["value"]), profile.unit_symbol(row["unit"]), QUANTITY_KINDS["eps_sw"])
+
+
+@pytest.mark.parametrize(
+    ("specimen_id", "expected"),
+    [("Zx1", 0.016), ("Zx2", 0.038), ("Zd2", 0.040)],  # graph: 1.6 %, 3.8 %, 4.0 %
+)
+def test_rate_switch_strain_is_a_ratio(pmdco2_source, specimen_id, expected):
+    assert _rate_switch_strain(pmdco2_source, specimen_id) == pytest.approx(expected, rel=1e-12)
 
 
 def test_reported_properties_node(pmdco2_source):
