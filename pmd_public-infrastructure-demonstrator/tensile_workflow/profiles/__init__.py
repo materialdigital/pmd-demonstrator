@@ -6,7 +6,7 @@ the exploration and acquisition nodes stay unchanged.
 
 from __future__ import annotations
 
-from tensile_workflow.profiles import pmdco2_tto
+from tensile_workflow.profiles import pmdco2_tto, pmdco3_tto
 from tensile_workflow.profiles.base import CurveLocator, OntologyProfile, SelectQuery
 
 __all__ = [
@@ -44,3 +44,4 @@ def available_profiles() -> list[str]:
 
 
 register_profile(pmdco2_tto.PROFILE)
+register_profile(pmdco3_tto.PROFILE)
