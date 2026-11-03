@@ -30,6 +30,7 @@ from urllib.parse import quote
 
 from tensile_workflow.contract import CURVE_ROLES, ColumnSpec
 from tensile_workflow.profiles.units import qudt_unit_symbol
+from tensile_workflow.sources import reject_url_credentials
 
 QUANTITY_KINDS: dict[str, str] = {
     # specimen geometry (analysis inputs)
@@ -83,6 +84,7 @@ class CurveLocator:
     def __post_init__(self) -> None:
         if "{specimen_id}" not in self.url_template:
             raise ValueError("url_template must contain '{specimen_id}'")
+        reject_url_credentials(self.url_template)  # The template is recorded in the run's knowledge graph.
         if set(self.columns) != set(CURVE_ROLES):
             raise ValueError(f"columns must have exactly the roles {CURVE_ROLES}")
 

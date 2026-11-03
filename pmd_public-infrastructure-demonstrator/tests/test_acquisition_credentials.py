@@ -1,4 +1,4 @@
-"""Credential hygiene of the Ontodocker access path (offline, stubbed praeco client).
+"""Credential hygiene of the Ontodocker access path and of URLs (offline, stubbed praeco client).
 
 The stub answers SPARQL from the local pmdco2 Turtle files, named like the
 Ontodocker datasets of the demonstrator.
@@ -17,6 +17,8 @@ import rdflib
 from conftest import PMDCO2_ORIENTATION_FILES
 
 from tensile_workflow import acquisition, exploration, sources
+from tensile_workflow.profiles import pmdco3_tto
+from tensile_workflow.profiles.base import CurveLocator
 
 TOKEN = "DUMMY_TOKEN_XYZ"
 ADDRESS = "ontodocker.example.invalid"
@@ -104,6 +106,71 @@ def test_no_node_output_contains_the_token(ontodocker_source):
     assert sorted(runs["specimens"].outputs.specimen_ids) == sorted(
         exploration.specimen_table("pmdco2-tto", turtle)["specimen_id"]
     )
+
+
+# ---------------------------------------------------------------------------
+# Credentials embedded in URLs (R8-6): refused, and not repeated in the error
+# ---------------------------------------------------------------------------
+
+SECRET = "s3cr3t"
+URLS_WITH_CREDENTIALS = [
+    f"https://user:{SECRET}@host.example.org/g.ttl",
+    f"https://{SECRET}@host.example.org/g.ttl",
+    f"https://host.example.org/g.ttl?token={SECRET}",
+]
+
+
+@pytest.mark.parametrize("url", URLS_WITH_CREDENTIALS)
+def test_validate_source_rejects_credentials_in_urls(url):
+    with pytest.raises(sources.SourceError) as error:
+        sources.validate_source({"kind": "turtle", "locations": ["datasets/ok.ttl", url]})
+    assert SECRET not in str(error.value)
+
+
+@pytest.mark.parametrize("url", URLS_WITH_CREDENTIALS)
+def test_fetch_bytes_rejects_credentials_in_urls_before_any_client_exists(monkeypatch, url):
+    def no_client(*args, **kwargs):
+        raise AssertionError("no client may be built for such a URL")
+
+    monkeypatch.setattr(sources, "HttpClient", no_client)
+    with pytest.raises(sources.SourceError) as error:
+        sources.fetch_bytes(url)
+    assert SECRET not in str(error.value)
+
+
+@pytest.mark.parametrize(
+    "template",
+    [
+        f"https://user:{SECRET}@host.example.org/{{specimen_id}}.csv",
+        f"https://{SECRET}@host.example.org/{{specimen_id}}.csv",
+        f"https://host.example.org/{{specimen_id}}.csv?token={SECRET}",
+    ],
+)
+def test_curve_locator_rejects_credentials_in_the_template(template):
+    data = pmdco3_tto.CURVE_LOCATOR.as_dict()
+    data["url_template"] = template
+    with pytest.raises(ValueError) as error:
+        CurveLocator.from_dict(data)
+    assert SECRET not in str(error.value)
+
+
+def test_local_paths_may_contain_url_characters():
+    locations = ["datasets/a?b.ttl", "/data/user@host/g.ttl"]
+    assert sources.validate_source({"kind": "turtle", "locations": locations}) == ("turtle", locations)
+
+
+def test_the_pinned_and_data_urls_are_accepted(pmdco2_source):
+    pinned = {"kind": "turtle", "locations": [pmdco3_tto.PINNED_GRAPH_URL]}
+    assert sources.validate_source(pinned) == ("turtle", [pmdco3_tto.PINNED_GRAPH_URL])
+    sources.reject_url_credentials(pmdco3_tto.PINNED_GRAPH_URL)
+    sources.reject_url_credentials(pmdco3_tto.CURVE_LOCATOR.url_for("Zx1"))
+    assert CurveLocator.from_dict(pmdco3_tto.CURVE_LOCATOR.as_dict()) == pmdco3_tto.CURVE_LOCATOR
+    # Every curve URL of the ten pmdco2 specimens, as linked by the graphs.
+    specimen_ids = exploration.specimen_table("pmdco2-tto", pmdco2_source)["specimen_id"]
+    assert len(specimen_ids) == 10
+    for specimen_id in specimen_ids:
+        record = acquisition.build_specimen_record("pmdco2-tto", pmdco2_source, specimen_id)
+        sources.reject_url_credentials(record.curve_url)
 
 
 def test_missing_address_fails_without_echoing_the_token(monkeypatch):

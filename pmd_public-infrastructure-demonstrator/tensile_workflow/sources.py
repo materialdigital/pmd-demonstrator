@@ -60,11 +60,28 @@ class SourceError(ValueError):
 # --------------------------------------------------------------------------
 
 
+def reject_url_credentials(url: str) -> None:
+    """Raise :class:`SourceError` if a URL has userinfo or a query string.
+
+    Either can carry a credential, and these URLs are recorded in knowledge
+    graphs; ``requests`` would also send userinfo as Basic auth. The message
+    names only the host, so that it does not repeat a secret.
+    """
+    parts = urlsplit(url)
+    if "@" in parts.netloc:
+        raise SourceError(f"URL for host {parts.hostname!r} must not contain userinfo")
+    if parts.query:
+        raise SourceError(f"URL for host {parts.hostname!r} must not contain a query string")
+
+
 def validate_source(source: Mapping) -> tuple[str, list[str]]:
     """Check a source dict and return ``(kind, parts)``.
 
-    Only the documented keys are accepted, so credentials cannot be smuggled
-    into a source (which is a node input and ends up in the knowledge graph).
+    A source is a node input and ends up in the knowledge graph. Only the
+    documented keys are accepted, and URL locations with userinfo or a query
+    string are refused (:func:`reject_url_credentials`). This closes the
+    regular places for credentials; it cannot recognise a secret elsewhere in
+    a path or dataset name.
     """
     if not isinstance(source, Mapping):
         raise SourceError(f"source must be a dict, got {type(source).__name__}")
@@ -83,6 +100,10 @@ def validate_source(source: Mapping) -> tuple[str, list[str]]:
         or not all(isinstance(p, str) and p.strip() for p in parts)
     ):
         raise SourceError(f"{kind} source needs a non-empty list of strings in {parts_key!r}")
+    if kind == "turtle":
+        for location in parts:
+            if urlsplit(location).netloc:  # A local path may contain '?' or '@'.
+                reject_url_credentials(location)
     return kind, [str(p) for p in parts]
 
 
@@ -205,8 +226,11 @@ def fetch_bytes(url: str) -> tuple[bytes, str]:
     """GET a public http(s) URL into memory; returns ``(data, sha256_hex)``.
 
     Uses a fresh praeco ``HttpClient`` bound to the URL's host and without a
-    token, so no credential can be sent along.
+    token, and refuses URLs with userinfo or a query string
+    (:func:`reject_url_credentials`), so no credential is sent along by these
+    means.
     """
+    reject_url_credentials(url)
     parts = urlsplit(url)
     if parts.scheme not in ("http", "https") or not parts.netloc:
         raise SourceError(f"not an absolute http(s) URL: {url!r}")
