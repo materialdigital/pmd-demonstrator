@@ -138,8 +138,11 @@ Rp0.2 gets ``rp02:in_yield_plateau``).
 5. Plateau extent: the band [candidate, P + (P - candidate)] is the plateau
    band (it widens with the observed serration depth). The extent is
    e_p(i_last) - e_p(i_r), with i_last the last sample in [i_r, i_h) inside
-   the band (strain-valid samples only). If it is >= ``plateau_min_extent``,
-   ReL = candidate.
+   the band (strain-valid samples only). If this in-band run reaches the last
+   strain-valid sample while later finite-force samples are still in the band,
+   the plateau extends beyond ``k_ext``: ReL is NaN with
+   ``rel:extensometer_invalid`` (M2, R8-2). If the extent is >=
+   ``plateau_min_extent``, ReL = candidate.
 6. Otherwise ReL = the transient minimum (min sigma over (i_p, i_r), or over
    Y without a transient or recovery) with flag ``rel:single_minimum``.
 
@@ -1038,7 +1041,14 @@ def _lower_yield(
         if not valid[y_index[start]]:
             out["flags"].append("rel:extensometer_invalid")
             return out
-        inside = np.flatnonzero((y_force[start:] <= upper) & valid[y_index[start:]])
+        in_band = y_force[start:] <= upper
+        strain_valid = valid[y_index[start:]]
+        last_valid = int(np.flatnonzero(strain_valid)[-1])
+        if in_band[last_valid] and np.any(in_band[last_valid + 1 :]):
+            # R8-2, M2: the plateau continues beyond k_ext, so its extent is unknown.
+            out["flags"].append("rel:extensometer_invalid")
+            return out
+        inside = np.flatnonzero(in_band & strain_valid)
         last = start + int(inside[-1]) if len(inside) else start
         out["extent"] = float(plastic[y_index[last]] - plastic[y_index[start]])
         if out["extent"] >= p.plateau_min_extent:

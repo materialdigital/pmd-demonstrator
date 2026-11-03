@@ -583,6 +583,41 @@ def test_m2_rp02_beyond_k_ext_is_nan_and_flagged():
     assert r.fm_n == pytest.approx(c.truth.fm_n, rel=EXACT)
 
 
+def _long_gauge(c: sy.SyntheticCurve) -> sy.SyntheticCurve:
+    # L0 = 200 mm: one 0.1 mm crosshead window spans 5e-4 strain (see above).
+    return dataclasses.replace(c, crosshead_mm=c.crosshead_mm * 4.0, l0_mm=200.0)
+
+
+@pytest.mark.parametrize("mode", ["freeze", "nan", "zero"])
+@pytest.mark.parametrize(
+    "at_plastic_strain",
+    [0.003, 0.010],
+    ids=["extent-below-plateau-min-extent", "extent-above-plateau-min-extent"],
+)
+def test_m2_plateau_beyond_k_ext_gives_nan_rel(mode, at_plastic_strain):
+    # R8-2: the extensometer ends inside the plateau (it runs to p = 0.015).
+    # ReL is neither the transient minimum nor a plateau value.
+    c = sy.extensometer_end(_long_gauge(curve("a")), mode, at_plastic_strain=at_plastic_strain)
+    r = run(c)
+    assert_k_ext_within_one_window(r, c, c.truth.k_ext)
+    assert r.reh_mpa == pytest.approx(400.0, rel=EXACT)
+    assert_nan(r.rel_mpa)
+    assert "rel:extensometer_invalid" in r.flags
+    assert "rel:single_minimum" not in r.flags
+    assert r.fm_n == pytest.approx(c.truth.fm_n, rel=EXACT)
+
+
+def test_m2_extensometer_ending_after_the_plateau_keeps_rel():
+    # Ends in the hardening rise, above the band: the plateau is complete.
+    # k_ext is the start of a crosshead window (2e-3 strain at L0 = 50 mm), so
+    # the removal is placed more than one window after the plateau.
+    c = sy.extensometer_end(curve("a"), "nan", at_plastic_strain=0.02)
+    r = run(c)
+    assert c.stress_mpa[r.k_ext - 1] > 381.0
+    assert r.rel_mpa == pytest.approx(c.truth.rel_mpa, abs=REL_TOL_MPA)
+    assert "rel:extensometer_invalid" not in r.flags
+
+
 def test_m1_non_finite_forces_do_not_change_fm():
     c0 = curve("a")
     force = c0.force_n.copy()
