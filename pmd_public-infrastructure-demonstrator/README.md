@@ -57,9 +57,9 @@ The analysis code is the `tensile_workflow` package in this directory. The noteb
 The tests in `tests/` run offline: they use the local Turtle files in `datasets/` and synthetic curves, and block outbound connections. `pytest` is not part of `environment.yml`; install it locally to run them from this directory:
 
 ```bash
-python -m pytest tests -m "not network"
-python -m pytest tests --run-statistical -m statistical  # Monte Carlo tolerance checks, slower
-python -m pytest tests --run-network -m network  # reads the pinned PMDco3/TTO graph from GitHub
+python -m pytest -p no:cacheprovider tests -m "not network"
+python -m pytest -p no:cacheprovider tests --run-statistical -m statistical  # Monte Carlo tolerance checks, slower
+python -m pytest -p no:cacheprovider tests --run-network -m network  # reads the pinned PMDco3/TTO graph from GitHub
 ```
 
 The notebook reads `ONTODOCKER_ADDRESS`, and `ONTODOCKER_TOKEN` if the service requires it, from the environment. They are needed only for the default Ontodocker source; the local Turtle files in `datasets/` are an alternative source, given relative to this directory. Credentials are never workflow inputs, so they cannot enter results or knowledge graphs. No Dataportal token is needed.
