@@ -894,16 +894,46 @@ def test_ag_no_maximum_force():
     r = run(c)
     assert_nan(r.fm_n)
     assert_nan(r.ag_percent)
-    assert "ag:no_maximum_force" in r.flags
-    assert "ag:no_elastic_modulus" not in r.flags
+    assert {"ag:no_maximum_force", "agt:no_maximum_force"} <= flag_set(r)
+    assert_nan(r.agt_percent)
+    assert not {"ag:no_elastic_modulus", "agt:no_elastic_modulus"} & flag_set(r)
 
 
 def test_ag_no_elastic_modulus():
     r = result("too-few-elastic")
     assert_nan(r.e_gpa)
     assert_nan(r.ag_percent)
-    assert "ag:no_elastic_modulus" in r.flags
-    assert "ag:no_maximum_force" not in r.flags
+    assert {"ag:no_elastic_modulus", "agt:no_elastic_modulus"} <= flag_set(r)
+    assert_nan(r.agt_percent)
+    assert not {"ag:no_maximum_force", "agt:no_maximum_force"} & flag_set(r)
+
+
+def test_rp02_no_elastic_modulus_on_a_continuous_curve():
+    r = result("too-few-elastic")
+    assert_nan(r.rp02_mpa)
+    assert "rp02:no_elastic_modulus" in r.flags
+    assert "rp02:not_reached" not in r.flags
+
+
+def test_rp02_no_elastic_modulus_on_a_discontinuous_curve():
+    # Only 5 samples stay in the final window [40, 160] MPa; the provisional
+    # window [25.5, 102] MPa keeps enough for the yield type.
+    a = curve("a")
+    force = a.force_n.copy()
+    force[(a.stress_mpa > 50.0) & (a.stress_mpa <= 160.0)] = np.nan
+    r = run(dataclasses.replace(a, force_n=force))
+    assert r.reh_mpa == pytest.approx(400.0, rel=EXACT)
+    assert_nan(r.e_gpa)
+    assert_nan(r.rp02_mpa)
+    assert "rp02:no_elastic_modulus" in r.flags
+    assert {"ag:no_elastic_modulus", "agt:no_elastic_modulus"} <= flag_set(r)
+
+
+def test_rp02_with_no_crossing_is_not_blamed_on_e():
+    # In a purely elastic record E is NaN because Rp0.2 has no crossing, not
+    # the other way round.
+    c = curve("ro15")
+    assert "rp02:no_elastic_modulus" not in run(_truncated(c, c.index_at_plastic_strain(0.0005))).flags
 
 
 def test_extensometer_no_complete_window():
@@ -923,7 +953,10 @@ def test_missing_crosshead_is_not_no_complete_window():
 
 @pytest.mark.parametrize("name", ["a", "ro15"])
 def test_regular_curves_have_none_of_the_undefined_value_flags(name):
-    new = ("rp02:not_reached", "ag:no_maximum_force", "ag:no_elastic_modulus", "extensometer:no_complete_window")
+    new = (
+        "rp02:not_reached", "rp02:no_elastic_modulus", "ag:no_maximum_force", "ag:no_elastic_modulus",
+        "agt:no_maximum_force", "agt:no_elastic_modulus", "extensometer:no_complete_window",
+    )
     assert not set(new) & flag_set(result(name))
 
 

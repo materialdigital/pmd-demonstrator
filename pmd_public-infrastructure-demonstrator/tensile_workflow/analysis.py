@@ -1354,7 +1354,8 @@ def proof_strength(
     Flags: ``rp02:extensometer_invalid`` (crossing not reached before
     ``k_ext``, with the extensometer ending early), ``rp02:not_reached`` (not
     reached in a record with valid strain to its end, or the first in-window
-    sample already exceeds the offset), ``rp02:in_yield_plateau``
+    sample already exceeds the offset), ``rp02:no_elastic_modulus`` (E is NaN,
+    so Rp0.2 cannot be evaluated), ``rp02:in_yield_plateau``
     (discontinuous yielding, crossing in [i_p, i_h]) and
     ``rp02:near_rate_switch``.
     """
@@ -1372,6 +1373,8 @@ def proof_strength(
         flags.append("rp02:extensometer_invalid" if k_ext < len(force) else "rp02:not_reached")
     elif status == _CROSSING_ALREADY_BEYOND:
         flags.append("rp02:not_reached")
+    elif not math.isfinite(elastic.slope_n):
+        flags.append("rp02:no_elastic_modulus")
     if index >= 0:
         if yielding.yield_type == DISCONTINUOUS and yielding.i_p <= index <= yielding.i_h:
             flags.append("rp02:in_yield_plateau")
@@ -1430,8 +1433,8 @@ def elongation_at_maximum_force(
     (e_mid - e0)*100 %, Ag = Agt - Rm/E*100 %. If any band sample is at or
     beyond ``k_ext`` (or has no finite strain), both are NaN with flags
     ``ag:extensometer_invalid`` and ``agt:extensometer_invalid``. Without
-    Fm or E both are NaN with flag ``ag:no_maximum_force`` or
-    ``ag:no_elastic_modulus``.
+    Fm or E both are NaN with the ``ag:`` and ``agt:`` flags
+    ``no_maximum_force`` or ``no_elastic_modulus``.
     """
     p = _params(params)
     force, eps, _ = _channels(force_n, strain)
@@ -1439,9 +1442,9 @@ def elongation_at_maximum_force(
     agt = ag = halfwidth = strain_mid = NAN
     band = (-1, -1)
     if maximum.i_m < 0:
-        flags.append("ag:no_maximum_force")
+        flags += ["ag:no_maximum_force", "agt:no_maximum_force"]
     if not math.isfinite(elastic.slope_n):
-        flags.append("ag:no_elastic_modulus")
+        flags += ["ag:no_elastic_modulus", "agt:no_elastic_modulus"]
     if maximum.i_m >= 0:
         noise = bootstrap.noise_n if math.isfinite(bootstrap.noise_n) else 0.0
         delta = max(p.band_rel_min, p.band_noise_factor * noise / maximum.fm_n)
