@@ -699,6 +699,32 @@ def spec_fixed_point(curve: SyntheticCurve, ro: RambergOsgood, tol: float = 1e-1
     return e_fit, b_fit, rp02
 
 
+def spec_reh(curve: SyntheticCurve) -> tuple[float, int]:
+    """ReH and i_p by the M5 step 2 and M7/M8 text, on the (noisy) samples.
+
+    My own evaluation of the definitions, for curves with finite channels:
+    "Rm" is the maximum stress; the provisional OLS uses the samples before
+    the stress first reaches 0.5*Rm within [0.10, 0.40]*0.5*Rm;
+    s_n = 1.4826 * MAD (about the median) of its residuals;
+    d(j) = max(0.005*M(j), 5*s_n); j* is the first j with s(j) > 0.5*Rm and
+    s(j) <= M(j) - d(j); i_p = argmax s[0..j*]. Raises if there is no j*.
+    """
+    s = curve.force_n / curve.s0_mm2
+    e = curve.strain
+    ref = 0.5 * float(np.max(s))
+    first = int(np.argmax(s >= ref))
+    s_b, e_b = s[:first], e[:first]
+    keep = (s_b >= 0.10 * ref) & (s_b <= 0.40 * ref)
+    slope, intercept = ols(s_b[keep], e_b[keep])
+    resid = s_b[keep] - (slope * e_b[keep] + intercept)
+    s_n = 1.4826 * float(np.median(np.abs(resid - np.median(resid))))
+    running_max = np.maximum.accumulate(s)
+    d = np.maximum(0.005 * running_max, 5.0 * s_n)
+    j_star = int(np.nonzero((s > ref) & (s <= running_max - d))[0][0])
+    i_p = int(np.argmax(s[: j_star + 1]))
+    return float(s[i_p]), i_p
+
+
 # ---------------------------------------------------------------------------
 # Transformations of a curve
 

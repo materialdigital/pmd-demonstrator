@@ -270,6 +270,15 @@ def test_noisy_reference_a_within_the_noisy_tolerances(seed):
 
 
 @pytest.mark.parametrize("seed", NOISY_SEEDS)
+def test_noisy_reh_is_the_m8_sample_value(seed):
+    # M7/M8 on raw samples: ReH = s(i_p), i_p = argmax s[0..j*], evaluated
+    # independently from the spec text on the same noisy samples.
+    c = sy.noisy(curve("a"), seed)
+    reh, _ = sy.spec_reh(c)
+    assert run(c).reh_mpa == pytest.approx(reh, rel=EXACT)
+
+
+@pytest.mark.parametrize("seed", NOISY_SEEDS)
 def test_noisy_ramberg_osgood_within_the_noisy_tolerances(seed):
     c = sy.noisy(curve("ro15"), seed)
     r, t = run(c), c.truth
