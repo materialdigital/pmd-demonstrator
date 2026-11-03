@@ -219,9 +219,8 @@ def test_reported_properties_present_or_none(pmdco2_source):
 def _rate_switch_strain(source: dict, specimen_id: str) -> float:
     """The profile's ``eps_sw`` value of one specimen, in contract units (ratio).
 
-    ``acquisition.build_specimen_record`` does not fill
-    ``SpecimenRecord.rate_switch_strain`` yet, so this checks the profile's
-    query and its unit conversion directly.
+    This checks the profile's query and its unit conversion directly,
+    independently of ``acquisition.build_specimen_record``.
     """
     profile = get_profile(PROFILE)
     table = exploration.specimen_table(PROFILE, source)

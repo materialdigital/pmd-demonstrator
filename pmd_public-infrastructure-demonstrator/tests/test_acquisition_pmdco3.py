@@ -150,9 +150,8 @@ def test_reported_properties(fixture_source):
 def _rate_switch_strain(profile_id: str, source: dict, specimen_id: str) -> float | None:
     """The profile's ``eps_sw`` value of one specimen as a ratio (``None`` if absent).
 
-    ``acquisition.build_specimen_record`` does not fill
-    ``SpecimenRecord.rate_switch_strain`` yet, so this checks the profile's
-    query and its unit conversion directly.
+    This checks the profile's query and its unit conversion directly,
+    independently of ``acquisition.build_specimen_record``.
     """
     profile = get_profile(profile_id)
     table = exploration.specimen_table(profile_id, source)
@@ -217,7 +216,10 @@ def test_real_pinned_graph_matches_pmdco2(pmdco2_source):
     assert sorted(ids) == sorted(exploration.specimen_table("pmdco2-tto", pmdco2_source)["specimen_id"])
     assert len(ids) == 10
 
-    compared = ["orientation", "s0_mm2", "cross_section_measurements_mm2", "l0_mm", "lu_mm", "su_mm2"]
+    compared = [
+        "orientation", "s0_mm2", "cross_section_measurements_mm2", "l0_mm", "lu_mm", "su_mm2",
+        "rate_switch_strain", "notes",
+    ]
     for sid in ids:
         r3 = acquisition.build_specimen_record(PROFILE, source, sid)
         r2 = acquisition.build_specimen_record("pmdco2-tto", pmdco2_source, sid)
