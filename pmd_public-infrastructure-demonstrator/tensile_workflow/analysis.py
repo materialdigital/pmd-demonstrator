@@ -105,14 +105,16 @@ M9 ReL (concrete rule; option (A))
 ----------------------------------
 Y is the yield range (i_p, i_h) on finite-force samples, where i_h is the
 first sample after i_p with sigma >= ReH. If the stress never returns to ReH
-(method-spec v2.1, M11 amendment), i_h = i_m is the highest sample after j*
-that lies more than d (the M7 drop threshold at ReH) above the preceding
-post-peak minimum, and Fm = F(i_m). If no sample after j* rises that far,
-there is no work hardening: Fm and Rm are NaN with ``fm:no_work_hardening``;
-the end of the yield range is then undefined, so ReL and ReL incl. transient
-are NaN with ``rel:no_work_hardening`` (implementation choice; the method
-does not define M9 for this case) and the range runs to the end of the record
-for ``rp02:in_yield_plateau``.
+(method-spec v2.2, M11 amendment, band reading), the rule below is first
+applied to the remaining record (i_p, end); it gives the plateau level P, the
+plateau minimum (candidate, step 4) and the plateau band
+[candidate, 2P - candidate]. Work hardening begins only when the stress,
+after having been inside the band at or after the recovery i_r, rises above
+it; then i_h = i_m is the highest sample from that rise on, Fm = F(i_m), and
+the rule is applied again over (i_p, i_h). If it never rises above the band,
+Fm and Rm are NaN with ``fm:no_work_hardening`` and ``rel:no_work_hardening``,
+ReL is the result over the remaining record, and the yield range runs to the
+end of the record (so Rp0.2 gets ``rp02:in_yield_plateau``).
 
 1. ``rel_incl_transient`` = min sigma over Y.
 2. Plateau level P = median of the samples in Y with
@@ -989,6 +991,60 @@ def bootstrap_fit(
     return bootstrap, noise_mpa
 
 
+def _lower_yield(
+    y_force: np.ndarray,
+    y_index: np.ndarray,
+    reh: float,
+    threshold: float,
+    valid: np.ndarray,
+    plastic: np.ndarray,
+    p: AnalysisParameters,
+) -> dict:
+    """M9 (option A) over the yield range Y; see the module docstring.
+
+    ``y_force``/``y_index`` are the finite-force samples of Y in order,
+    ``threshold`` is the M7 drop threshold d at ReH. Returns the ReL sample
+    index (-1 if undefined), ReL incl. transient, plateau level P, extent, the
+    recovery position ``start`` in Y (-1 if none), the plateau band's upper
+    bound 2P - candidate (``None`` without a candidate) and flags.
+    """
+    out = dict(i_rel=-1, rel_incl=NAN, level=NAN, extent=NAN, start=-1, band_upper=None, flags=[])
+    if not len(y_force):
+        return out
+    out["rel_incl"] = float(y_force.min())
+    level = float(np.median(y_force[y_force <= 0.5 * (out["rel_incl"] + reh)]))
+    out["level"] = level
+    # Hysteresis against noise: the transient begins below level - d; recovery
+    # is complete at sigma >= level.
+    below = _first(y_force < level - threshold)
+    if below < 0:
+        start = 0
+    else:
+        back = _first(y_force[below + 1 :] >= level)
+        start = -1 if back < 0 else below + 1 + back
+    out["start"] = start
+    single = start < 0
+    if not single:
+        candidate_pos = start + int(np.argmin(y_force[start:]))
+        upper = 2.0 * level - float(y_force[candidate_pos])
+        out["band_upper"] = upper
+        if not valid[y_index[start]]:
+            out["flags"].append("rel:extensometer_invalid")
+            return out
+        inside = np.flatnonzero((y_force[start:] <= upper) & valid[y_index[start:]])
+        last = start + int(inside[-1]) if len(inside) else start
+        out["extent"] = float(plastic[y_index[last]] - plastic[y_index[start]])
+        if out["extent"] >= p.plateau_min_extent:
+            out["i_rel"] = int(y_index[candidate_pos])
+        else:
+            single = True
+    if single:
+        transient = y_force[:start] if start > 0 else y_force
+        out["i_rel"] = int(y_index[int(np.argmin(transient))])
+        out["flags"].append("rel:single_minimum")
+    return out
+
+
 def _yield_points(
     force: np.ndarray,
     eps: np.ndarray,
@@ -1052,67 +1108,34 @@ def _yield_points(
     work_hardening = hardening >= 0
     if work_hardening:
         h = peak + 1 + hardening
+        m9 = _lower_yield(f[peak + 1 : h], finite_idx[peak + 1 : h], reh, threshold, valid, plastic, p)
     else:
-        # v2.1 amendment (M11, T4-D1): the stress never returns to ReH. i_h = i_m
-        # is the highest sample after j* that lies more than d above the
-        # preceding post-peak minimum.
-        after = f[peak + 1 :]
-        preceding_min = np.minimum.accumulate(after)[:-1]  # min of after[:r] for r >= 1
-        rises = after[1:] - preceding_min
-        positions = np.arange(1, len(after)) + peak + 1
-        qualifying = np.flatnonzero((positions > j_star) & (rises > threshold))
-        if len(qualifying):
-            best = qualifying[int(np.argmax(after[1:][qualifying]))]
-            h = int(positions[best])
-            work_hardening = True
+        # v2.2 amendment (M11, T4-D1): the stress never returns to ReH. M9 over
+        # the remaining record gives the plateau band [ReL, 2P - ReL]; work
+        # hardening begins only when the stress, after having been inside the
+        # band, rises above it. Then i_h = i_m is the highest sample from that
+        # rise on, and M9 is repeated with i_h as the plateau end.
+        y_force, y_index = f[peak + 1 :], finite_idx[peak + 1 :]
+        m9 = _lower_yield(y_force, y_index, reh, threshold, valid, plastic, p)
+        h = len(f)
+        if m9["band_upper"] is not None:
+            tail = y_force[m9["start"] :]
+            inside = _first(tail <= m9["band_upper"])
+            if inside >= 0:
+                rise = _first(tail[inside + 1 :] > m9["band_upper"])
+                if rise >= 0:
+                    rise_pos = m9["start"] + inside + 1 + rise
+                    h = peak + 1 + rise_pos + int(np.argmax(y_force[rise_pos:]))
+                    work_hardening = True
+        if work_hardening:
+            m9 = _lower_yield(f[peak + 1 : h], finite_idx[peak + 1 : h], reh, threshold, valid, plastic, p)
         else:
-            h = len(f)
-    if work_hardening:
-        i_h = int(finite_idx[h])
-    else:
-        # No sample after j* rises more than d above the preceding post-peak
-        # minimum: no work hardening (Fm NaN in M11). The end of the yield range
-        # is then undefined, so ReL is not evaluated (flag below) and the range
-        # runs to the end of the record for the in_yield_plateau check.
-        i_h = len(force)
-        flags.append("rel:no_work_hardening")
-
-    # M9: ReL, option (A).
-    y_force = f[peak + 1 : h] if work_hardening else f[:0]
-    y_index = finite_idx[peak + 1 : h] if work_hardening else finite_idx[:0]
-    rel = rel_incl = level = extent = NAN
-    i_rel = -1
-    if len(y_force):
-        rel_incl = float(y_force.min())
-        level = float(np.median(y_force[y_force <= 0.5 * (rel_incl + reh)]))
-        # Hysteresis against noise: the transient begins below level - d (the
-        # M7 drop threshold at ReH); recovery is complete at sigma >= level.
-        below = _first(y_force < level - threshold)
-        if below < 0:
-            start = 0
-        else:
-            back = _first(y_force[below + 1 :] >= level)
-            start = -1 if back < 0 else below + 1 + back
-        single = start < 0
-        if not single:
-            if not valid[y_index[start]]:
-                flags.append("rel:extensometer_invalid")
-            else:
-                candidate_pos = start + int(np.argmin(y_force[start:]))
-                upper = 2.0 * level - y_force[candidate_pos]
-                inside = np.flatnonzero((y_force[start:] <= upper) & valid[y_index[start:]])
-                last = start + int(inside[-1]) if len(inside) else start
-                extent = float(plastic[y_index[last]] - plastic[y_index[start]])
-                if extent >= p.plateau_min_extent:
-                    i_rel = int(y_index[candidate_pos])
-                else:
-                    single = True
-        if single:
-            transient = y_force[:start] if start > 0 else y_force
-            i_rel = int(y_index[int(np.argmin(transient))])
-            flags.append("rel:single_minimum")
-        if i_rel >= 0:
-            rel = float(force[i_rel])
+            flags.append("rel:no_work_hardening")
+    i_h = int(finite_idx[h]) if h < len(f) else len(force)
+    flags += m9["flags"]
+    i_rel = m9["i_rel"]
+    rel = float(force[i_rel]) if i_rel >= 0 else NAN
+    rel_incl, level, extent = m9["rel_incl"], m9["level"], m9["extent"]
 
     if _near_switch(_strain_at(eps, i_p), rate_switch_strain, p):
         flags.append("reh:near_rate_switch")
