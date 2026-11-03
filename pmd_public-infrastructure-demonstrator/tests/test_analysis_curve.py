@@ -54,6 +54,8 @@ FLAG_NAMES = (
     "no_maximum_force",
     "no_elastic_modulus",
     "no_complete_window",
+    # Spec v2.6, analysis-api.md amendment of 2026-11-03, 23:30 CET.
+    "no_return_to_reh",
 )
 FLAG_PATTERN = re.compile(rf"^({'|'.join(FLAG_PROPERTIES)}):({'|'.join(FLAG_NAMES)})$")
 
@@ -779,11 +781,9 @@ def test_terminal_drop_does_not_change_a_curve_that_returns_to_reh():
     _assert_same_values(run(sy.with_terminal_drop(c, first_mpa=250.0, n=40)), result("a"))
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason="v2.5 truncates only below 0.5*Rm_provisional; a gradual drop through the band "
-    "keeps samples above it, so ReL and Fm change. Escalated to the human (Run 15, R8-1).",
-)
+# v2.5 truncates only below 0.5*Rm_provisional, so a gradual drop keeps samples
+# above it and ReL and Fm change. The human accepted this limit, visibly flagged.
+@pytest.mark.xfail(strict=True, reason="known limit, spec v2.6")
 @pytest.mark.parametrize(
     "first_mpa, n",
     [(388.5, 60), (350.0, 3)],
@@ -794,6 +794,46 @@ def test_v2_5_gradual_terminal_drop_leaves_rel_and_fm_unchanged(first_mpa, n):
     r = run(sy.with_terminal_drop(c, first_mpa=first_mpa, n=n))
     assert r.rel_mpa == pytest.approx(c.truth.rel_mpa, abs=REL_TOL_MPA)
     assert r.fm_n == pytest.approx(c.truth.fm_n, rel=EXACT)
+
+
+NO_RETURN_FLAG = "fm:no_return_to_reh"
+
+
+@pytest.mark.parametrize(
+    "tail",
+    [None, {"first_mpa": 190.0}, {"first_mpa": 370.0, "n": 60}],
+    ids=["no-tail", "abrupt-tail", "gradual-tail"],
+)
+@pytest.mark.parametrize(
+    "kwargs",
+    [
+        {"rm": 395.0, "ag_p": 0.06, "p_end": 0.12},
+        {"hardening": None, "plateau_end_p": 0.03, "serration_phase": 0.5},
+    ],
+    ids=["rise-below-reh", "no-work-hardening"],
+)
+def test_v2_6_no_return_results_carry_the_flag(kwargs, tail):
+    c = sy.discontinuous(**kwargs)
+    r = run(sy.with_terminal_drop(c, **tail) if tail else c)
+    assert r.yield_type == "discontinuous"
+    assert NO_RETURN_FLAG in r.flags
+
+
+@pytest.mark.parametrize("seed", NOISY_SEEDS)
+def test_v2_6_noisy_no_return_results_carry_the_flag(seed):
+    assert NO_RETURN_FLAG in run(sy.noisy(curve("rise-below-reh"), seed)).flags
+
+
+@pytest.mark.parametrize("name", ["a", "ii", "iii", "flat-top", "rate-step", "ro15", "ro5"])
+def test_v2_6_curves_that_return_to_reh_or_yield_continuously_do_not_carry_the_flag(name):
+    assert NO_RETURN_FLAG not in result(name).flags
+
+
+@pytest.mark.parametrize("name", ["a", "ro15"])
+def test_v2_6_flag_is_absent_with_a_tail_and_with_noise(name):
+    c = curve(name)
+    assert NO_RETURN_FLAG not in run(sy.with_terminal_drop(c, first_mpa=250.0, n=40)).flags
+    assert NO_RETURN_FLAG not in run(sy.noisy(c, 0)).flags
 
 
 # ---------------------------------------------------------------------------

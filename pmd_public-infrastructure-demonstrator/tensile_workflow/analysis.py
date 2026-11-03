@@ -1,6 +1,6 @@
 """Ontology-agnostic tensile-test analysis (method-defined, ISO 6892-1-inspired).
 
-Implements ``.notes/tensile-workflow/method-spec.md`` (APPROVED v2.5) behind the
+Implements ``.notes/tensile-workflow/method-spec.md`` (APPROVED v2.6) behind the
 public interface fixed in ``.notes/tensile-workflow/analysis-api.md``. Every
 property is **"method-defined, ISO 6892-1-inspired"**; nothing here claims
 conformity with ISO 6892-1 or its Annex G. E is the **"regression slope of the
@@ -108,9 +108,8 @@ first sample after i_p with sigma >= ReH. If the stress never returns to ReH
 (method-spec v2.2, M11 amendment, band reading), the remaining record ends at
 the last sample with F > 0.5*Rm, the M7 search threshold with the provisional
 Rm, so the terminal force drop of fracture or unloading is excluded (v2.5,
-R8-1). Force-drop samples above that threshold stay in: a gradual decline
-below the plateau, unlike an abrupt drop, still lowers ReL and leaves Fm NaN.
-The rule below is
+R8-1). Every result from this branch has the flag ``fm:no_return_to_reh``
+(v2.6; see the known limitations below). The rule below is
 first applied to this remainder (i_p, end); it gives the plateau level P, the
 plateau minimum (candidate, step 4) and the plateau band
 [candidate, 2P - candidate]. Work hardening begins only when the stress,
@@ -156,8 +155,15 @@ dip: the candidate is the recovery sample itself, the band collapses to
 same place; the noisy ReL is low by the noise extreme over the plateau (the
 min/max noise bias, A5).
 
-Known method limitations (method-spec v2.5; documented, not corrected)
+Known method limitations (method-spec v2.6; documented, not corrected)
 ----------------------------------------------------------------------
+- **R8-1, gradual tail in the M11 no-return branch.** The v2.5 truncation
+  handles abrupt drops only. A gradual force decline after the plateau that
+  stays above 0.5*Rm still corrupts the branch: necking to 0.8*Rm gives ReL
+  316 instead of 379 MPa on the synthetic case, and Fm NaN. The flag
+  ``fm:no_return_to_reh`` marks every result from this branch, with or without
+  such a tail, as unreliable for records with a gradual tail. S355 is expected
+  never to enter it. Follow-up F9 is a better rule.
 - **R8-7, M7 under noise.** A noisy plateau without an upper peak (M9 case
   (iv)) can be classified as discontinuous, which reports a spurious ReH: 44 %
   of 1000 seeds at 0.5 MPa noise on the synthetic case. The opt-in statistical
@@ -1164,7 +1170,11 @@ def _yield_points(
         # last sample above the M7 search threshold, which excludes the terminal
         # force drop of fracture or unloading. j* lies after the peak and above
         # that threshold, so the search below always finds a sample.
-        above = np.flatnonzero(f[peak + 1 :] > _YIELD_SEARCH_FRACTION_OF_RM * boot.fm_n)
+        #
+        # v2.6 accepted limit: a gradual decline above that threshold stays in,
+        # so every result from this branch carries fm:no_return_to_reh.
+        flags.append("fm:no_return_to_reh")
+        above =np.flatnonzero(f[peak + 1 :] > _YIELD_SEARCH_FRACTION_OF_RM * boot.fm_n)
         h = peak + 1 + int(above[-1]) + 1
         y_force, y_index = f[peak + 1 : h], finite_idx[peak + 1 : h]
         m9 = _lower_yield(y_force, y_index, reh, threshold, valid, plastic, p)
@@ -1212,7 +1222,8 @@ def yield_analysis(
     """M5 step 3, M7-M9: yield type, ReH (raw sample) and ReL (option A).
 
     Uses only the bootstrap E0, b0 and s_n. Continuous yielding gives NaN
-    ReH/ReL with flags ``reh:no_upper_yield`` and ``rel:no_upper_yield``.
+    ReH/ReL with flags ``reh:no_upper_yield`` and ``rel:no_upper_yield``. If
+    the stress never returns to ReH, the result has ``fm:no_return_to_reh``.
     """
     p = _params(params)
     s0 = _check_s0(s0_mm2)
