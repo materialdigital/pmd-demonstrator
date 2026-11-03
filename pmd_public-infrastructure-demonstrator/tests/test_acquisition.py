@@ -241,6 +241,13 @@ def test_rate_switch_strain_is_a_ratio(pmdco2_source, specimen_id, expected):
     assert _rate_switch_strain(pmdco2_source, specimen_id) == pytest.approx(expected, rel=1e-12)
 
 
+def test_specimen_record_rate_switch_strain(pmdco2_source):
+    # graph: 1.6 % (Zx1) and 4.0 % (Zd2), arriving as ratios in the record
+    for specimen_id, expected in (("Zx1", 0.016), ("Zd2", 0.040)):
+        record = acquisition.build_specimen_record(PROFILE, pmdco2_source, specimen_id)
+        assert record.rate_switch_strain == pytest.approx(expected, rel=1e-12)
+
+
 def test_reported_properties_node(pmdco2_source):
     run = pwf.node(acquisition.get_reported_properties, "reported").run(
         profile_id=PROFILE, source=pmdco2_source, specimen_id="Zx4"

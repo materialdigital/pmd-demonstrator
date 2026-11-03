@@ -178,6 +178,7 @@ def build_specimen_record(
         notes=_notes(profile, source, process),
         curve_url=curve_url,
         curve_columns=curve_columns,
+        rate_switch_strain=_single_value(values, "eps_sw", specimen_id, required=False),
     )
 
 
