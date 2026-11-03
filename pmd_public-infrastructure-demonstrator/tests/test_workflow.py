@@ -137,6 +137,21 @@ SUMMARY_FIELDS = {
     "ag_percent": "ag_percent",
     "agt_percent": "agt_percent",
     "e_stderr_gpa": "e_stderr_gpa",
+    # R8-3: the spec's report items (analysis-api.md amendment).
+    "ag_location_halfwidth_percent": "ag_location_halfwidth_percent",
+    "ag_window_range_percent": "ag_window_range_percent",
+    "agt_window_range_percent": "agt_window_range_percent",
+    "e_window_range_gpa": "e_window_range_gpa",
+    "e_linearity_rel_diff": "e_linearity_rel_diff",
+    "e_lag1_rho": "e_lag1_rho",
+    "e_n_eff": "e_n_eff",
+    "e_n": "e_n",
+    "e_r2": "e_r2",
+    "e_window_mpa": "e_window_mpa",
+    "rel_incl_transient_mpa": "rel_incl_transient_mpa",
+    "reh_sample_increment_mpa": "reh_sample_increment_mpa",
+    "strain_origin": "strain_origin",
+    "dropped_samples": "dropped_samples",
 }
 
 

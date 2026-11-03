@@ -211,7 +211,9 @@ def specimen_summary(
 
     The S0 scatter ``s0_u_rel`` applies to every stress-based value (M14);
     the window ranges are the M15 sensitivity. Flags of A, Z and S0 are added
-    to the curve flags.
+    to the curve flags. ``*_range_*`` entries are (min, max) tuples,
+    ``e_window_mpa`` is (lo, hi) and ``dropped_samples`` is a dictionary
+    channel -> count, as in :class:`~tensile_workflow.analysis.CurveAnalysis`.
     """
     flags = (*analysis.flags, *elongation.flags, *reduction.flags, *scatter.flags)
     summary = {
@@ -237,6 +239,20 @@ def specimen_summary(
         "rp02_window_min_mpa": analysis.rp02_window_range_mpa[0],
         "rp02_window_max_mpa": analysis.rp02_window_range_mpa[1],
         "e_stderr_gpa": analysis.e_stderr_gpa,
+        "ag_location_halfwidth_percent": analysis.ag_location_halfwidth_percent,
+        "ag_window_range_percent": analysis.ag_window_range_percent,
+        "agt_window_range_percent": analysis.agt_window_range_percent,
+        "e_window_range_gpa": analysis.e_window_range_gpa,
+        "e_linearity_rel_diff": analysis.e_linearity_rel_diff,
+        "e_lag1_rho": analysis.e_lag1_rho,
+        "e_n_eff": analysis.e_n_eff,
+        "e_n": analysis.e_n,
+        "e_r2": analysis.e_r2,
+        "e_window_mpa": analysis.e_window_mpa,
+        "rel_incl_transient_mpa": analysis.rel_incl_transient_mpa,
+        "reh_sample_increment_mpa": analysis.reh_sample_increment_mpa,
+        "strain_origin": analysis.strain_origin,
+        "dropped_samples": analysis.dropped_samples,
         "flags": "; ".join(flags),
         "curve_sha256": curve_sha256,
         "curve_url": curve_url,
