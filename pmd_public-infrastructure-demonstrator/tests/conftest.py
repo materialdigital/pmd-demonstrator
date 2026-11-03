@@ -3,8 +3,9 @@
 - Puts the demonstrator directory on ``sys.path`` (as the notebooks do), so
   ``tensile_workflow`` is importable.
 - Registers the ``network`` marker. Network tests are skipped unless
-  ``--run-network`` is given; every other test runs with outbound socket
-  connections blocked.
+  ``--run-network`` is given. Outbound socket connections are blocked for the
+  whole pytest session, including collection and fixtures of any scope; the
+  block is lifted only during a ``network`` test run with ``--run-network``.
 - Registers the ``statistical`` marker (Monte Carlo checks such as VP-10).
   Statistical tests are skipped unless ``--run-statistical`` is given.
 """
@@ -26,6 +27,12 @@ PMDCO2_ORIENTATION_FILES = {
 
 if str(DEMO_DIR) not in sys.path:
     sys.path.insert(0, str(DEMO_DIR))
+
+_REAL_CONNECT = socket.socket.connect
+
+
+def _refuse_connection(self, address):
+    raise OSError(f"offline test attempted a connection to {address!r}")
 
 
 def pytest_addoption(parser):
@@ -52,6 +59,11 @@ def pytest_configure(config):
         "markers",
         "statistical: Monte Carlo check; skipped unless --run-statistical is given",
     )
+    socket.socket.connect = _refuse_connection
+
+
+def pytest_unconfigure(config):
+    socket.socket.connect = _REAL_CONNECT
 
 
 def pytest_collection_modifyitems(config, items):
@@ -69,15 +81,10 @@ def pytest_collection_modifyitems(config, items):
 
 
 @pytest.fixture(autouse=True)
-def _block_network(request, monkeypatch):
-    """Refuse outbound connections in all tests not marked ``network``."""
-    if request.node.get_closest_marker("network"):
-        return
-
-    def refuse(self, address):
-        raise OSError(f"offline test attempted a connection to {address!r}")
-
-    monkeypatch.setattr(socket.socket, "connect", refuse)
+def _lift_network_block(request, monkeypatch):
+    """Allow connections during a ``network`` test run with ``--run-network``, and only then."""
+    if request.node.get_closest_marker("network") and request.config.getoption("--run-network"):
+        monkeypatch.setattr(socket.socket, "connect", _REAL_CONNECT)
 
 
 @pytest.fixture(autouse=True)
