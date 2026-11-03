@@ -5,6 +5,8 @@
 - Registers the ``network`` marker. Network tests are skipped unless
   ``--run-network`` is given; every other test runs with outbound socket
   connections blocked.
+- Registers the ``statistical`` marker (Monte Carlo checks such as VP-10).
+  Statistical tests are skipped unless ``--run-statistical`` is given.
 """
 
 from __future__ import annotations
@@ -33,6 +35,12 @@ def pytest_addoption(parser):
         default=False,
         help="run tests marked 'network' (read-only fetches of pinned public files)",
     )
+    parser.addoption(
+        "--run-statistical",
+        action="store_true",
+        default=False,
+        help="run tests marked 'statistical' (Monte Carlo tolerance feasibility, VP-10)",
+    )
 
 
 def pytest_configure(config):
@@ -40,15 +48,24 @@ def pytest_configure(config):
         "markers",
         "network: needs read-only network access; skipped unless --run-network is given",
     )
+    config.addinivalue_line(
+        "markers",
+        "statistical: Monte Carlo check; skipped unless --run-statistical is given",
+    )
 
 
 def pytest_collection_modifyitems(config, items):
-    if config.getoption("--run-network"):
-        return
-    skip = pytest.mark.skip(reason="network test; use --run-network to run it")
+    skips = {}
+    if not config.getoption("--run-network"):
+        skips["network"] = pytest.mark.skip(reason="network test; use --run-network to run it")
+    if not config.getoption("--run-statistical"):
+        skips["statistical"] = pytest.mark.skip(
+            reason="statistical test; use --run-statistical to run it"
+        )
     for item in items:
-        if "network" in item.keywords:
-            item.add_marker(skip)
+        for keyword, skip in skips.items():
+            if keyword in item.keywords:
+                item.add_marker(skip)
 
 
 @pytest.fixture(autouse=True)
