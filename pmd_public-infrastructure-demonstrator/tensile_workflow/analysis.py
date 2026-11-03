@@ -1,6 +1,6 @@
 """Ontology-agnostic tensile-test analysis (method-defined, ISO 6892-1-inspired).
 
-Implements ``.notes/tensile-workflow/method-spec.md`` (APPROVED v2.4) behind the
+Implements ``.notes/tensile-workflow/method-spec.md`` (APPROVED v2.5) behind the
 public interface fixed in ``.notes/tensile-workflow/analysis-api.md``. Every
 property is **"method-defined, ISO 6892-1-inspired"**; nothing here claims
 conformity with ISO 6892-1 or its Annex G. E is the **"regression slope of the
@@ -105,8 +105,13 @@ M9 ReL (concrete rule; option (A))
 ----------------------------------
 Y is the yield range (i_p, i_h) on finite-force samples, where i_h is the
 first sample after i_p with sigma >= ReH. If the stress never returns to ReH
-(method-spec v2.2, M11 amendment, band reading), the rule below is first
-applied to the remaining record (i_p, end); it gives the plateau level P, the
+(method-spec v2.2, M11 amendment, band reading), the remaining record ends at
+the last sample with F > 0.5*Rm, the M7 search threshold with the provisional
+Rm, so the terminal force drop of fracture or unloading is excluded (v2.5,
+R8-1). Force-drop samples above that threshold stay in: a gradual decline
+below the plateau, unlike an abrupt drop, still lowers ReL and leaves Fm NaN.
+The rule below is
+first applied to this remainder (i_p, end); it gives the plateau level P, the
 plateau minimum (candidate, step 4) and the plateau band
 [candidate, 2P - candidate]. Work hardening begins only when the stress,
 after having been inside the band at or after the recovery i_r, rises above
@@ -115,8 +120,8 @@ sigma > 2P - candidate + d, because a symmetric serrated plateau's own maxima
 lie on 2P - candidate); then i_h = i_m is the highest sample from that rise on, Fm = F(i_m), and
 the rule is applied again over (i_p, i_h). If it never rises above the band,
 Fm and Rm are NaN with ``fm:no_work_hardening`` and ``rel:no_work_hardening``,
-ReL is the result over the remaining record, and the yield range runs to the
-end of the record (so Rp0.2 gets ``rp02:in_yield_plateau``).
+ReL is the result over the remainder, and the yield range runs to its end (so
+Rp0.2 gets ``rp02:in_yield_plateau``).
 
 1. ``rel_incl_transient`` = min sigma over Y.
 2. Plateau level P = median of the samples in Y with
@@ -1119,9 +1124,15 @@ def _yield_points(
         # sigma > 2P - ReL + d, d the M7 drop threshold at ReH). Then
         # i_h = i_m is the highest sample from that rise on, and M9 is
         # repeated with i_h as the plateau end.
-        y_force, y_index = f[peak + 1 :], finite_idx[peak + 1 :]
+        #
+        # v2.5 truncation (R8-1): in this branch only, the remainder ends at the
+        # last sample above the M7 search threshold, which excludes the terminal
+        # force drop of fracture or unloading. j* lies after the peak and above
+        # that threshold, so the search below always finds a sample.
+        above = np.flatnonzero(f[peak + 1 :] > _YIELD_SEARCH_FRACTION_OF_RM * boot.fm_n)
+        h = peak + 1 + int(above[-1]) + 1
+        y_force, y_index = f[peak + 1 : h], finite_idx[peak + 1 : h]
         m9 = _lower_yield(y_force, y_index, reh, threshold, valid, plastic, p)
-        h = len(f)
         if m9["band_upper"] is not None:
             tail = y_force[m9["start"] :]
             inside = _first(tail <= m9["band_upper"])

@@ -246,6 +246,20 @@ def test_temporary_flat_strain_recovers(a):
     np.testing.assert_array_equal(curve.strain[:i1], a.strain[:i1])
 
 
+def test_terminal_drop_only_appends_samples(a):
+    curve = sy.with_terminal_drop(a, first_mpa=190.0, to_mpa=5.0, n=5)
+    n = len(a)
+    assert len(curve) == n + 5 == curve.truth.k_ext
+    np.testing.assert_array_equal(curve.force_n[:n], a.force_n)
+    np.testing.assert_array_equal(curve.crosshead_mm[:n], a.crosshead_mm)
+    np.testing.assert_allclose(curve.strain[:n], a.strain, rtol=1e-14)
+    assert curve.stress_mpa[n] == 190.0
+    assert curve.stress_mpa[-1] == 5.0
+    # r = de/(dc/L0) = 1 also in the drop, so the extensometer stays valid.
+    np.testing.assert_allclose(np.diff(curve.strain[n:]), np.diff(curve.crosshead_mm[n:]) / sy.L0_MM, rtol=1e-9)
+    assert curve.segment("terminal_drop").stop == len(curve)
+
+
 def test_toe_is_below_every_window(a):
     curve = sy.with_toe(a)
     above = a.stress_mpa >= 12.0

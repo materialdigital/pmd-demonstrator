@@ -667,6 +667,96 @@ def test_no_work_hardening_after_transient_dip_and_flat_serrated_plateau():
 
 
 # ---------------------------------------------------------------------------
+# §8 v2.5: terminal force drop in the no-return branch (R8-1)
+#
+# Without a return to ReH, the M7 search threshold is 0.5*ReH = 200 MPa. An
+# abrupt drop has no sample between that threshold and the plateau.
+
+
+def _assert_same_values(with_tail: CurveAnalysis, without_tail: CurveAnalysis) -> None:
+    names = (
+        "yield_type", "noise_mpa", "e_gpa", "reh_mpa", "rel_mpa", "rel_incl_transient_mpa",
+        "rel_plateau_level_mpa", "rel_plateau_extent", "rp02_mpa", "fm_n", "rm_mpa",
+        "agt_percent", "ag_percent", "ag_location_halfwidth_percent", "flags", "indices",
+    )
+    for name in names:
+        expected = getattr(without_tail, name)
+        if isinstance(expected, float) and math.isnan(expected):
+            assert_nan(getattr(with_tail, name))
+        else:
+            assert getattr(with_tail, name) == expected, name
+
+
+@pytest.mark.parametrize("phase", [0.0, 0.5])
+def test_v2_5_abrupt_terminal_drop_leaves_rel_and_fm_unchanged(phase):
+    c = sy.discontinuous(rm=395.0, ag_p=0.06, p_end=0.12, serration_phase=phase)
+    tailed = sy.with_terminal_drop(c, first_mpa=190.0)
+    r = run(tailed)
+    assert r.rel_mpa == pytest.approx(c.truth.rel_mpa, abs=REL_TOL_MPA)
+    assert r.fm_n == pytest.approx(c.truth.fm_n, rel=EXACT)
+    assert not any(f.endswith(":no_work_hardening") for f in r.flags)
+    _assert_same_values(r, run(c))
+
+
+@pytest.mark.parametrize("seed", NOISY_SEEDS)
+def test_v2_5_abrupt_terminal_drop_on_a_noisy_curve(seed):
+    c = sy.discontinuous(rm=395.0, ag_p=0.06, p_end=0.12)
+    noisy = sy.noisy(c, seed)
+    # Appended to the noisy samples, so both runs share the same pre-drop noise.
+    tail = sy.with_terminal_drop(c, first_mpa=190.0)
+    n = len(c)
+    force = np.append(noisy.force_n, tail.force_n[n:])
+    strain = np.append(noisy.strain, tail.strain[n:])
+    r = analyse_curve(force, strain, tail.crosshead_mm, c.s0_mm2, c.l0_mm)
+    assert r.rel_mpa == pytest.approx(c.truth.rel_mpa, abs=NOISY["rel"])
+    assert r.fm_n == pytest.approx(c.truth.fm_n, rel=NOISY["rm_rel"])
+    _assert_same_values(r, run(noisy))
+
+
+@pytest.mark.parametrize("transient", [None, 372.0], ids=["no-dip", "dip"])
+def test_v2_5_no_work_hardening_with_abrupt_terminal_drop(transient):
+    c = sy.discontinuous(
+        transient_min=transient, hardening=None, plateau_end_p=0.03, serration_phase=0.5
+    )
+    tailed = sy.with_terminal_drop(c, first_mpa=190.0)
+    r = run(tailed)
+    _assert_no_work_hardening(tailed, r)
+    assert "rel:single_minimum" not in r.flags
+    _assert_same_values(r, run(c))
+
+
+def test_v2_5_remainder_ends_at_the_last_sample_above_the_threshold():
+    # The 205 MPa sample stays in the remainder (ReL incl. transient); the
+    # 5 MPa sample after it does not.
+    c = sy.discontinuous(rm=395.0, ag_p=0.06, p_end=0.12)
+    r = run(sy.with_terminal_drop(c, first_mpa=205.0, to_mpa=5.0, n=2))
+    assert r.rel_incl_transient_mpa == pytest.approx(205.0, rel=EXACT)
+
+
+def test_terminal_drop_does_not_change_a_curve_that_returns_to_reh():
+    # The regular M11 branch has no truncation: Y ends at the return to ReH.
+    c = curve("a")
+    _assert_same_values(run(sy.with_terminal_drop(c, first_mpa=250.0, n=40)), result("a"))
+
+
+@pytest.mark.xfail(
+    strict=True,
+    reason="v2.5 truncates only below 0.5*Rm_provisional; a gradual drop through the band "
+    "keeps samples above it, so ReL and Fm change. Escalated to the human (Run 15, R8-1).",
+)
+@pytest.mark.parametrize(
+    "first_mpa, n",
+    [(388.5, 60), (350.0, 3)],
+    ids=["linear-drop-of-the-r8-1-repro", "one-sample-below-the-plateau"],
+)
+def test_v2_5_gradual_terminal_drop_leaves_rel_and_fm_unchanged(first_mpa, n):
+    c = sy.discontinuous(rm=395.0, ag_p=0.06, p_end=0.12, serration_phase=0.5)
+    r = run(sy.with_terminal_drop(c, first_mpa=first_mpa, n=n))
+    assert r.rel_mpa == pytest.approx(c.truth.rel_mpa, abs=REL_TOL_MPA)
+    assert r.fm_n == pytest.approx(c.truth.fm_n, rel=EXACT)
+
+
+# ---------------------------------------------------------------------------
 # VP-9 rate step inside the plateau
 
 

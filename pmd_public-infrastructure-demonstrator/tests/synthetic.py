@@ -839,6 +839,44 @@ def with_hold(
     )
 
 
+def with_terminal_drop(
+    curve: SyntheticCurve, *, first_mpa: float, to_mpa: float = 5.0, n: int = 5
+) -> SyntheticCurve:
+    """§8 v2.5: append a terminal force drop (fracture or unloading) of ``n`` samples.
+
+    The stress falls linearly from ``first_mpa`` (first appended sample) to
+    ``to_mpa`` (last sample). The crosshead keeps its last step per sample and
+    the strain follows it (r = 1), so the extensometer stays valid. Truth
+    values describe the curve before the drop and stay as they are, except
+    the record length ``k_ext``.
+    """
+    if curve.quadratic != 0.0:
+        raise ValueError("terminal drop needs a linear elastic law")
+    step = curve.crosshead_mm[-1] - curve.crosshead_mm[-2]
+    crosshead = np.append(curve.crosshead_mm, curve.crosshead_mm[-1] + step * np.arange(1, n + 1))
+    s = np.append(curve.stress_mpa, np.linspace(first_mpa, to_mpa, n))
+    clean = curve.e0 + crosshead / curve.l0_mm
+    p = clean - curve.e0 - s / curve.e_mpa
+    p[: len(curve)] = curve.plastic_strain
+    _check_construction(s, p, crosshead)
+    start = len(curve)
+    segments = curve.segments + (
+        Segment("terminal_drop", start, len(s), f"linear from {first_mpa:g} to {to_mpa:g} MPa"),
+    )
+    return dataclasses.replace(
+        curve,
+        force_n=s * curve.s0_mm2,
+        strain=clean.copy(),
+        crosshead_mm=crosshead,
+        stress_mpa=s,
+        plastic_strain=p,
+        clean_strain=clean,
+        truth=dataclasses.replace(curve.truth, k_ext=len(s)),
+        segments=segments,
+        description=curve.description + "; terminal drop",
+    )
+
+
 def with_strain_shift(curve: SyntheticCurve, shift: float) -> SyntheticCurve:
     """VP-5: e -> e + shift (moves the strain origin by ``shift``)."""
     return _with_strain(
