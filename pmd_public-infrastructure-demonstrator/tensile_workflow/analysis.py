@@ -104,13 +104,15 @@ window rule with flag ``extensometer:missing_input``.
 M9 ReL (concrete rule; option (A))
 ----------------------------------
 Y is the yield range (i_p, i_h) on finite-force samples, where i_h is the
-first sample after i_p with sigma >= ReH.
-
-**Interim, decision pending:** if the stress never returns to ReH, the
-method's fallback i_h = i_m is circular (M11 leaves Fm, hence i_m, undefined
-without work hardening). Then ReL, ReL incl. transient, Fm and Rm are NaN with
-flags ``rel:no_work_hardening`` and ``fm:no_work_hardening``, and the yield
-range runs to the end of the record for ``rp02:in_yield_plateau``.
+first sample after i_p with sigma >= ReH. If the stress never returns to ReH
+(method-spec v2.1, M11 amendment), i_h = i_m is the highest sample after j*
+that lies more than d (the M7 drop threshold at ReH) above the preceding
+post-peak minimum, and Fm = F(i_m). If no sample after j* rises that far,
+there is no work hardening: Fm and Rm are NaN with ``fm:no_work_hardening``;
+the end of the yield range is then undefined, so ReL and ReL incl. transient
+are NaN with ``rel:no_work_hardening`` (implementation choice; the method
+does not define M9 for this case) and the range runs to the end of the record
+for ``rp02:in_yield_plateau``.
 
 1. ``rel_incl_transient`` = min sigma over Y.
 2. Plateau level P = median of the samples in Y with
@@ -1045,18 +1047,33 @@ def _yield_points(
     flags = []
     reh = float(f[peak])
     increment = float(f[peak] - f[peak - 1]) if peak > 0 else NAN
+    threshold = max(p.drop_rel * reh, p.drop_noise_factor * noise)  # M7 d at ReH
     hardening = _first(f[peak + 1 :] >= reh)
     work_hardening = hardening >= 0
     if work_hardening:
         h = peak + 1 + hardening
+    else:
+        # v2.1 amendment (M11, T4-D1): the stress never returns to ReH. i_h = i_m
+        # is the highest sample after j* that lies more than d above the
+        # preceding post-peak minimum.
+        after = f[peak + 1 :]
+        preceding_min = np.minimum.accumulate(after)[:-1]  # min of after[:r] for r >= 1
+        rises = after[1:] - preceding_min
+        positions = np.arange(1, len(after)) + peak + 1
+        qualifying = np.flatnonzero((positions > j_star) & (rises > threshold))
+        if len(qualifying):
+            best = qualifying[int(np.argmax(after[1:][qualifying]))]
+            h = int(positions[best])
+            work_hardening = True
+        else:
+            h = len(f)
+    if work_hardening:
         i_h = int(finite_idx[h])
     else:
-        # INTERIM (decision pending): the stress never returns to ReH. The method
-        # sets i_h = i_m, but M11 leaves Fm (hence i_m) undefined here, so the
-        # end of the yield range is undefined: ReL is not evaluated (flag below)
-        # and the yield range is taken to run to the end of the record for the
-        # in_yield_plateau check.
-        h = len(f)
+        # No sample after j* rises more than d above the preceding post-peak
+        # minimum: no work hardening (Fm NaN in M11). The end of the yield range
+        # is then undefined, so ReL is not evaluated (flag below) and the range
+        # runs to the end of the record for the in_yield_plateau check.
         i_h = len(force)
         flags.append("rel:no_work_hardening")
 
@@ -1070,7 +1087,7 @@ def _yield_points(
         level = float(np.median(y_force[y_force <= 0.5 * (rel_incl + reh)]))
         # Hysteresis against noise: the transient begins below level - d (the
         # M7 drop threshold at ReH); recovery is complete at sigma >= level.
-        below = _first(y_force < level - max(p.drop_rel * reh, p.drop_noise_factor * noise))
+        below = _first(y_force < level - threshold)
         if below < 0:
             start = 0
         else:
