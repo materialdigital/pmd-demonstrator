@@ -16,7 +16,9 @@ Graphs
 
   - ``hash_data=True`` (default): every data node gets semantikon's
     provenance hash (function metadata, upstream hashes and workflow-input
-    values), so equal results of different runs can be recognized.
+    values). Equal results of different runs can be recognized only within
+    the same networkx (>= 3.5) environment, because these hashes use networkx
+    graph hashes, which differ across networkx versions.
   - ``remove_data=False`` (default): values stay in the graph, so results and
     inputs can be queried (example queries (b) and (c)). semantikon writes
     values as literals; arrays and tables become their (shortened, lossy)
