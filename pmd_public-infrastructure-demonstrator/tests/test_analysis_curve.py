@@ -49,6 +49,11 @@ FLAG_NAMES = (
     "near_rate_switch",
     "missing_input",
     "no_s0_spread",
+    # R8-5, analysis-api.md amendment of 2026-11-03, 22:22 CET.
+    "not_reached",
+    "no_maximum_force",
+    "no_elastic_modulus",
+    "no_complete_window",
 )
 FLAG_PATTERN = re.compile(rf"^({'|'.join(FLAG_PROPERTIES)}):({'|'.join(FLAG_NAMES)})$")
 
@@ -841,6 +846,85 @@ def _all_results():
     rs = curve("rate-step")
     results.append(("rate-step-flagged", run(rs, rate_switch_strain=_dip_strain(rs))))
     return results
+
+
+def _truncated(c: sy.SyntheticCurve, stop: int) -> sy.SyntheticCurve:
+    return dataclasses.replace(
+        c, force_n=c.force_n[:stop], strain=c.strain[:stop], crosshead_mm=c.crosshead_mm[:stop]
+    )
+
+
+def test_rp02_not_reached_in_a_record_with_valid_strain_to_its_end():
+    # Discontinuous: the record ends in the plateau, before e_p = 0.002.
+    a = curve("a")
+    r = run(_truncated(a, a.index_at_plastic_strain(0.0015)))
+    assert r.k_ext == a.index_at_plastic_strain(0.0015)
+    assert_nan(r.rp02_mpa)
+    assert "rp02:not_reached" in r.flags
+    assert "rp02:extensometer_invalid" not in r.flags
+
+
+def test_rp02_not_reached_in_an_elastic_record():
+    # Continuous: the E window has no reference without a first crossing.
+    c = curve("ro15")
+    r = run(_truncated(c, c.index_at_plastic_strain(0.0005)))
+    assert r.yield_type == "continuous"
+    assert_nan(r.rp02_mpa)
+    assert "rp02:not_reached" in r.flags
+
+
+def test_rp02_not_reached_when_the_first_window_sample_exceeds_the_offset():
+    a = curve("a")
+    k = int(np.argmax(a.stress_mpa >= 0.10 * a.truth.reh_mpa))
+    strain = a.strain.copy()
+    strain[k] += 0.003
+    r = run(dataclasses.replace(a, strain=strain))
+    assert_nan(r.rp02_mpa)
+    assert "rp02:not_reached" in r.flags
+
+
+def test_rp02_extensometer_invalid_is_not_also_not_reached():
+    # The removal case of test_m2_rp02_beyond_k_ext_is_nan_and_flagged.
+    c = sy.extensometer_end(_long_gauge(curve("a")), "nan", at_plastic_strain=0.0015)
+    assert "rp02:not_reached" not in run(c).flags
+
+
+def test_ag_no_maximum_force():
+    c = sy.discontinuous(hardening=None, plateau_end_p=0.03)
+    r = run(c)
+    assert_nan(r.fm_n)
+    assert_nan(r.ag_percent)
+    assert "ag:no_maximum_force" in r.flags
+    assert "ag:no_elastic_modulus" not in r.flags
+
+
+def test_ag_no_elastic_modulus():
+    r = result("too-few-elastic")
+    assert_nan(r.e_gpa)
+    assert_nan(r.ag_percent)
+    assert "ag:no_elastic_modulus" in r.flags
+    assert "ag:no_maximum_force" not in r.flags
+
+
+def test_extensometer_no_complete_window():
+    a = curve("a")
+    r = run(dataclasses.replace(a, crosshead_mm=a.crosshead_mm * 0.001))  # travel < 0.1 mm
+    assert r.k_ext == len(a)
+    assert "extensometer:no_complete_window" in r.flags
+    assert "extensometer:missing_input" not in r.flags
+
+
+def test_missing_crosshead_is_not_no_complete_window():
+    a = curve("a")
+    r = analyse_curve(a.force_n, a.strain, None, a.s0_mm2, a.l0_mm)
+    assert "extensometer:missing_input" in r.flags
+    assert "extensometer:no_complete_window" not in r.flags
+
+
+@pytest.mark.parametrize("name", ["a", "ro15"])
+def test_regular_curves_have_none_of_the_undefined_value_flags(name):
+    new = ("rp02:not_reached", "ag:no_maximum_force", "ag:no_elastic_modulus", "extensometer:no_complete_window")
+    assert not set(new) & flag_set(result(name))
 
 
 def test_flags_are_property_colon_flag_strings():

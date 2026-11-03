@@ -93,7 +93,7 @@ Windows are consecutive runs of samples over which the crosshead travels
 their boundary sample; samples with non-finite crosshead never close a
 window, so holds do not advance it). A trailing remainder of less than one
 window is merged into the last window; with no complete window, M3 is not
-applied. A window is *invalid* if its strain has a non-finite value, an exact
+applied (flag ``extensometer:no_complete_window``). A window is *invalid* if its strain has a non-finite value, an exact
 zero, a single-step drop larger than ``ext_jump``, or
 r = (e[end] - e[start]) / ((c[end] - c[start]) / L0) < ``ext_ratio_min``.
 ``k_ext`` is the start of the earliest window from which every window to the
@@ -809,6 +809,12 @@ def _window_ols(
     return _ols(eps[mask], force[mask], min_points), lo, hi
 
 
+_CROSSING_FOUND = "found"
+_CROSSING_UNDEFINED = "undefined"
+_CROSSING_BELOW_OFFSET = "below_offset"
+_CROSSING_ALREADY_BEYOND = "already_beyond"
+
+
 def _proof_crossing(
     force: np.ndarray,
     eps: np.ndarray,
@@ -817,31 +823,34 @@ def _proof_crossing(
     intercept: float,
     start_n: float,
     offset: float,
-) -> tuple[float, int, bool]:
+) -> tuple[float, int, str]:
     """First crossing of e_p = ``offset`` (M10), linearly interpolated in force.
 
     The search runs over consecutive strain-valid samples from the first one
     with F >= ``start_n``. Returns (force at the crossing, index of the sample
-    after it, reached); ``reached`` is False only if e_p stays below the
-    offset to the end of the valid strain.
+    after it, status). The status is ``_CROSSING_FOUND``,
+    ``_CROSSING_UNDEFINED`` (no fit or no sample in the search range),
+    ``_CROSSING_BELOW_OFFSET`` (e_p stays below the offset to the end of the
+    valid strain) or ``_CROSSING_ALREADY_BEYOND`` (the first searched sample
+    is already at or above the offset).
     """
     if not (math.isfinite(slope) and slope != 0.0 and math.isfinite(intercept) and math.isfinite(start_n)):
-        return NAN, -1, True
+        return NAN, -1, _CROSSING_UNDEFINED
     indices = np.flatnonzero(valid)
     f_valid = force[indices]
     plastic = eps[indices] - (f_valid - intercept) / slope
     start = _first(f_valid >= start_n)
     if start < 0:
-        return NAN, -1, True
+        return NAN, -1, _CROSSING_UNDEFINED
     beyond = _first(plastic[start:] >= offset)
     if beyond < 0:
-        return NAN, -1, False
+        return NAN, -1, _CROSSING_BELOW_OFFSET
     if beyond == 0:
-        return NAN, -1, True
+        return NAN, -1, _CROSSING_ALREADY_BEYOND
     a, b = start + beyond - 1, start + beyond
     fraction = (offset - plastic[a]) / (plastic[b] - plastic[a])
     crossing = f_valid[a] + fraction * (f_valid[b] - f_valid[a])
-    return float(crossing), int(indices[b]), True
+    return float(crossing), int(indices[b]), _CROSSING_FOUND
 
 
 def _value_range(values: list[float]) -> tuple[float, float]:
@@ -952,8 +961,10 @@ def extensometer_validity(
     """M1-M3: extensometer end ``k_ext`` (rule in the module docstring) and checks.
 
     Flags: ``extensometer:missing_input`` (no crosshead or L0, window rule
-    skipped), ``extensometer:extensometer_ended_early`` (largest valid strain
-    below 0.5*A/100 when A is given) and ``extensometer:near_rate_switch``.
+    skipped), ``extensometer:no_complete_window`` (no complete crosshead
+    window, so M3 could not be evaluated),
+    ``extensometer:extensometer_ended_early`` (largest valid strain below
+    0.5*A/100 when A is given) and ``extensometer:near_rate_switch``.
     A strain channel continued from the crosshead cannot be detected
     (:data:`RESIDUAL_RISKS`).
     """
@@ -964,6 +975,8 @@ def extensometer_validity(
     flags = []
     if not usable:
         flags.append("extensometer:missing_input")
+    elif n_windows == 0:
+        flags.append("extensometer:no_complete_window")
     head = eps[:k_end]
     head = head[np.isfinite(head)]
     max_valid = float(head.max()) if len(head) else NAN
@@ -1339,19 +1352,26 @@ def proof_strength(
     """M10: Rp0.2 at the first crossing of e_p = 0.002 (linear interpolation).
 
     Flags: ``rp02:extensometer_invalid`` (crossing not reached before
-    ``k_ext``), ``rp02:in_yield_plateau`` (discontinuous yielding, crossing in
-    [i_p, i_h]) and ``rp02:near_rate_switch``.
+    ``k_ext``, with the extensometer ending early), ``rp02:not_reached`` (not
+    reached in a record with valid strain to its end, or the first in-window
+    sample already exceeds the offset), ``rp02:in_yield_plateau``
+    (discontinuous yielding, crossing in [i_p, i_h]) and
+    ``rp02:near_rate_switch``.
     """
     p = _params(params)
     s0 = _check_s0(s0_mm2)
     force, eps, _ = _channels(force_n, strain)
     valid = _strain_valid(force, eps, k_ext)
-    crossing, index, reached = _proof_crossing(
+    crossing, index, status = _proof_crossing(
         force, eps, valid, elastic.slope_n, elastic.intercept_n, elastic.lo_n, p.offset_plastic_strain
     )
     flags = []
-    if not reached and k_ext < len(force):
-        flags.append("rp02:extensometer_invalid")
+    # A continuous record without a first crossing has no E window ("no reference").
+    no_reference = status == _CROSSING_UNDEFINED and "e:e_window_not_converged" in elastic.flags
+    if status == _CROSSING_BELOW_OFFSET or no_reference:
+        flags.append("rp02:extensometer_invalid" if k_ext < len(force) else "rp02:not_reached")
+    elif status == _CROSSING_ALREADY_BEYOND:
+        flags.append("rp02:not_reached")
     if index >= 0:
         if yielding.yield_type == DISCONTINUOUS and yielding.i_p <= index <= yielding.i_h:
             flags.append("rp02:in_yield_plateau")
@@ -1409,13 +1429,19 @@ def elongation_at_maximum_force(
     F >= Fm*(1 - delta_F), delta_F = max(band_rel_min, 3*s_F/Fm). Agt =
     (e_mid - e0)*100 %, Ag = Agt - Rm/E*100 %. If any band sample is at or
     beyond ``k_ext`` (or has no finite strain), both are NaN with flags
-    ``ag:extensometer_invalid`` and ``agt:extensometer_invalid``.
+    ``ag:extensometer_invalid`` and ``agt:extensometer_invalid``. Without
+    Fm or E both are NaN with flag ``ag:no_maximum_force`` or
+    ``ag:no_elastic_modulus``.
     """
     p = _params(params)
     force, eps, _ = _channels(force_n, strain)
     flags = []
     agt = ag = halfwidth = strain_mid = NAN
     band = (-1, -1)
+    if maximum.i_m < 0:
+        flags.append("ag:no_maximum_force")
+    if not math.isfinite(elastic.slope_n):
+        flags.append("ag:no_elastic_modulus")
     if maximum.i_m >= 0:
         noise = bootstrap.noise_n if math.isfinite(bootstrap.noise_n) else 0.0
         delta = max(p.band_rel_min, p.band_noise_factor * noise / maximum.fm_n)
