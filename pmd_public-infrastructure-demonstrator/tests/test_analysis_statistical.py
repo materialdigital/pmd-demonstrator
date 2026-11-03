@@ -1,4 +1,4 @@
-"""VP-10 tolerance feasibility and VP-2/VP-8 (method-spec v2.3, §14), Monte Carlo.
+"""VP-10 tolerance feasibility and VP-2/VP-8 (method-spec v2.4, §14), Monte Carlo.
 
 Opt-in: ``pytest --run-statistical -m statistical``. Each check runs the
 implementation over seeded noisy curves and counts how often the result is
@@ -11,8 +11,9 @@ RO n = 15: E and Rp0.2 from the analytic window-slope fixed point,
 Rm = 480 MPa, Ag = 12 %.
 
 Tolerances (§14, declared in advance): E +-2 %, ReH +-3 MPa, ReL +-2 MPa,
-Rp0.2 +-3 MPa, Rm +-0.5 %; VP-2: ReH in [true, true + 3 sd] with
-sd = 0.5 MPa; VP-8 / Ag: |Ag - Ag_true| <= 100 sqrt(2 n delta) pp with
+Rp0.2 +-3 MPa, Rm +-0.5 %; VP-2 (v2.4): ReH in [true - 1.5, true + 1.5] MPa
+at sd = 0.5 MPa, and ReH equal to the independent M8 evaluation
+``synthetic.spec_reh`` in every seed; VP-8 / Ag: |Ag - Ag_true| <= 100 sqrt(2 n delta) pp with
 delta = max(2e-4, 3 sigma/Rm) and n the generator's curvature parameter.
 
 Seeds: ``SEEDS`` per configuration (at least the spec's 100 for VP-2 and
@@ -84,7 +85,7 @@ def _checks() -> list[Check]:
         Check("E (a)", "a", 0.5, "e_gpa", ta.e_gpa, -0.02 * ta.e_gpa, 0.02 * ta.e_gpa),
         Check("E (RO n=15)", "ro15", 0.5, "e_gpa", tr.e_gpa, -0.02 * tr.e_gpa, 0.02 * tr.e_gpa),
         Check("ReH", "a", 0.5, "reh_mpa", ta.reh_mpa, -3.0, 3.0),
-        Check("VP-2 ReH in [true, true+3sd]", "a", 0.5, "reh_mpa", ta.reh_mpa, 0.0, 1.5),
+        Check("VP-2 ReH in [true-1.5, true+1.5]", "a", 0.5, "reh_mpa", ta.reh_mpa, -1.5, 1.5),
         Check("ReL", "a", 0.5, "rel_mpa", ta.rel_mpa, -2.0, 2.0),
         Check("Rp0.2 (a, in plateau)", "a", 0.5, "rp02_mpa", ta.rp02_mpa, -3.0, 3.0),
         Check("Rp0.2 (RO n=15)", "ro15", 0.5, "rp02_mpa", tr.rp02_mpa, -3.0, 3.0),
@@ -137,13 +138,9 @@ def evaluate(check: Check) -> dict:
 
 
 # Rates below 99 % found by T5 (Run 10); escalated, not loosened. See
-# .notes/tensile-workflow/evidence/T5/vp10.md.
-ESCALATED = {
-    "VP-2 ReH in [true, true+3sd]": (
-        "T5 escalation E5-1: VP-2 pass rate 96.5 % < 99 %; the M8 sample maximum "
-        "falls below the true peak (implementation equals the M8 definition)"
-    ),
-}
+# .notes/tensile-workflow/evidence/T5/vp10.md. E5-1 (VP-2) was resolved by
+# method-spec v2.4 (two-sided +-1.5 MPa), so no check is escalated now.
+ESCALATED: dict[str, str] = {}
 
 
 def _param(check: Check):
