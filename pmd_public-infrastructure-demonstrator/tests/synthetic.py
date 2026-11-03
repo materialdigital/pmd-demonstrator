@@ -232,15 +232,20 @@ def _check_construction(s: np.ndarray, p: np.ndarray, crosshead: np.ndarray) -> 
         raise AssertionError("generator stress must stay positive")
 
 
-def _tri(j: int, period: int = SERRATION_PERIOD_SAMPLES) -> float:
-    """Triangle wave at sample phase j/period: 0 -> 0, 1/4 -> 1, 1/2 -> 0, 3/4 -> -1."""
-    j %= period
-    quarter = period // 4
-    if j <= quarter:
-        return j / quarter
-    if j <= 3 * quarter:
-        return 2.0 - j / quarter
-    return j / quarter - 4.0
+def _tri(j: int, period: int = SERRATION_PERIOD_SAMPLES, phase: float = 0.0) -> float:
+    """Triangle wave at sample position (j + phase)/period.
+
+    0 -> 0, 1/4 -> 1, 1/2 -> 0, 3/4 -> -1. With ``phase = 0`` the extremes
+    are samples; with ``phase = 0.5`` no sample lies on an extreme or on the
+    mean level.
+    """
+    x = (j + phase) % period
+    quarter = period / 4
+    if x <= quarter:
+        return x / quarter
+    if x <= 3 * quarter:
+        return 2.0 - x / quarter
+    return x / quarter - 4.0
 
 
 @dataclasses.dataclass(frozen=True)
@@ -411,6 +416,7 @@ def discontinuous(
     transient_min: float | None = 372.0,
     plateau: float | None = 380.0,
     serration: float = 1.0,
+    serration_phase: float = 0.0,
     plateau_end_p: float = 0.015,
     hardening: str | None = "voce",
     rm: float = 510.0,
@@ -432,6 +438,8 @@ def discontinuous(
     Voce hardening to Rm = 510 MPa at Ag = 15 %.
 
     - ``serration``: plateau half-amplitude (M9 (ii): 3).
+    - ``serration_phase``: sample offset of the triangle wave; 0.5 puts no
+      sample on an extreme or on the plateau level.
     - ``plateau=None``: no plateau; hardening starts at the transient minimum
       (M9 (iii)).
     - ``upper_peak=False``: the rounded part ends tangentially on the plateau
@@ -494,7 +502,7 @@ def discontinuous(
             )
             k_back = k_back[plateau_end_p - k_back * plateau_dp > p_after + 1e-12]
         p_plateau = plateau_end_p - k_back * plateau_dp
-        values = np.array([plateau + serration * _tri(-int(k)) for k in k_back])
+        values = np.array([plateau + serration * _tri(-int(k), phase=serration_phase) for k in k_back])
         density = f"{plateau_dp:g} plastic strain per sample; serrations +-{serration:g} MPa"
         if rate_step is not None:
             # Snap the switch to a phase-0 grid point.
@@ -509,7 +517,7 @@ def discontinuous(
                 elif offset <= 8:
                     values[i] = plateau + 3.0 * (offset - 3)
                 else:
-                    values[i] = plateau + 15.0 + serration * _tri(-int(k_back[i]))
+                    values[i] = plateau + 15.0 + serration * _tri(-int(k_back[i]), phase=serration_phase)
             density += "; rate step: 3 MPa dip at 1 MPa/sample, +15 MPa at 3 MPa/sample"
         b.add("plateau", values, p_plateau, density)
         plateau_min = float(values.min())

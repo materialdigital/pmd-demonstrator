@@ -106,6 +106,15 @@ def test_m9_plateau_minima(serration, expected):
     assert s_pl.min() == expected == curve.truth.rel_mpa
 
 
+def test_half_sample_serration_phase_avoids_the_extremes_and_the_level():
+    curve = sy.discontinuous(serration_phase=0.5)
+    s_pl, _ = _segment_values(curve, "plateau")
+    assert s_pl.min() == pytest.approx(379.05) == curve.truth.rel_mpa
+    assert s_pl.max() == pytest.approx(380.95)
+    assert not np.any(np.isclose(s_pl, 380.0, rtol=0, atol=1e-9))
+    assert np.mean(s_pl) == pytest.approx(380.0, abs=1e-3)
+
+
 def test_m9_case_iii_rises_monotonically_after_the_dip():
     curve = sy.discontinuous(plateau=None)
     seg = curve.segment("hardening")
