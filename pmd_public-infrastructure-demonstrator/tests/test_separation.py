@@ -1,7 +1,7 @@
 """Separation and knowledge graph (acceptance criteria 2 and 6), offline (C9).
 
 The workflow graphs come from runs on the local pmdco2 Turtle files with a
-stubbed curve download (synthetic CSV bytes, see ``test_workflow``), and from
+stubbed curve download (synthetic CSV bytes, see ``workflow_helpers``), and from
 a stubbed Ontodocker source with a dummy token for the credential check.
 
 semantikon's own workflow vocabulary uses PMDco 3.x terms in the namespace
@@ -23,7 +23,7 @@ import pytest
 import rdflib
 from conftest import PMDCO2_ORIENTATION_FILES
 from rdflib.compare import isomorphic
-from test_workflow import PMDCO2, PMDCO2_SOURCE, curve_bytes_for, run_with_stubbed_curves
+from workflow_helpers import PMDCO2, PMDCO2_SOURCE, curve_bytes_for, run_with_stubbed_curves
 
 from tensile_workflow import knowledge_graph as kg
 from tensile_workflow import sources, workflows

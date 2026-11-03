@@ -27,6 +27,9 @@ PMDCO2_ORIENTATION_FILES = {
 
 if str(DEMO_DIR) not in sys.path:
     sys.path.insert(0, str(DEMO_DIR))
+# Test helper modules (synthetic, workflow_helpers), also under --import-mode=importlib.
+if str(DEMO_DIR / "tests") not in sys.path:
+    sys.path.insert(0, str(DEMO_DIR / "tests"))
 
 _REAL_CONNECT = socket.socket.connect
 

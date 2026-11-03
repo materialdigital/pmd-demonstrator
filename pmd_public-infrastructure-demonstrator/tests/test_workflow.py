@@ -1,11 +1,8 @@
 """Two-stage workflow (decision D6): exploration, per-specimen workflow, batch (C9).
 
 Offline: the graphs are the local pmdco2 Turtle files (and, for the pmdco3
-parity, T3's structural pmdco3 fixture); curve downloads are stubbed with
-synthetic CSV bytes in the layout of the S355 curve files (``;`` delimiter,
-``,`` decimal mark, a header row and a unit row). The synthetic stresses are
-method-spec §14 (a) with noise, scaled to each specimen's S0; their numbers
-are made up, not lab data.
+parity, the structural pmdco3 fixture); curve downloads are stubbed with
+synthetic CSV bytes (see ``workflow_helpers``).
 
 Parity: the per-specimen workflow must give exactly the numbers of
 ``analyse_curve`` on the same parsed arrays (analysis-api.md), compared
@@ -22,9 +19,16 @@ import re
 import numpy as np
 import pandas as pd
 import pytest
-from conftest import PMDCO2_ORIENTATION_FILES
+from workflow_helpers import (
+    PMDCO2,
+    PMDCO2_SOURCE,
+    PMDCO3,
+    curve_bytes_for,
+    pmdco3_twin_of_pmdco2,
+    run_with_stubbed_curves,
+    stub_fetch,
+)
 
-import synthetic as sy
 from tensile_workflow import acquisition, exploration, sources, workflows
 from tensile_workflow.analysis import (
     CurveAnalysis,
@@ -34,57 +38,7 @@ from tensile_workflow.analysis import (
     s0_scatter,
 )
 
-PMDCO2 = "pmdco2-tto"
-PMDCO3 = "pmdco3-tto"
 SPECIMENS = ("Zx1", "Zy1", "Zd2")  # one per orientation
-PMDCO2_SOURCE = {"kind": "turtle", "locations": [str(p) for p in PMDCO2_ORIENTATION_FILES.values()]}
-NOISE_SEEDS = {"Zx1": 101, "Zy1": 102, "Zd2": 103, "Zx2": 104}
-
-# ---------------------------------------------------------------------------
-# Synthetic curve bytes and the stubbed download (shared with test_separation)
-# ---------------------------------------------------------------------------
-
-
-def synthetic_csv(s0_mm2: float, seed: int) -> bytes:
-    """§14 (a) with noise, as CSV bytes in the S355 layout, force scaled to ``s0_mm2``."""
-    curve = sy.noisy(sy.reference_a(), seed)
-    force_kn = curve.force_n / curve.s0_mm2 * s0_mm2 / 1000.0
-    time_s = np.arange(len(curve)) * 0.1
-    lines = ["Time;Crosshead separation;Load;Extensometer elongation", "(sec);(mm);(kN);(%)"]
-    for row in zip(time_s, curve.crosshead_mm, force_kn, curve.strain * 100.0, strict=True):
-        lines.append(";".join(f"{value:.10g}".replace(".", ",") for value in row))
-    return ("\r\n".join(lines) + "\r\n").encode("utf-8")
-
-
-def curve_bytes_for(specimen_ids, profile_id: str = PMDCO2, source: dict = PMDCO2_SOURCE) -> dict:
-    """Synthetic CSV bytes per specimen ID, force scaled to the record's S0."""
-    return {
-        sid: synthetic_csv(acquisition.build_specimen_record(profile_id, source, sid).s0_mm2, NOISE_SEEDS[sid])
-        for sid in specimen_ids
-    }
-
-
-def stub_fetch(curves: dict):
-    """A ``sources.fetch_bytes`` stand-in: serves the bytes by the URL's file name ``<ID>.csv``."""
-    fetched = []
-
-    def fetch(url: str) -> tuple[bytes, str]:
-        fetched.append(url)
-        data = curves[url.rsplit("/", 1)[-1].removesuffix(".csv")]
-        return data, hashlib.sha256(data).hexdigest()
-
-    fetch.fetched = fetched
-    return fetch
-
-
-def run_with_stubbed_curves(curves: dict, profile_id: str, source: dict, **kwargs):
-    """``run_tensile_analysis`` with the curve download stubbed; returns (analysis, fetched URLs)."""
-    fetch = stub_fetch(curves)
-    with pytest.MonkeyPatch.context() as mp:
-        mp.setattr(sources, "fetch_bytes", fetch)
-        result = workflows.run_tensile_analysis(profile_id, source, **kwargs)
-    return result, list(fetch.fetched)
-
 
 # ---------------------------------------------------------------------------
 # NaN-aware equality
@@ -321,46 +275,12 @@ def test_builders_reject_bad_specimen_lists(pmdco2_curves):
 # pmdco2 versus pmdco3 (acceptance criterion 4, offline)
 # ---------------------------------------------------------------------------
 #
-# T3's structural pmdco3 fixture (tests/test_acquisition_pmdco3.py) has the
-# PMDco3/TTO modelling pattern but made-up numbers. Here its values are set
-# to the pmdco2 values of the same specimens, so both profiles describe the
-# same specimens; the curve bytes are identical by construction.
+# The structural pmdco3 fixture (workflow_helpers.py) has the PMDco3/TTO
+# modelling pattern but made-up numbers. Here its values are set to the pmdco2
+# values of the same specimens, so both profiles describe the same specimens;
+# the curve bytes are identical by construction.
 
 PARITY_SPECIMENS = ("Zx1", "Zd2")
-
-
-def _set_fixture_value(text: str, test: str, name: str, value) -> str:
-    """Replace one value literal of T3's fixture, ``ex:<test>_<name>_value``."""
-    literal = "NaN" if value is None else repr(float(value))
-    pattern = re.compile(
-        rf'(ex:{test}_{name}_value a obo:OBI_0001931 ;.*?pmdco:PMD_0000006 ")[^"]*(")', re.DOTALL
-    )
-    text, count = pattern.subn(rf"\g<1>{literal}\g<2>", text)
-    assert count == 1, (test, name)
-    return text
-
-
-def pmdco3_twin_of_pmdco2(specimen_ids, tmp_path) -> dict:
-    """A pmdco3 structural graph describing the given pmdco2 specimens with their values."""
-    import test_acquisition_pmdco3 as t3
-
-    text = t3._PREFIXES
-    for i, sid in enumerate(specimen_ids, start=1):
-        record = acquisition.build_specimen_record(PMDCO2, PMDCO2_SOURCE, sid)
-        test = f"test_{i}"
-        switch = round(100.0 * record.rate_switch_strain, 10)  # percent, as in the graphs
-        block = t3._test(test, sid, record.orientation, switch=repr(switch))
-        s1, s2, s3 = record.cross_section_measurements_mm2
-        values = {
-            "S0": record.s0_mm2, "s1": s1, "s2": s2, "s3": s3,
-            "L0": record.l0_mm, "Lu": record.lu_mm, "Su": record.su_mm2,
-        }
-        for name, value in values.items():
-            block = _set_fixture_value(block, test, name, value)
-        text += block
-    path = tmp_path / "pmdco3_twin.ttl"
-    path.write_text(text, encoding="utf-8")
-    return {"kind": "turtle", "locations": [str(path)]}
 
 
 def test_pmdco2_and_pmdco3_give_identical_analysis_for_identical_curve_bytes(tmp_path):

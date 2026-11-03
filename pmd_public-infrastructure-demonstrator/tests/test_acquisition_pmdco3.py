@@ -19,6 +19,7 @@ import re
 import numpy as np
 import pyiron_workflow as pwf
 import pytest
+from workflow_helpers import PMDCO3_PREFIXES, pmdco3_test
 
 from tensile_workflow import acquisition, exploration, sources
 from tensile_workflow.contract import UnitError, to_contract_unit
@@ -27,103 +28,10 @@ from tensile_workflow.profiles.base import QUANTITY_KINDS
 
 PROFILE = "pmdco3-tto"
 
-_PREFIXES = """\
-@prefix ex:    <https://example.org/fixture/> .
-@prefix obo:   <http://purl.obolibrary.org/obo/> .
-@prefix pmdco: <https://w3id.org/pmd/co/> .
-@prefix tto:   <https://w3id.org/pmd/tto/> .
-@prefix rdfs:  <http://www.w3.org/2000/01/rdf-schema#> .
-@prefix unit:  <http://qudt.org/vocab/unit/> .
-@prefix xsd:   <http://www.w3.org/2001/XMLSchema#> .
-"""
-
-
-def _measured(
-    test: str,
-    name: str,
-    cls: str,
-    bearer: str,
-    value: str,
-    unit: str | None,
-    relation: str = "obo:RO_0000086",
-) -> str:
-    """A quality, its measurement datum (output of the test) and its value spec.
-
-    ``relation`` links the bearer to the quality (default: has quality).
-    """
-    unit_line = f"    obo:IAO_0000039 {unit} ;\n" if unit else ""
-    return f"""
-ex:{test}_{name} a {cls} .
-{bearer} {relation} ex:{test}_{name} .
-ex:{test} obo:OBI_0000299 ex:{test}_{name}_datum .
-ex:{test}_{name}_datum a obo:IAO_0000109 ;
-    obo:IAO_0000136 ex:{test}_{name} ;
-    obo:OBI_0001938 ex:{test}_{name}_value .
-ex:{test}_{name}_value a obo:OBI_0001931 ;
-{unit_line}    obo:OBI_0001927 ex:{test}_{name} ;
-    pmdco:PMD_0000006 "{value}"^^xsd:float .
-"""
-
-
-def _test(
-    test: str, piece: str, orientation: str, s0_unit: str = "unit:MilliM2", switch: str = "3.8"
-) -> str:
-    tp, broken, material = f"ex:{piece}", f"ex:{piece}_after", f"ex:{piece}_material"
-    extensometer, load_cell = f"ex:{test}_extensometer", f"ex:{test}_load_cell"
-    text = f"""
-ex:{test} a pmdco:PMD_0000974 ;
-    obo:OBI_0000293 {tp} ;
-    obo:OBI_0000299 {broken} .
-{tp} a obo:BFO_0000030 ;
-    pmdco:PMD_0020005 {material} .
-ex:{piece}_id obo:IAO_0000219 {tp} ;
-    rdfs:label "Test piece identifier"^^xsd:string ;
-    obo:OBI_0001938 ex:{piece}_id_value .
-ex:{piece}_id_value pmdco:PMD_0000006 "{piece}"^^xsd:string .
-ex:{piece}_material_id obo:IAO_0000219 {material} ;
-    obo:OBI_0001938 ex:{piece}_material_id_value .
-ex:{piece}_material_id_value pmdco:PMD_0000006 "S355"^^xsd:string .
-{material} obo:RO_0000086 ex:{piece}_rolling_direction .
-ex:{piece}_rolling_direction a obo:BFO_0000019 ;
-    obo:OBI_0001938 ex:{piece}_rolling_direction_value .
-ex:{piece}_rolling_direction_value pmdco:PMD_0000006 "{orientation}"^^xsd:string .
-ex:{test}_identifier obo:IAO_0000219 ex:{test} ;
-    rdfs:label "Process identifier"^^xsd:string ;
-    obo:OBI_0001938 ex:{test}_identifier_value .
-ex:{test}_identifier_value pmdco:PMD_0000006 "process-{test}"^^xsd:string .
-ex:{test}_note obo:IAO_0000219 ex:{test} ;
-    rdfs:label "process note"^^xsd:string ;
-    obo:OBI_0001938 ex:{test}_note_value .
-ex:{test}_note_value pmdco:PMD_0000006 "note of {piece}"^^xsd:string .
-"""
-    text += _measured(test, "S0", "tto:TTO_0000026", tp, "100.2", s0_unit)
-    text += _measured(test, "s1", "tto:TTO_0000012", tp, "100.0", "unit:MilliM2")
-    text += _measured(test, "s2", "tto:TTO_0000012", tp, "100.3", "unit:MilliM2")
-    text += _measured(test, "s3", "tto:TTO_0000012", tp, "100.3", "unit:MilliM2")
-    text += _measured(test, "L0", "tto:TTO_0000028", tp, "60.0", "unit:MilliM")
-    text += _measured(test, "ext_gauge", "tto:TTO_0000028", extensometer, "50.0", "unit:MilliM")
-    text += _measured(test, "Lu", "tto:TTO_0000018", broken, "80.5", "unit:MilliM")
-    text += _measured(test, "Su", "tto:TTO_0000024", broken, "45.0", "unit:MilliM2")
-    text += _measured(test, "E", "pmdco:PMD_0000618", material, "205.0", "unit:GigaPa")
-    text += _measured(test, "Rp02", "tto:TTO_0000047", material, "NaN", "unit:MegaPa")
-    text += _measured(test, "ReH", "tto:TTO_0000059", material, "400.0", "unit:MegaPa")
-    text += _measured(test, "ReL", "tto:TTO_0000022", material, "380.0", "unit:MegaPa")
-    text += _measured(test, "Rm", "tto:TTO_0000053", material, "510.0", "unit:MegaPa")
-    text += _measured(test, "Fm", "tto:TTO_0000023", material, "51.1", "unit:KiloN")
-    text += _measured(test, "load_range", "tto:TTO_0000023", load_cell, "100.0", "unit:KiloN")
-    text += _measured(test, "A", "tto:TTO_0000033", material, "34.0", "unit:PERCENT")
-    text += _measured(test, "Z", "tto:TTO_0000038", material, "55.0", "unit:PERCENT")
-    text += _measured(
-        test, "switch", "tto:TTO_0000058", f"ex:{test}", switch, "unit:PERCENT",
-        relation="pmdco:PMD_0000009",  # has process attribute
-    )
-    return text
-
-
 FIXTURE = (
-    _PREFIXES
-    + _test("test_1", "Za1", "in rolling direction", switch="1.6")
-    + _test("test_2", "Zb7", "diagonal to rolling direction", switch="4.0")
+    PMDCO3_PREFIXES
+    + pmdco3_test("test_1", "Za1", "in rolling direction", switch="1.6")
+    + pmdco3_test("test_2", "Zb7", "diagonal to rolling direction", switch="4.0")
 )
 
 CSV = (
@@ -266,13 +174,13 @@ def test_rate_switch_strain_is_a_ratio(fixture_source):
 
 
 def test_unknown_unit_raises(tmp_path):
-    text = _PREFIXES + _test("test_1", "Za1", "in rolling direction", s0_unit="unit:FURLONG2")
+    text = PMDCO3_PREFIXES + pmdco3_test("test_1", "Za1", "in rolling direction", s0_unit="unit:FURLONG2")
     with pytest.raises(UnitError, match="FURLONG2"):
         acquisition.build_specimen_record(PROFILE, _source(tmp_path, text), "Za1")
 
 
 def test_mismatched_unit_raises(tmp_path):
-    text = _PREFIXES + _test("test_1", "Za1", "in rolling direction", s0_unit="unit:MilliM")
+    text = PMDCO3_PREFIXES + pmdco3_test("test_1", "Za1", "in rolling direction", s0_unit="unit:MilliM")
     with pytest.raises(UnitError, match="'area'"):
         acquisition.build_specimen_record(PROFILE, _source(tmp_path, text), "Za1")
 
