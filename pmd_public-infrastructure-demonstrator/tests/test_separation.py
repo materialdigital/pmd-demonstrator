@@ -22,6 +22,7 @@ import pandas as pd
 import pytest
 import rdflib
 from conftest import PMDCO2_ORIENTATION_FILES
+from rdflib.compare import isomorphic
 from test_workflow import PMDCO2, PMDCO2_SOURCE, curve_bytes_for, run_with_stubbed_curves
 
 from tensile_workflow import knowledge_graph as kg
@@ -88,6 +89,33 @@ def test_graphs_export_and_reparse_as_turtle(graphs, tmp_path):
         assert len(reparsed) == len(graph), name
         path = kg.write_turtle(graph, tmp_path / f"{name.replace(' ', '_')}.ttl")
         assert len(kg.read_turtle(path)) == len(graph), name
+
+
+def _double_values(graph: rdflib.Graph) -> list[str]:
+    return sorted(
+        str(o) for o in graph.objects() if isinstance(o, rdflib.Literal) and o.datatype == rdflib.XSD.double
+    )
+
+
+def test_default_export_is_lossless_ntriples(graphs, tmp_path):
+    """Saved graphs default to N-Triples, which keeps doubles exactly (Turtle keeps 7 digits)."""
+    value = 400.26355612345
+    graph = rdflib.Graph()
+    graph += graphs["batch run"]
+    graph.add((rdflib.URIRef("urn:test:item"), rdflib.URIRef("urn:test:value"), rdflib.Literal(value)))
+    assert kg.LOSSLESS_FORMAT == "nt"
+
+    # No suffix: reading back falls back to N-Triples, so this also checks the written format.
+    path = kg.write_graph(graph, tmp_path / "batch_run_graph")
+    reread = kg.read_graph(path)
+    (stored,) = reread.objects(rdflib.URIRef("urn:test:item"), rdflib.URIRef("urn:test:value"))
+    assert stored.datatype == rdflib.XSD.double
+    assert stored.toPython() == value
+    assert len(reread) == len(graph)
+    assert len(_double_values(graph)) > 1
+    assert _double_values(reread) == _double_values(graph)
+    # semantikon names some blank nodes after IRIs; they are relabelled, so the graphs are isomorphic.
+    assert isomorphic(reread, graph)
 
 
 def test_validate_values_conforms(graphs):

@@ -1,6 +1,6 @@
 """Ontology-agnostic tensile-test analysis (method-defined, ISO 6892-1-inspired).
 
-Implements ``.notes/tensile-workflow/method-spec.md`` (APPROVED v2) behind the
+Implements ``.notes/tensile-workflow/method-spec.md`` (APPROVED v2.4) behind the
 public interface fixed in ``.notes/tensile-workflow/analysis-api.md``. Every
 property is **"method-defined, ISO 6892-1-inspired"**; nothing here claims
 conformity with ISO 6892-1 or its Annex G. E is the **"regression slope of the

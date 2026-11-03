@@ -31,8 +31,28 @@ Graphs
 
 - :func:`validate_knowledge_graph`: ``semantikon.validate_values`` (OWL-RL
   reasoning and SHACL), returning ``(conforms, report text)``.
+
+Saving and display
+------------------
+- :func:`write_graph` and :func:`read_graph`: save and load a graph. The
+  default format is **N-Triples** (:data:`LOSSLESS_FORMAT`), which keeps every
+  literal's lexical form and therefore round-trips all values exactly. Use
+  these for any graph that is kept, exported or compared later.
+  Before writing, blank nodes whose IDs are not valid N-Triples labels are
+  relabelled deterministically. semantikon 1.4.4 names some blank nodes after
+  IRIs (``http://pyiron.org/ontology/...-not_defined_input_..._uri``), which
+  rdflib 7.6.0 writes verbatim, so that a plain N-Triples file of a batch KG
+  cannot be parsed again. Blank-node labels are local to a document, so the
+  written graph is isomorphic to the original: same triples, same literals.
+  JSON-LD would also round-trip, but N-Triples is the decided default
+  (handoff r10) and is line-based, which makes diffs easy.
 - :func:`to_turtle`, :func:`write_turtle`, :func:`parse_turtle`,
-  :func:`read_turtle`: Turtle serialization and re-parsing.
+  :func:`read_turtle`: Turtle, for human-readable display only.
+  :data:`TURTLE_PRECISION_NOTE` explains why: rdflib 7.6.0 writes
+  ``xsd:double`` literals in Turtle in the short numeric form
+  ``f"{value:e}"`` (``rdflib/term.py``, line 1681), i.e. with 7 significant
+  digits, so 400.26355612345 becomes ``4.002636e+02``. Triple counts survive a
+  Turtle round trip; double values do not.
 
 Example SPARQL queries
 ----------------------
@@ -68,15 +88,28 @@ The queries:
 
 from __future__ import annotations
 
+import hashlib
+import re
 from pathlib import Path
 
 import flowrep as fr
 import pandas as pd
 import rdflib
 import semantikon
+from rdflib.util import guess_format
 
 SEMANTIKON_PMD_NAMESPACE = "https://w3id.org/pmd/co/PMD_"
 """Namespace of semantikon's own workflow vocabulary (PMDco 3.x terms; prefix ``pmdco``)."""
+
+LOSSLESS_FORMAT = "nt"
+"""Default rdflib format for saved or exported graphs: N-Triples (lossless)."""
+
+TURTLE_PRECISION_NOTE = (
+    "Turtle is for display only: rdflib 7.6.0 writes xsd:double literals with 7 "
+    "significant digits (e.g. 400.26355612345 -> 4.002636e+02), so double values "
+    "do not survive a Turtle round trip. Saved graphs use N-Triples, which is lossless."
+)
+"""Why Turtle output is for display only (see the module docstring)."""
 
 MODULE_ROLES: dict[str, str] = {
     "tensile_workflow.exploration": "ontology-aware: exploration",
@@ -223,17 +256,85 @@ def validate_knowledge_graph(graph: rdflib.Graph) -> tuple[bool, str]:
 
 
 # ---------------------------------------------------------------------------
-# Turtle
+# Saving (lossless by default)
+# ---------------------------------------------------------------------------
+
+
+_NT_BLANK_NODE_LABEL = re.compile(r"[A-Za-z0-9_](?:[A-Za-z0-9_.\-]*[A-Za-z0-9_\-])?")
+"""Blank-node labels valid in N-Triples (ASCII subset of the W3C grammar; no ':' or '/')."""
+
+
+def _with_valid_blank_node_labels(graph: rdflib.Graph) -> rdflib.Graph:
+    """``graph`` with every blank node whose ID is not a valid N-Triples label relabelled.
+
+    semantikon 1.4.4 names some blank nodes after IRIs (``BNode(str(iri) +
+    "_uri")`` in ``semantikon/ontology.py``), and rdflib writes such IDs
+    verbatim, so the N-Triples file could not be parsed again. Blank-node
+    labels are local to a document, so relabelling them (deterministically,
+    ``b`` + SHA-256 of the old ID) gives an isomorphic graph. Other blank nodes
+    and all IRIs and literals are unchanged.
+    """
+    relabel = {
+        term: rdflib.BNode("b" + hashlib.sha256(str(term).encode("utf-8")).hexdigest())
+        for triple in graph
+        for term in triple
+        if isinstance(term, rdflib.BNode) and not _NT_BLANK_NODE_LABEL.fullmatch(str(term))
+    }
+    if not relabel:
+        return graph
+    relabelled = rdflib.Graph()
+    for prefix, namespace in graph.namespaces():
+        relabelled.bind(prefix, namespace, override=True, replace=True)
+    for s, p, o in graph:
+        relabelled.add((relabel.get(s, s), p, relabel.get(o, o)))
+    return relabelled
+
+
+def write_graph(graph: rdflib.Graph, path: str | Path, *, format: str = LOSSLESS_FORMAT) -> Path:
+    """Write ``graph`` to ``path`` (the caller chooses the location).
+
+    The default is N-Triples (:data:`LOSSLESS_FORMAT`), which round-trips every
+    value exactly; Turtle would round double values to 7 significant digits
+    (:data:`TURTLE_PRECISION_NOTE`). Blank nodes whose IDs are not valid
+    N-Triples labels are relabelled first (an isomorphic graph, see
+    :func:`_with_valid_blank_node_labels`), so the file can be read back with
+    :func:`read_graph`. ``graph`` itself is not changed.
+    """
+    path = Path(path)
+    _with_valid_blank_node_labels(graph).serialize(destination=path, format=format, encoding="utf-8")
+    return path
+
+
+def read_graph(path: str | Path, *, format: str | None = None) -> rdflib.Graph:
+    """Parse a graph file into a new graph.
+
+    Without ``format``, it is guessed from the file suffix (e.g. ``.nt``,
+    ``.ttl``), falling back to N-Triples.
+    """
+    path = Path(path)
+    return rdflib.Graph().parse(path, format=format or guess_format(str(path)) or LOSSLESS_FORMAT)
+
+
+# ---------------------------------------------------------------------------
+# Turtle (human-readable display; lossy for doubles)
 # ---------------------------------------------------------------------------
 
 
 def to_turtle(graph: rdflib.Graph) -> str:
-    """Serialize ``graph`` as Turtle text."""
+    """Serialize ``graph`` as Turtle text, for display.
+
+    Lossy for ``xsd:double`` values (:data:`TURTLE_PRECISION_NOTE`); save
+    graphs with :func:`write_graph` instead.
+    """
     return graph.serialize(format="turtle")
 
 
 def write_turtle(graph: rdflib.Graph, path: str | Path) -> Path:
-    """Write ``graph`` as a Turtle file (the caller chooses the location)."""
+    """Write ``graph`` as a Turtle file (the caller chooses the location).
+
+    Lossy for ``xsd:double`` values (:data:`TURTLE_PRECISION_NOTE`); use
+    :func:`write_graph` (N-Triples) for graphs that are kept or exported.
+    """
     path = Path(path)
     graph.serialize(destination=path, format="turtle")
     return path
