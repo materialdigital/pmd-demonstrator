@@ -176,6 +176,40 @@ def test_vp2_reh_equals_the_m8_definition_in_every_seed():
     assert m8_agreement()["equal"] == SEEDS
 
 
+# ---------------------------------------------------------------------------
+# R8-7: known method limitation, measured and recorded (method-spec v2.5)
+# ---------------------------------------------------------------------------
+
+R8_7_SEEDS = 1000
+R8_7_SEED_BASE = {0.25: 60_000, 0.5: 50_000, 1.0: 70_000}
+
+
+def test_r8_7_record_the_misclassification_of_a_noisy_plateau_without_upper_peak(capsys):
+    """Noisy M9 case (iv): how often does M7 report a spurious discontinuous yield?
+
+    This documents the rate and asserts no pass threshold: the limitation is
+    accepted by human decision (r11), and a prominence criterion is follow-up
+    F7. The expected classification is continuous, as in the noise-free case.
+    """
+    base = sy.discontinuous(upper_peak=False, serration=0.0)
+    lines = []
+    for stress_sd, first in R8_7_SEED_BASE.items():
+        results = [
+            analyse_curve(*sy.noisy(base, seed, stress_sd=stress_sd).args())
+            for seed in range(first, first + R8_7_SEEDS)
+        ]
+        spurious = [r.reh_mpa for r in results if r.yield_type == "discontinuous"]
+        k = len(spurious)
+        lo, hi = clopper_pearson(k, R8_7_SEEDS)
+        rate = f"{k}/{R8_7_SEEDS} = {100 * k / R8_7_SEEDS:.1f} % (95 % CI [{100 * lo:.1f}, {100 * hi:.1f}] %)"
+        reh = f"; spurious ReH {min(spurious):.2f} to {max(spurious):.2f} MPa (plateau 380 MPa)" if k else ""
+        lines.append(f"- case (iv), sigma={stress_sd:g} MPa: classified discontinuous in {rate}{reh}")
+    with capsys.disabled():
+        print()
+        print("R8-7 (no pass threshold; plateau without upper peak, serration 0):")
+        print("\n".join(lines))
+
+
 def _row(o: dict) -> str:
     c = o["check"]
     lo, hi = o["ci"]

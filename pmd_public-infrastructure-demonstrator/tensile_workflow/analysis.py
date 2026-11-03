@@ -154,9 +154,21 @@ dip: the candidate is the recovery sample itself, the band collapses to
 (iv) no upper peak: M7 gives continuous yielding, ReL is NaN with
 ``no_upper_yield``. (v) noise: P is a median, so recovery is found at the
 same place; the noisy ReL is low by the noise extreme over the plateau (the
-min/max noise bias, A5). Known limitation: a smoothly *rising* plateau looks
-like case (iii) when noise-free; with noise its band may widen enough to
-count as a plateau. This is reported for review (T8.1).
+min/max noise bias, A5).
+
+Known method limitations (method-spec v2.5; documented, not corrected)
+----------------------------------------------------------------------
+- **R8-7, M7 under noise.** A noisy plateau without an upper peak (M9 case
+  (iv)) can be classified as discontinuous, which reports a spurious ReH: 44 %
+  of 1000 seeds at 0.5 MPa noise on the synthetic case. The opt-in statistical
+  test ``test_r8_7_...`` records the rate. Follow-up F7 is a prominence
+  criterion.
+- **R8-8, M9 on a smoothly rising plateau.** P is a median, so the recovery
+  falls mid-plateau and the lower half counts as transient. Noise-free, the
+  band collapses as in case (iii), so ReL is the transient minimum with
+  ``rel:single_minimum``. With noise, ReL is about P minus the noise extreme.
+  Neither is the plateau start. ReL is not compared with lab values. Follow-up
+  F8 is a reference case with a declared expectation.
 """
 
 from __future__ import annotations
