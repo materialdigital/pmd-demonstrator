@@ -658,7 +658,6 @@ def test_no_work_hardening_plateau(transient, phase):
     _assert_no_work_hardening(c, run(c))
 
 
-@pytest.mark.xfail(strict=True, reason="v2.3 margin pending C17")
 def test_no_work_hardening_after_transient_dip_and_flat_serrated_plateau():
     # v2.3: work hardening needs sigma > 2P - ReL + d. The serrated plateau
     # (extremes between samples) never exceeds that, so Fm is NaN and ReL is

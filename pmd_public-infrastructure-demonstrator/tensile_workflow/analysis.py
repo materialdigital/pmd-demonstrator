@@ -110,7 +110,9 @@ applied to the remaining record (i_p, end); it gives the plateau level P, the
 plateau minimum (candidate, step 4) and the plateau band
 [candidate, 2P - candidate]. Work hardening begins only when the stress,
 after having been inside the band at or after the recovery i_r, rises above
-it; then i_h = i_m is the highest sample from that rise on, Fm = F(i_m), and
+it by more than the M7 drop threshold d at ReH (v2.3 margin:
+sigma > 2P - candidate + d, because a symmetric serrated plateau's own maxima
+lie on 2P - candidate); then i_h = i_m is the highest sample from that rise on, Fm = F(i_m), and
 the rule is applied again over (i_p, i_h). If it never rises above the band,
 Fm and Rm are NaN with ``fm:no_work_hardening`` and ``rel:no_work_hardening``,
 ReL is the result over the remaining record, and the yield range runs to the
@@ -1113,8 +1115,10 @@ def _yield_points(
         # v2.2 amendment (M11, T4-D1): the stress never returns to ReH. M9 over
         # the remaining record gives the plateau band [ReL, 2P - ReL]; work
         # hardening begins only when the stress, after having been inside the
-        # band, rises above it. Then i_h = i_m is the highest sample from that
-        # rise on, and M9 is repeated with i_h as the plateau end.
+        # band, rises above it by more than the margin d (v2.3:
+        # sigma > 2P - ReL + d, d the M7 drop threshold at ReH). Then
+        # i_h = i_m is the highest sample from that rise on, and M9 is
+        # repeated with i_h as the plateau end.
         y_force, y_index = f[peak + 1 :], finite_idx[peak + 1 :]
         m9 = _lower_yield(y_force, y_index, reh, threshold, valid, plastic, p)
         h = len(f)
@@ -1122,7 +1126,7 @@ def _yield_points(
             tail = y_force[m9["start"] :]
             inside = _first(tail <= m9["band_upper"])
             if inside >= 0:
-                rise = _first(tail[inside + 1 :] > m9["band_upper"])
+                rise = _first(tail[inside + 1 :] > m9["band_upper"] + threshold)
                 if rise >= 0:
                     rise_pos = m9["start"] + inside + 1 + rise
                     h = peak + 1 + rise_pos + int(np.argmax(y_force[rise_pos:]))
