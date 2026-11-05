@@ -27,6 +27,7 @@ import hashlib
 import io
 import json
 import os
+import threading
 from collections.abc import Mapping, Sequence
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -137,7 +138,7 @@ def ask(source: Mapping, query: str) -> dict[str, bool]:
     answers: dict[str, bool] = {}
     if kind == "turtle":
         for location in parts:
-            answers[location] = bool(_load_graph(location).query(query).askAnswer)
+            answers[location] = bool(_query_graph(_load_graph(location), query).askAnswer)
     else:
         client = _ontodocker_client()
         for dataset in parts:
@@ -151,6 +152,19 @@ def ask(source: Mapping, query: str) -> dict[str, bool]:
 # --------------------------------------------------------------------------
 # Turtle files and URLs (rdflib)
 # --------------------------------------------------------------------------
+
+# pyiron_workflow runs nodes in a thread pool, but rdflib's SPARQL grammar is
+# module-level pyparsing state, which is not thread-safe: one overlap can break
+# a grammar element for the life of the process. The pyparsing maintainer says
+# a lock belongs in the calling code
+# (https://github.com/pyparsing/pyparsing/issues/89).
+_SPARQL_QUERY_LOCK = threading.Lock()
+
+
+def _query_graph(graph: rdflib.Graph, query: str) -> rdflib.query.Result:
+    """Run ``Graph.query`` under the lock; the graph must already be loaded."""
+    with _SPARQL_QUERY_LOCK:
+        return graph.query(query)
 
 
 def _is_url(location: str) -> bool:
@@ -190,7 +204,7 @@ def clear_graph_cache() -> None:
 
 
 def _turtle_select(location: str, query: str, columns: list[str]) -> pd.DataFrame:
-    result = _load_graph(location).query(query)
+    result = _query_graph(_load_graph(location), query)
     rows = []
     for row in result:
         bindings = row.asdict()
