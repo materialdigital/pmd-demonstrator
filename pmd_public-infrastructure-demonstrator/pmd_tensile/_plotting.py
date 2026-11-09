@@ -1001,8 +1001,8 @@ def yield_step_figure(
     ax_a.set_ylabel("strain (extensometer) / %")
     ax_a.legend([Line2D([], [], marker="|", color="k", linestyle="none", markersize=16, markeredgewidth=2)],
                 ["extensometer end found by the method (k_ext)"], loc="lower right", fontsize=9)
-    _note(ax_a, "strain is evaluated only before the end;\nafter it the record has no strain values",
-          loc="upper left")
+    _note(ax_a, "strain is evaluated only before the end found by the method;\n"
+          "the recorded strain may continue a little beyond it", loc="upper left")
 
     ax_b.set_title("(b) provisional fit (bootstrap): window and line")
     ax_b.set_xlabel("strain (extensometer, not shifted) / %")
