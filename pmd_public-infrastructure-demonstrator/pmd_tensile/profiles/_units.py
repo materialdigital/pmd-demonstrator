@@ -6,6 +6,9 @@ expected quantity kind is checked by ``contract.check_unit``.
 
 The canonical IRIs below were checked against the QUDT unit vocabulary bundled
 with semantikon 1.4.4 (``semantikon/data/qudt.ttl``).
+
+The module is private so that sim_atlas does not catalogue the plain function
+:func:`qudt_unit_symbol` as a workflow node.
 """
 
 from __future__ import annotations

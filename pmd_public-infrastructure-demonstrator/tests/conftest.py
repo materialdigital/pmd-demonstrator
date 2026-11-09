@@ -1,7 +1,7 @@
 """Shared test setup for the tensile workflow.
 
-- Puts the demonstrator directory on ``sys.path`` (as the notebooks do), so
-  ``pmd_tensile`` is importable.
+- Puts the demonstrator directory on ``sys.path``, so ``pmd_tensile`` is
+  importable also without the editable install of ``environment.yml``.
 - Registers the ``network`` marker. Network tests are skipped unless
   ``--run-network`` is given. Outbound socket connections are blocked for the
   whole pytest session, including collection and fixtures of any scope; the
@@ -93,7 +93,7 @@ def _lift_network_block(request, monkeypatch):
 @pytest.fixture(autouse=True)
 def _fresh_graph_cache():
     """Tests must not see graphs parsed by other tests."""
-    from pmd_tensile import sources
+    from pmd_tensile import _sources as sources
 
     sources.clear_graph_cache()
     yield

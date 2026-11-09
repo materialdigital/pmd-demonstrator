@@ -21,8 +21,8 @@ import pytest
 
 import synthetic as sy
 from pmd_tensile import analysis
+from pmd_tensile._analysis import analyse_curve
 from pmd_tensile.analysis import (
-    analyse_curve,
     check_time_order,
     compare_with_reported,
     elastic_fit,
@@ -350,10 +350,12 @@ ANALYSIS_PATH = Path(analysis.__file__)
 FORBIDDEN = (
     "rdflib",
     "praeco",
-    "pmd_tensile.sources",
+    "pmd_tensile._sources",
     "pmd_tensile.profiles",
     "pmd_tensile.exploration",
+    "pmd_tensile._exploration",
     "pmd_tensile.acquisition",
+    "pmd_tensile._acquisition",
 )
 
 
@@ -409,4 +411,9 @@ def test_importing_analysis_loads_no_ontology_aware_module():
         check=True,
         env=dict(os.environ, PYTHONDONTWRITEBYTECODE="1"),
     ).stdout.split()
-    assert set(out) <= {"pmd_tensile", "pmd_tensile.analysis", "pmd_tensile.contract"}
+    assert set(out) <= {
+        "pmd_tensile",
+        "pmd_tensile.analysis",
+        "pmd_tensile.contract",
+        "pmd_tensile._contract_units",
+    }

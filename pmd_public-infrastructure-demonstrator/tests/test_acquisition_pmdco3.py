@@ -21,7 +21,8 @@ import pyiron_workflow as pwf
 import pytest
 from workflow_helpers import PMDCO3_PREFIXES, pmdco3_test
 
-from pmd_tensile import acquisition, exploration, sources
+from pmd_tensile import _acquisition, _exploration, acquisition, exploration
+from pmd_tensile import _sources as sources
 from pmd_tensile.contract import UnitError, to_contract_unit
 from pmd_tensile.profiles import available_profiles, get_profile, pmdco3_tto
 from pmd_tensile.profiles.base import QUANTITY_KINDS
@@ -70,8 +71,8 @@ def test_profile_is_registered_and_non_semantic_for_curves():
 
 
 def test_conformance_on_structural_fixture(fixture_source):
-    assert exploration.is_conformant(PROFILE, fixture_source)
-    assert not exploration.is_conformant("pmdco2-tto", fixture_source)
+    assert _exploration.is_conformant(PROFILE, fixture_source)
+    assert not _exploration.is_conformant("pmdco2-tto", fixture_source)
     run = pwf.node(exploration.check_conformance, "c").run(
         profile_id=PROFILE, source=fixture_source
     )
@@ -79,9 +80,9 @@ def test_conformance_on_structural_fixture(fixture_source):
 
 
 def test_pmdco2_files_do_not_conform_to_pmdco3(pmdco2_source):
-    results = exploration.conformance_results(PROFILE, pmdco2_source)
+    results = _exploration.conformance_results(PROFILE, pmdco2_source)
     assert not any(any(answers.values()) for answers in results.values())
-    assert not exploration.is_conformant(PROFILE, pmdco2_source)
+    assert not _exploration.is_conformant(PROFILE, pmdco2_source)
     with pytest.raises(exploration.ConformanceError, match="pmdco3-tto"):
         pwf.node(exploration.check_conformance, "c").run(profile_id=PROFILE, source=pmdco2_source)
 
@@ -94,7 +95,7 @@ def test_pmdco2_files_do_not_conform_to_pmdco3(pmdco2_source):
 def test_list_specimens(fixture_source):
     run = pwf.node(exploration.list_specimens, "s").run(profile_id=PROFILE, source=fixture_source)
     assert run.outputs.specimen_ids == ["Za1", "Zb7"]
-    table = exploration.specimen_table(PROFILE, fixture_source)
+    table = _exploration.specimen_table(PROFILE, fixture_source)
     assert dict(zip(table["specimen_id"], table["orientation"])) == {
         "Za1": "in rolling direction",
         "Zb7": "diagonal to rolling direction",
@@ -127,10 +128,10 @@ def test_specimen_record(fixture_source):
 def test_explicit_curve_locator_overrides_default(fixture_source):
     locator = pmdco3_tto.CURVE_LOCATOR.as_dict()
     locator["url_template"] = "https://curves.example.org/s355/{specimen_id}.csv"
-    record = acquisition.build_specimen_record(PROFILE, fixture_source, "Za1", curve_locator=locator)
+    record = _acquisition.build_specimen_record(PROFILE, fixture_source, "Za1", curve_locator=locator)
     assert record.curve_url == "https://curves.example.org/s355/Za1.csv"
     with pytest.raises(ValueError, match="specimen_id"):
-        acquisition.build_specimen_record(
+        _acquisition.build_specimen_record(
             PROFILE, fixture_source, "Za1", curve_locator=dict(locator, url_template="https://x/a.csv")
         )
 
@@ -151,10 +152,10 @@ def _rate_switch_strain(profile_id: str, source: dict, specimen_id: str) -> floa
     """The profile's ``eps_sw`` value of one specimen as a ratio (``None`` if absent).
 
     This checks the profile's query and its unit conversion directly,
-    independently of ``acquisition.build_specimen_record``.
+    independently of ``_acquisition.build_specimen_record``.
     """
     profile = get_profile(profile_id)
-    table = exploration.specimen_table(profile_id, source)
+    table = _exploration.specimen_table(profile_id, source)
     process = table[table["specimen_id"] == specimen_id]["process"].item()
     rows = sources.select(source, profile.quantities.query, profile.quantities.columns)
     rows = rows[(rows["process"] == process) & (rows["quantity"] == "eps_sw")]
@@ -169,23 +170,23 @@ def test_rate_switch_strain_is_a_ratio(fixture_source):
     assert _rate_switch_strain(PROFILE, fixture_source, "Za1") == pytest.approx(0.016, rel=1e-12)
     assert _rate_switch_strain(PROFILE, fixture_source, "Zb7") == pytest.approx(0.040, rel=1e-12)
     # Acquisition still succeeds with the extra quantity in the graph.
-    assert acquisition.build_specimen_record(PROFILE, fixture_source, "Za1").specimen_id == "Za1"
+    assert _acquisition.build_specimen_record(PROFILE, fixture_source, "Za1").specimen_id == "Za1"
 
 
 def test_unknown_unit_raises(tmp_path):
     text = PMDCO3_PREFIXES + pmdco3_test("test_1", "Za1", "in rolling direction", s0_unit="unit:FURLONG2")
     with pytest.raises(UnitError, match="FURLONG2"):
-        acquisition.build_specimen_record(PROFILE, _source(tmp_path, text), "Za1")
+        _acquisition.build_specimen_record(PROFILE, _source(tmp_path, text), "Za1")
 
 
 def test_mismatched_unit_raises(tmp_path):
     text = PMDCO3_PREFIXES + pmdco3_test("test_1", "Za1", "in rolling direction", s0_unit="unit:MilliM")
     with pytest.raises(UnitError, match="'area'"):
-        acquisition.build_specimen_record(PROFILE, _source(tmp_path, text), "Za1")
+        _acquisition.build_specimen_record(PROFILE, _source(tmp_path, text), "Za1")
 
 
 def test_fetch_curve_by_header_with_stubbed_fetch(monkeypatch, fixture_source):
-    record = acquisition.build_specimen_record(PROFILE, fixture_source, "Za1")
+    record = _acquisition.build_specimen_record(PROFILE, fixture_source, "Za1")
     monkeypatch.setattr(sources, "fetch_bytes", lambda url: (CSV, hashlib.sha256(CSV).hexdigest()))
     curve = pwf.node(acquisition.fetch_curve, "f").run(record=record).outputs.curve
     np.testing.assert_allclose(curve.force_n, [0.0, 2500.0])
@@ -211,9 +212,9 @@ def test_iri_label_table_covers_every_iri_used():
 @pytest.mark.network
 def test_real_pinned_graph_matches_pmdco2(pmdco2_source):
     source = {"kind": "turtle", "locations": [pmdco3_tto.PINNED_GRAPH_URL]}
-    assert exploration.is_conformant(PROFILE, source)
-    ids = list(exploration.specimen_table(PROFILE, source)["specimen_id"])
-    assert sorted(ids) == sorted(exploration.specimen_table("pmdco2-tto", pmdco2_source)["specimen_id"])
+    assert _exploration.is_conformant(PROFILE, source)
+    ids = list(_exploration.specimen_table(PROFILE, source)["specimen_id"])
+    assert sorted(ids) == sorted(_exploration.specimen_table("pmdco2-tto", pmdco2_source)["specimen_id"])
     assert len(ids) == 10
 
     compared = [
@@ -221,12 +222,12 @@ def test_real_pinned_graph_matches_pmdco2(pmdco2_source):
         "rate_switch_strain", "notes",
     ]
     for sid in ids:
-        r3 = acquisition.build_specimen_record(PROFILE, source, sid)
-        r2 = acquisition.build_specimen_record("pmdco2-tto", pmdco2_source, sid)
+        r3 = _acquisition.build_specimen_record(PROFILE, source, sid)
+        r2 = _acquisition.build_specimen_record("pmdco2-tto", pmdco2_source, sid)
         for field in compared:
             assert getattr(r3, field) == getattr(r2, field), (sid, field)
-        q3 = acquisition.build_reported_properties(PROFILE, source, sid)
-        q2 = acquisition.build_reported_properties("pmdco2-tto", pmdco2_source, sid)
+        q3 = _acquisition.build_reported_properties(PROFILE, source, sid)
+        q2 = _acquisition.build_reported_properties("pmdco2-tto", pmdco2_source, sid)
         assert q3 == q2, sid
         switch3 = _rate_switch_strain(PROFILE, source, sid)
         assert switch3 is not None, sid

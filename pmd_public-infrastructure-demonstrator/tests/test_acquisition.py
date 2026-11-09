@@ -13,11 +13,12 @@ import pyiron_workflow as pwf
 import pytest
 from conftest import PMDCO2_ORIENTATION_FILES
 
-from pmd_tensile import acquisition, exploration, sources
+from pmd_tensile import _acquisition, _exploration, acquisition, exploration
+from pmd_tensile import _sources as sources
 from pmd_tensile.contract import CURVE_ROLES, SpecimenRecord, UnitError, to_contract_unit
 from pmd_tensile.profiles import available_profiles, get_profile
+from pmd_tensile.profiles._units import qudt_unit_symbol
 from pmd_tensile.profiles.base import QUANTITY_KINDS
-from pmd_tensile.profiles.units import qudt_unit_symbol
 
 PROFILE = "pmdco2-tto"
 
@@ -65,7 +66,7 @@ def test_profile_is_registered():
 
 
 def test_pmdco2_files_conform_to_pmdco2_profile(pmdco2_source):
-    results = exploration.conformance_results(PROFILE, pmdco2_source)
+    results = _exploration.conformance_results(PROFILE, pmdco2_source)
     assert results
     assert all(all(answers.values()) for answers in results.values())
     run = pwf.node(exploration.check_conformance, "conformance").run(
@@ -82,7 +83,7 @@ def test_lists_ten_specimens_split_4_4_2(pmdco2_source):
     assert run.status == "finished", run.exception
     assert sorted(run.outputs.specimen_ids) == sorted(ALL_IDS)
 
-    table = exploration.specimen_table(PROFILE, pmdco2_source)
+    table = _exploration.specimen_table(PROFILE, pmdco2_source)
     counts = table.groupby("orientation")["specimen_id"].count().to_dict()
     assert counts == {
         EXPECTED_ORIENTATION["parallel"]: 4,
@@ -94,7 +95,7 @@ def test_lists_ten_specimens_split_4_4_2(pmdco2_source):
 @pytest.mark.parametrize("orientation", list(PMDCO2_ORIENTATION_FILES))
 def test_each_file_holds_its_orientation(orientation):
     source = {"kind": "turtle", "locations": [str(PMDCO2_ORIENTATION_FILES[orientation])]}
-    table = exploration.specimen_table(PROFILE, source)
+    table = _exploration.specimen_table(PROFILE, source)
     assert list(table["specimen_id"]) == EXPECTED_IDS[orientation]
     assert set(table["orientation"]) == {EXPECTED_ORIENTATION[orientation]}
 
@@ -106,7 +107,7 @@ def test_each_file_holds_its_orientation(orientation):
 
 @pytest.mark.parametrize("specimen_id", ALL_IDS)
 def test_specimen_record(pmdco2_source, specimen_id):
-    record = acquisition.build_specimen_record(PROFILE, pmdco2_source, specimen_id)
+    record = _acquisition.build_specimen_record(PROFILE, pmdco2_source, specimen_id)
     assert isinstance(record, SpecimenRecord)
     assert record.specimen_id == specimen_id
     assert record.orientation == ORIENTATION_OF[specimen_id]
@@ -132,17 +133,17 @@ def test_specimen_record(pmdco2_source, specimen_id):
 
 
 def test_specimen_record_known_values(pmdco2_source):
-    zd3 = acquisition.build_specimen_record(PROFILE, pmdco2_source, "Zd3")
+    zd3 = _acquisition.build_specimen_record(PROFILE, pmdco2_source, "Zd3")
     assert zd3.s0_mm2 == 120.707
     assert zd3.cross_section_measurements_mm2 == (120.867, 120.544, 120.71)
     assert (zd3.l0_mm, zd3.lu_mm, zd3.su_mm2) == (60.0, 79.97, 43.924)
     assert zd3.notes == ("Proben aus Stahlblech entnommen, diagonal der Walzrichtung",)
 
     # Zx1: Lu is "NaN" in the graph -> None; its lab note is carried through.
-    zx1 = acquisition.build_specimen_record(PROFILE, pmdco2_source, "Zx1")
+    zx1 = _acquisition.build_specimen_record(PROFILE, pmdco2_source, "Zx1")
     assert zx1.lu_mm is None
     assert "Weggeschwindigkeit wurde erhöht" in zx1.notes[0]
-    zx2 = acquisition.build_specimen_record(PROFILE, pmdco2_source, "Zx2")
+    zx2 = _acquisition.build_specimen_record(PROFILE, pmdco2_source, "Zx2")
     assert "Extensometer nach 3,9 % Dehnung" in zx2.notes[0]
 
 
@@ -151,7 +152,7 @@ def test_specimen_record_node(pmdco2_source):
         profile_id=PROFILE, source=pmdco2_source, specimen_id="Zy3"
     )
     assert run.status == "finished", run.exception
-    assert run.outputs.record == acquisition.build_specimen_record(PROFILE, pmdco2_source, "Zy3")
+    assert run.outputs.record == _acquisition.build_specimen_record(PROFILE, pmdco2_source, "Zy3")
 
 
 def test_test_with_two_specimen_ids_raises(tmp_path):
@@ -165,18 +166,18 @@ def test_test_with_two_specimen_ids_raises(tmp_path):
     )
     source = _source_with(tmp_path, "parallel", text)
     with pytest.raises(ValueError, match="several specimen IDs"):
-        exploration.specimen_table(PROFILE, source)
+        _exploration.specimen_table(PROFILE, source)
 
 
 def test_unknown_specimen_raises(pmdco2_source):
     with pytest.raises(LookupError, match="Zq9"):
-        acquisition.build_specimen_record(PROFILE, pmdco2_source, "Zq9")
+        _acquisition.build_specimen_record(PROFILE, pmdco2_source, "Zq9")
 
 
 def test_semantic_profile_rejects_curve_locator(pmdco2_source):
     locator = {"url_template": "https://example.org/{specimen_id}.csv", "columns": {}}
     with pytest.raises(ValueError, match="links curves semantically"):
-        acquisition.build_specimen_record(PROFILE, pmdco2_source, "Zx1", curve_locator=locator)
+        _acquisition.build_specimen_record(PROFILE, pmdco2_source, "Zx1", curve_locator=locator)
 
 
 # ---------------------------------------------------------------------------
@@ -185,7 +186,7 @@ def test_semantic_profile_rejects_curve_locator(pmdco2_source):
 
 
 def test_reported_properties_known_values(pmdco2_source):
-    zx1 = acquisition.build_reported_properties(PROFILE, pmdco2_source, "Zx1")
+    zx1 = _acquisition.build_reported_properties(PROFILE, pmdco2_source, "Zx1")
     assert zx1.specimen_id == "Zx1"
     assert zx1.e_gpa == 194.0
     assert zx1.rp02_mpa == 375.0
@@ -196,7 +197,7 @@ def test_reported_properties_known_values(pmdco2_source):
     assert zx1.z_percent == 56.0
     assert zx1.rel_mpa is None  # ReL is not described in pmdco2 graphs
 
-    zd3 = acquisition.build_reported_properties(PROFILE, pmdco2_source, "Zd3")
+    zd3 = _acquisition.build_reported_properties(PROFILE, pmdco2_source, "Zd3")
     assert zd3.rp02_mpa is None  # "NaN" in the graph
     assert (zd3.e_gpa, zd3.reh_mpa, zd3.rm_mpa) == (195.0, 396.0, 511.0)
     assert (zd3.a_percent, zd3.z_percent) == (33.0, 64.0)
@@ -204,7 +205,7 @@ def test_reported_properties_known_values(pmdco2_source):
 
 def test_reported_properties_present_or_none(pmdco2_source):
     reported = {
-        sid: acquisition.build_reported_properties(PROFILE, pmdco2_source, sid) for sid in ALL_IDS
+        sid: _acquisition.build_reported_properties(PROFILE, pmdco2_source, sid) for sid in ALL_IDS
     }
     # Rp0.2 is missing exactly for S355-7 (Zy3) and S355-10 (Zd3).
     assert {sid for sid, r in reported.items() if r.rp02_mpa is None} == {"Zy3", "Zd3"}
@@ -220,10 +221,10 @@ def _rate_switch_strain(source: dict, specimen_id: str) -> float:
     """The profile's ``eps_sw`` value of one specimen, in contract units (ratio).
 
     This checks the profile's query and its unit conversion directly,
-    independently of ``acquisition.build_specimen_record``.
+    independently of ``_acquisition.build_specimen_record``.
     """
     profile = get_profile(PROFILE)
-    table = exploration.specimen_table(PROFILE, source)
+    table = _exploration.specimen_table(PROFILE, source)
     process = table[table["specimen_id"] == specimen_id]["process"].item()
     rows = sources.select(source, profile.quantities.query, profile.quantities.columns)
     rows = rows[(rows["process"] == process) & (rows["quantity"] == "eps_sw")]
@@ -243,7 +244,7 @@ def test_rate_switch_strain_is_a_ratio(pmdco2_source, specimen_id, expected):
 def test_specimen_record_rate_switch_strain(pmdco2_source):
     # graph: 1.6 % (Zx1) and 4.0 % (Zd2), arriving as ratios in the record
     for specimen_id, expected in (("Zx1", 0.016), ("Zd2", 0.040)):
-        record = acquisition.build_specimen_record(PROFILE, pmdco2_source, specimen_id)
+        record = _acquisition.build_specimen_record(PROFILE, pmdco2_source, specimen_id)
         assert record.rate_switch_strain == pytest.approx(expected, rel=1e-12)
 
 
@@ -282,7 +283,7 @@ def test_unknown_unit_raises(tmp_path):
     text = PMDCO2_ORIENTATION_FILES["parallel"].read_text(encoding="utf-8")
     source = _source_with(tmp_path, "parallel", _replace_once(text, S0_UNIT_PATTERN, r"\1FURLONG2>"))
     with pytest.raises(UnitError, match="FURLONG2"):
-        acquisition.build_specimen_record(PROFILE, source, "Zx1")
+        _acquisition.build_specimen_record(PROFILE, source, "Zx1")
 
 
 def test_mismatched_unit_raises(tmp_path):
@@ -290,7 +291,7 @@ def test_mismatched_unit_raises(tmp_path):
     text = PMDCO2_ORIENTATION_FILES["parallel"].read_text(encoding="utf-8")
     source = _source_with(tmp_path, "parallel", _replace_once(text, S0_UNIT_PATTERN, r"\1MilliM>"))
     with pytest.raises(UnitError, match="'mm' is not valid for quantity kind 'area'"):
-        acquisition.build_specimen_record(PROFILE, source, "Zx1")
+        _acquisition.build_specimen_record(PROFILE, source, "Zx1")
 
 
 def test_mismatched_curve_column_unit_raises(tmp_path):
@@ -305,7 +306,7 @@ def test_mismatched_curve_column_unit_raises(tmp_path):
     )
     source = _source_with(tmp_path, "parallel", graph_text)
     with pytest.raises(UnitError, match="'force'"):
-        acquisition.build_specimen_record(PROFILE, source, "Zx1")
+        _acquisition.build_specimen_record(PROFILE, source, "Zx1")
 
 
 def test_missing_unit_raises(tmp_path):
@@ -318,7 +319,7 @@ def test_missing_unit_raises(tmp_path):
     )
     source = _source_with(tmp_path, "parallel", graph_text)
     with pytest.raises(UnitError, match="has no unit"):
-        acquisition.build_specimen_record(PROFILE, source, "Zx1")
+        _acquisition.build_specimen_record(PROFILE, source, "Zx1")
 
 
 def test_unrecognized_cross_section_name_raises(tmp_path):
@@ -327,7 +328,7 @@ def test_unrecognized_cross_section_name_raises(tmp_path):
     graph_text = text.replace("pmdao-tto-tt-S355-1_crossSectionArea_s3", "pmdao-tto-tt-S355-1_crossSectionArea_x3")
     source = _source_with(tmp_path, "parallel", graph_text)
     with pytest.raises(ValueError, match="UNRECOGNIZED"):
-        acquisition.build_specimen_record(PROFILE, source, "Zx1")
+        _acquisition.build_specimen_record(PROFILE, source, "Zx1")
 
 
 # ---------------------------------------------------------------------------

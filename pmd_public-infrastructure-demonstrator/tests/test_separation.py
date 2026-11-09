@@ -25,8 +25,8 @@ from conftest import PMDCO2_ORIENTATION_FILES
 from rdflib.compare import isomorphic
 from workflow_helpers import PMDCO2, PMDCO2_SOURCE, curve_bytes_for, run_with_stubbed_curves
 
-from pmd_tensile import knowledge_graph as kg
-from pmd_tensile import sources, workflows
+from pmd_tensile import _knowledge_graph as kg
+from pmd_tensile import _sources as sources
 from pmd_tensile.analysis import QUANTITY_KIND_IRIS
 from pmd_tensile.profiles import pmdco3_tto
 

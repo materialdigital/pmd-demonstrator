@@ -29,10 +29,11 @@ from workflow_helpers import (
     stub_fetch,
 )
 
-from pmd_tensile import acquisition, exploration, sources, workflows
+from pmd_tensile import _acquisition, _orchestration, exploration, workflows
+from pmd_tensile import _sources as sources
+from pmd_tensile._analysis import analyse_curve
 from pmd_tensile.analysis import (
     CurveAnalysis,
-    analyse_curve,
     elongation_after_fracture,
     reduction_of_area,
     s0_scatter,
@@ -63,7 +64,7 @@ def differing_fields(a: CurveAnalysis, b: CurveAnalysis) -> list[str]:
 
 def reference_analysis(profile_id: str, source: dict, specimen_id: str, data: bytes):
     """``analyse_curve`` and the metadata results on the parsed arrays, outside any workflow."""
-    record = acquisition.build_specimen_record(profile_id, source, specimen_id)
+    record = _acquisition.build_specimen_record(profile_id, source, specimen_id)
     curve = sources.parse_curve_csv(data, record.curve_columns, source_url=record.curve_url)
     a = elongation_after_fracture(record.l0_mm, record.lu_mm)
     z = reduction_of_area(record.s0_mm2, record.su_mm2)
@@ -131,7 +132,7 @@ def pmdco2_run(pmdco2_curves):
 
 
 def test_exploration_lists_the_ten_specimens():
-    run = workflows.build_exploration_workflow().run(profile_id=PMDCO2, source=PMDCO2_SOURCE)
+    run = _orchestration.build_exploration_workflow().run(profile_id=PMDCO2, source=PMDCO2_SOURCE)
     assert run.outputs.checked_profile_id == PMDCO2
     ids = run.outputs.specimen_ids
     assert len(ids) == 10
@@ -141,7 +142,7 @@ def test_exploration_lists_the_ten_specimens():
 
 def test_exploration_fails_early_on_a_profile_mismatch():
     with pytest.raises(exploration.ConformanceError, match=PMDCO3):
-        workflows.build_exploration_workflow().run(profile_id=PMDCO3, source=PMDCO2_SOURCE)
+        _orchestration.build_exploration_workflow().run(profile_id=PMDCO3, source=PMDCO2_SOURCE)
 
 
 # ---------------------------------------------------------------------------
@@ -160,7 +161,7 @@ def test_batch_runs_end_to_end(pmdco2_run, pmdco2_curves):
     assert table["orientation"].nunique() == 3
     for sid in SPECIMENS:
         row = table.set_index("specimen_id").loc[sid]
-        record = acquisition.build_specimen_record(PMDCO2, PMDCO2_SOURCE, sid)
+        record = _acquisition.build_specimen_record(PMDCO2, PMDCO2_SOURCE, sid)
         assert row["curve_sha256"] == hashlib.sha256(pmdco2_curves[sid]).hexdigest()
         assert isinstance(row["curve_sha256"], str) and isinstance(row["curve_url"], str)
         assert row["curve_url"] == record.curve_url
@@ -208,7 +209,7 @@ def test_per_specimen_workflow_equals_analyse_curve(pmdco2_curves):
     fetch = stub_fetch(pmdco2_curves)
     with pytest.MonkeyPatch.context() as mp:
         mp.setattr(sources, "fetch_bytes", fetch)
-        run = workflows.build_specimen_node().run(
+        run = _orchestration.build_specimen_node().run(
             profile_id=PMDCO2, source=PMDCO2_SOURCE, specimen_id=sid, curve_locator=None
         )
     record, curve, expected, _, _, _ = reference_analysis(PMDCO2, PMDCO2_SOURCE, sid, pmdco2_curves[sid])
@@ -239,19 +240,19 @@ def _recipe_types(recipe) -> list[str]:
 
 
 def test_recipes_contain_no_flow_controllers():
-    batch = workflows.build_batch_workflow(SPECIMENS)
+    batch = _orchestration.build_batch_workflow(SPECIMENS)
     for recipe in (batch.recipe, workflows.exploration_workflow.flowrep_recipe):
         assert set(_recipe_types(recipe)) <= FLAT_RECIPE_TYPES
 
 
 def test_batch_structure_and_inputs():
-    batch = workflows.build_batch_workflow(SPECIMENS)
+    batch = _orchestration.build_batch_workflow(SPECIMENS)
     specimen_nodes = [label for label in batch.nodes if re.fullmatch(r"specimen_\d+", label)]
     assert specimen_nodes == [f"specimen_{i}" for i in range(len(SPECIMENS))]
     assert {"gather_summaries", "gather_comparisons", "results", "orientation_summary", "comparison"} <= set(
         batch.nodes
     )
-    inputs = workflows.batch_inputs(PMDCO2, PMDCO2_SOURCE, SPECIMENS)
+    inputs = _orchestration.batch_inputs(PMDCO2, PMDCO2_SOURCE, SPECIMENS)
     assert set(inputs) == set(batch.inputs.keys())
     assert inputs == {
         "profile_id": PMDCO2,
@@ -266,7 +267,7 @@ def test_batch_structure_and_inputs():
 
 def test_builders_reject_bad_specimen_lists(pmdco2_curves):
     with pytest.raises(ValueError, match="at least one"):
-        workflows.build_batch_workflow([])
+        _orchestration.build_batch_workflow([])
     with pytest.raises(LookupError, match="Zq9"):
         run_with_stubbed_curves(pmdco2_curves, PMDCO2, PMDCO2_SOURCE, specimen_ids=["Zx1", "Zq9"])
 
@@ -287,8 +288,8 @@ def test_pmdco2_and_pmdco3_give_identical_analysis_for_identical_curve_bytes(tmp
     curves = curve_bytes_for(PARITY_SPECIMENS)
     pmdco3_source = pmdco3_twin_of_pmdco2(PARITY_SPECIMENS, tmp_path)
     for sid in PARITY_SPECIMENS:  # the neutral records agree on what the analysis sees
-        r2 = acquisition.build_specimen_record(PMDCO2, PMDCO2_SOURCE, sid)
-        r3 = acquisition.build_specimen_record(PMDCO3, pmdco3_source, sid)
+        r2 = _acquisition.build_specimen_record(PMDCO2, PMDCO2_SOURCE, sid)
+        r3 = _acquisition.build_specimen_record(PMDCO3, pmdco3_source, sid)
         for field in ("s0_mm2", "cross_section_measurements_mm2", "l0_mm", "lu_mm", "su_mm2", "orientation"):
             assert getattr(r2, field) == getattr(r3, field), (sid, field)
         assert r2.rate_switch_strain == pytest.approx(r3.rate_switch_strain, rel=1e-12)

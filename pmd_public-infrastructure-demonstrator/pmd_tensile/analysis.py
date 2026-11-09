@@ -40,8 +40,10 @@ result dataclasses carry no quantity kind.
 
 Step nodes (flowrep ``@fr.atomic``; each is also a plain, directly callable function)
 -------------------------------------------------------------------------------------
-Curve analysis, in the M5 bootstrap order. :func:`analyse_curve` is exactly
-this composition, so a workflow wiring the same nodes gives the same numbers.
+Curve analysis, in the M5 bootstrap order. ``analyse_curve`` (a plain
+function in the private module ``pmd_tensile._analysis``, so that sim_atlas
+does not catalogue it as a node) is exactly this composition, so a workflow
+wiring the same nodes gives the same numbers.
 
 1. :func:`count_dropped_samples` (M1): checks lengths; non-finite counts per channel.
 2. :func:`extensometer_validity` (M1, M2, M3): ``k_ext`` and the end checks.
@@ -1617,46 +1619,5 @@ def assemble_curve_analysis(
             "fm": maximum.i_m,
             "ag_band": elongation.band,
         },
-    )
-    return analysis
-
-
-# ---------------------------------------------------------------------------
-# Composition
-# ---------------------------------------------------------------------------
-
-
-def analyse_curve(
-    force_n,
-    strain,
-    crosshead_mm,
-    s0_mm2: float,
-    l0_mm: float,
-    *,
-    a_percent: float | None = None,
-    rate_switch_strain: float | None = None,
-    params: AnalysisParameters | None = None,
-) -> CurveAnalysis:
-    """Analyse one curve (M1-M12, M15-M16) in the M5 bootstrap order.
-
-    Arrays may contain NaN (per-channel handling, M1). ``a_percent`` (A from
-    metadata) enables the M3 end check; ``rate_switch_strain`` (ratio) only
-    sets ``near_rate_switch`` flags. This is a plain composition of the step
-    nodes listed in the module docstring.
-    """
-    _check_s0(s0_mm2)
-    dropped_samples = count_dropped_samples(force_n, strain, crosshead_mm)
-    extensometer, k_ext, _ = extensometer_validity(
-        strain, crosshead_mm, l0_mm, a_percent, rate_switch_strain, params
-    )
-    bootstrap, _ = bootstrap_fit(force_n, strain, s0_mm2, k_ext, params)
-    yielding, _, _, _ = yield_analysis(force_n, strain, s0_mm2, k_ext, bootstrap, rate_switch_strain, params)
-    elastic, _, _ = final_elastic_fit(force_n, strain, s0_mm2, k_ext, bootstrap, yielding, params)
-    proof, _ = proof_strength(force_n, strain, s0_mm2, k_ext, elastic, yielding, rate_switch_strain, params)
-    maximum, _, _ = maximum_force(force_n, s0_mm2, yielding)
-    elongation, _, _ = elongation_at_maximum_force(force_n, strain, k_ext, bootstrap, elastic, maximum, params)
-    sensitivity = window_sensitivity(force_n, strain, s0_mm2, k_ext, elastic, maximum, elongation, params)
-    analysis = assemble_curve_analysis(
-        dropped_samples, extensometer, bootstrap, yielding, elastic, proof, maximum, elongation, sensitivity
     )
     return analysis

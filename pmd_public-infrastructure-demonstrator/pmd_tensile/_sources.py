@@ -18,6 +18,10 @@ they are never merged into one graph, because some files reuse node labels
 Raw curves and remote Turtle files are fetched with a separate, token-free
 praeco ``HttpClient`` bound to the URL's host, never with an authenticated
 service client. Downloads stay in memory; nothing is written to disk.
+
+The module holds no nodes. It is private so that sim_atlas does not catalogue
+its plain functions as workflow nodes; notebooks reach the functions they need
+through :mod:`pmd_tensile.demo`.
 """
 
 from __future__ import annotations

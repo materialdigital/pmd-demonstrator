@@ -8,6 +8,10 @@ functions, ports and data; it is independent of the ontology that describes
 the tensile-test *data* (the profile). Analysis ports carry only units and
 generic QUDT quantity kinds (decision D4).
 
+The module holds no nodes. It is private so that sim_atlas does not catalogue
+its plain functions as workflow nodes; notebooks reach them through
+:mod:`pmd_tensile.demo`.
+
 Graphs
 ------
 - :func:`recipe_knowledge_graph`: the workflow *recipe* (what will run).
@@ -29,7 +33,7 @@ Graphs
     graph without results.
 
   Credentials never enter either graph: they are not node inputs or outputs
-  (decision D5, :mod:`pmd_tensile.sources`).
+  (decision D5, ``pmd_tensile._sources``).
 
 - :func:`validate_knowledge_graph`: ``semantikon.validate_values`` (OWL-RL
   reasoning and SHACL), returning ``(conforms, report text)``.

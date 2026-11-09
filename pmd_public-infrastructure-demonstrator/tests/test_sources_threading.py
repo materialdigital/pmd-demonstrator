@@ -2,7 +2,7 @@
 
 pyiron_workflow runs nodes in a thread pool. rdflib's SPARQL grammar is
 module-level pyparsing state, and one overlap of ``Graph.query`` calls can break
-a grammar element for the life of the process, so ``pmd_tensile.sources``
+a grammar element for the life of the process, so ``pmd_tensile._sources``
 serializes them with a lock.
 
 - The first test checks the lock directly: at most one ``Graph.query`` at a time.
@@ -26,7 +26,7 @@ import rdflib
 from conftest import DEMO_DIR, PMDCO2_ORIENTATION_FILES
 from rdflib.plugins.sparql import prepareQuery
 
-from pmd_tensile import sources
+from pmd_tensile import _sources as sources
 
 N_THREADS = 10
 
@@ -99,7 +99,7 @@ socket.socket.connect = refuse_connection
 demo_dir, *locations = sys.argv[1:]
 sys.path.insert(0, demo_dir)
 
-from pmd_tensile import sources
+from pmd_tensile import _sources as sources
 from pmd_tensile.profiles import get_profile
 from pmd_tensile.profiles.base import SelectQuery
 

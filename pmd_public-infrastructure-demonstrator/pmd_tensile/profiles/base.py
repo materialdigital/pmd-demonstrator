@@ -29,8 +29,8 @@ from collections.abc import Mapping
 from urllib.parse import quote
 
 from pmd_tensile.contract import CURVE_ROLES, ColumnSpec
-from pmd_tensile.profiles.units import qudt_unit_symbol
-from pmd_tensile.sources import reject_url_credentials
+from pmd_tensile._sources import reject_url_credentials
+from pmd_tensile.profiles._units import qudt_unit_symbol
 
 QUANTITY_KINDS: dict[str, str] = {
     # specimen geometry (analysis inputs)
