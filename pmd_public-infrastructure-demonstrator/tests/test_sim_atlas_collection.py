@@ -1,4 +1,13 @@
-"""sim_atlas would catalogue exactly the nodes and macros of pmd_tensile (decisions D5.1, D6).
+"""sim_atlas module and filesystem mode collect only nodes, macros and dataclass types (D5.1, D6).
+
+Checked: module mode on every public module and on the packages
+``pmd_tensile`` and ``pmd_tensile.profiles``, and filesystem mode on
+``pmd_tensile``, collect exactly the listed nodes, macros and dataclass types,
+and no helper. Import mode (``recursive="import"``) is not imitated: D6 does
+not require it, and it walks every imported submodule, ``_``-prefixed ones
+included (collector.py:53-56 come before the ``_`` check), so on
+``pmd_tensile`` it would collect the private helpers that D5.1 keeps out of
+the public modules.
 
 sim_atlas is not installed. The test imitates the collection code of the
 sim_atlas toolkit at commit 753205bd61ef821517f5ea26bd5c564730e6a114
@@ -142,6 +151,17 @@ OTHER_PUBLIC_MODULES: dict[str, dict[str, str]] = {
 }
 """The other modules that filesystem mode reaches, and what it collects from them."""
 
+PACKAGES: dict[str, dict[str, str]] = {
+    PACKAGE: {},
+    "pmd_tensile.profiles": dict.fromkeys(("CurveLocator", "OntologyProfile", "SelectQuery"), DATACLASS),
+}
+"""Packages, whose ``__init__.py`` filesystem mode skips, and what module mode on them collects.
+
+``pmd_tensile.profiles`` re-exports the registry functions from the private
+top-level module ``pmd_tensile._profile_registry``; the dataclass types match
+the prefix ``pmd_tensile.profiles`` because they come from ``profiles.base``.
+"""
+
 
 # ---------------------------------------------------------------------------
 # Imitation of sim_atlas_toolkit.collector.collect_objects
@@ -207,6 +227,23 @@ def test_module_mode_collects_exactly_the_expected_nodes_and_macros():
         assert collected == expected, module
 
 
+def test_module_mode_on_the_packages_collects_no_helper():
+    for package, expected in PACKAGES.items():
+        collected = _kinds(package)
+        helpers = {name: kind for name, kind in collected.items() if kind in (FUNCTION, CLASS)}
+        assert not helpers, f"{package} would catalogue helpers as nodes: {helpers}"
+        assert collected == expected, package
+
+
+def test_profile_registry_is_still_public_in_profiles():
+    from pmd_tensile import _profile_registry, profiles
+
+    for name in ("register_profile", "get_profile", "available_profiles"):
+        assert name in profiles.__all__
+        assert getattr(profiles, name) is getattr(_profile_registry, name)
+    assert profiles.available_profiles() == ["pmdco2-tto", "pmdco3-tto"]
+
+
 def test_every_public_function_in_a_node_module_is_a_node_or_macro():
     for module in NODE_MODULES:
         for name, value in _collect_module(module):
@@ -242,14 +279,14 @@ def test_every_collected_object_has_a_sim_atlas_parser():
     Anything else would make sim_atlas raise (parser.py:26-30), e.g. a
     default-parameter instance, or be catalogued as a node (a plain function).
     """
-    modules = sorted({*NODE_MODULES, *_filesystem_modules(PACKAGE)})
+    modules = sorted({*NODE_MODULES, *PACKAGES, *_filesystem_modules(PACKAGE)})
     collected = {
         f"{module}.{name}": _kind(value) for module in modules for name, value in _collect_module(module)
     }
     assert collected  # not vacuous
     unparsable = {name: kind for name, kind in collected.items() if kind not in PARSABLE}
     assert not unparsable, f"sim_atlas has no parser for: {unparsable}"
-    for expected in (*NODE_MODULES.values(), *OTHER_PUBLIC_MODULES.values()):
+    for expected in (*NODE_MODULES.values(), *OTHER_PUBLIC_MODULES.values(), *PACKAGES.values()):
         assert set(expected.values()) <= set(PARSABLE)
 
 
