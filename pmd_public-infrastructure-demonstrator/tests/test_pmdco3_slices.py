@@ -7,7 +7,8 @@ full file ``datasets/pmdco3_tto_example.ttl`` and the slices
 
 The checks follow decision D8.6 of the tensile-notebooks plan (modelling
 approved at gate G1) and acceptance criterion 4. They use rdflib only: the
-script runs in a subprocess, and nothing is read from the network. Expected
+script runs in a subprocess (its write helper is also imported directly),
+and nothing is read from the network. Expected
 values (tests, orientations, counts, the curve-table Turtle) are written out
 here instead of being derived with the script's own rules.
 """
@@ -15,6 +16,8 @@ here instead of being derived with the script's own rules.
 from __future__ import annotations
 
 import hashlib
+import importlib.util
+import os
 import re
 import shutil
 import subprocess
@@ -319,6 +322,69 @@ def test_script_refuses_to_overwrite_its_input(tmp_path):
     assert "overwrite the input" in result.stderr
     assert hashlib.sha256(pinned_copy.read_bytes()).hexdigest() == ORIGINAL_SHA256
     assert sorted(path.name for path in tmp_path.iterdir()) == [FILE_NAMES["full"]]
+
+
+def test_script_refuses_to_overwrite_its_input_under_another_name(tmp_path):
+    """The same file under an output name (here a hard link; on a case-insensitive file system also a
+    name in another letter case) is refused, although its resolved path differs from the input's."""
+    pinned_copy = tmp_path / "input.ttl"
+    shutil.copyfile(ORIGINAL, pinned_copy)
+    out = tmp_path / "out"
+    out.mkdir()
+    alias = out / FILE_NAMES["perpendicular"]
+    try:
+        os.link(pinned_copy, alias)
+    except OSError as error:
+        pytest.skip(f"no hard links here: {error}")
+    result = subprocess.run(
+        [sys.executable, str(SCRIPT), "--input", str(pinned_copy), "--output-dir", str(out)],
+        capture_output=True,
+        text=True,
+        check=False,
+    )
+    assert result.returncode == 1
+    assert "overwrite the input" in result.stderr
+    assert hashlib.sha256(pinned_copy.read_bytes()).hexdigest() == ORIGINAL_SHA256
+    assert os.path.samefile(alias, pinned_copy)
+    assert sorted(path.name for path in out.iterdir()) == [alias.name]
+
+
+def _script_module():
+    spec = importlib.util.spec_from_file_location("slice_pmdco3", SCRIPT)
+    module = importlib.util.module_from_spec(spec)
+    sys.modules[spec.name] = module  # the script's dataclasses look their module up while it executes
+    try:
+        spec.loader.exec_module(module)
+    finally:
+        del sys.modules[spec.name]
+    return module
+
+
+class _FailingGraph:
+    def serialize(self, format):
+        raise RuntimeError("serialisation failed")
+
+
+def test_writes_replace_no_file_before_every_graph_is_written(tmp_path):
+    script = _script_module()
+    targets = [tmp_path / name for name in FILE_NAMES.values()]
+    for target in targets:
+        target.write_text(f"old {target.name}\n", encoding="utf-8")
+    graph = Graph()
+    graph.add((URIRef(ABOX + "a"), RDFS.label, Literal("new")))
+    # The failure comes last, after three graphs have been written to temporary files.
+    graphs = dict(zip(targets, [graph, graph, graph, _FailingGraph()]))
+    with pytest.raises(RuntimeError, match="serialisation failed"):
+        script.write_turtle_files(graphs)
+    assert [target.read_text(encoding="utf-8") for target in targets] == [
+        f"old {target.name}\n" for target in targets
+    ]
+    assert sorted(path.name for path in tmp_path.iterdir()) == sorted(FILE_NAMES.values())
+
+    script.write_turtle_files(dict.fromkeys(targets, graph))
+    for target in targets:
+        assert isomorphic(Graph().parse(target, format="turtle"), graph)
+    assert sorted(path.name for path in tmp_path.iterdir()) == sorted(FILE_NAMES.values())
 
 
 # (c) full file composition

@@ -476,24 +476,39 @@ def output_paths(output_dir: Path, input_path: Path) -> dict[str, Path]:
             raise SliceError(f"{path} is outside {output_dir}")
         if path.resolve() == input_resolved:
             raise SliceError(f"refusing to overwrite the input file {input_path}")
+        # The same file under another name, e.g. a hard link, or a different
+        # letter case on a case-insensitive file system (resolve() keeps the case).
+        if path.exists() and input_path.exists() and os.path.samefile(path, input_path):
+            raise SliceError(f"refusing to overwrite the input file {input_path} (same file as {path})")
         paths[key] = path
     return paths
 
 
-def write_turtle(graph: Graph, path: Path) -> None:
-    """Write ``graph`` as Turtle to ``path`` atomically, inside its directory."""
-    data = graph.serialize(format="turtle").encode("utf-8")
-    handle, temporary = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp")
+def write_turtle_files(graphs: dict[Path, Graph]) -> None:
+    """Write each graph as Turtle to its path, replacing no target before all are written.
+
+    Every graph is first serialised to a temporary file next to its target;
+    only then are the targets replaced (``os.replace``, which does not follow
+    a symlink at the target). A failure while serialising or writing leaves
+    every existing target unchanged and removes the temporary files.
+    """
+    # mkstemp creates the files with mode 0600; use the usual mode instead.
+    umask = os.umask(0)
+    os.umask(umask)
+    temporaries: dict[Path, str] = {}
     try:
-        with os.fdopen(handle, "wb") as stream:
-            stream.write(data)
-        # mkstemp creates the file with mode 0600; use the usual mode instead.
-        umask = os.umask(0)
-        os.umask(umask)
-        os.chmod(temporary, 0o666 & ~umask)
-        os.replace(temporary, path)
+        for path, graph in graphs.items():
+            data = graph.serialize(format="turtle").encode("utf-8")
+            handle, temporary = tempfile.mkstemp(dir=path.parent, prefix=f".{path.name}.", suffix=".tmp")
+            temporaries[path] = temporary
+            with os.fdopen(handle, "wb") as stream:
+                stream.write(data)
+            os.chmod(temporary, 0o666 & ~umask)
+        for path, temporary in temporaries.items():
+            os.replace(temporary, path)
     except BaseException:
-        Path(temporary).unlink(missing_ok=True)
+        for temporary in temporaries.values():
+            Path(temporary).unlink(missing_ok=True)
         raise
 
 
@@ -519,9 +534,7 @@ def main(argv: list[str] | None = None) -> int:
     except SliceError as error:
         print(f"error: {error}", file=sys.stderr)
         return 1
-    write_turtle(full, paths["full"])
-    for name, graph in slices.items():
-        write_turtle(graph, paths[name])
+    write_turtle_files({paths["full"]: full, **{paths[name]: graph for name, graph in slices.items()}})
     for key, value in counts.items():
         print(f"{key}: {value}")
     for path in paths.values():
