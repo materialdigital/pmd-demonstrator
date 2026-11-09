@@ -21,8 +21,17 @@ _REGISTRY: dict[str, OntologyProfile] = {}
 
 
 def register_profile(profile: OntologyProfile) -> None:
-    """Register a profile under its ID; an ID can be registered only once."""
-    if profile.profile_id in _REGISTRY:
+    """Register a profile under its ID; an ID can be registered only once.
+
+    Registering the same object again is a no-op, so that reloading
+    :mod:`pmd_tensile.profiles` (``importlib.reload`` or IPython autoreload)
+    works. A different object under an ID that is already registered raises
+    ``ValueError``.
+    """
+    registered = _REGISTRY.get(profile.profile_id)
+    if registered is profile:
+        return
+    if registered is not None:
         raise ValueError(f"profile {profile.profile_id!r} is already registered")
     _REGISTRY[profile.profile_id] = profile
 
