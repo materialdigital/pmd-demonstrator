@@ -42,6 +42,19 @@ from pmd_tensile._orchestration import (
     specimen_input_label,
 )
 from pmd_tensile._parameters import DEFAULT_PARAMETERS, parameter_values, parameters_from_values
+from pmd_tensile._plotting import (
+    curves_overview_figure,
+    elastic_step_figure,
+    format_value,
+    lab_comparison_step_figure,
+    maximum_force_step_figure,
+    orientation_styles,
+    results_overview_figure,
+    specimen_colors,
+    specimen_label,
+    specimen_order,
+    yield_step_figure,
+)
 from pmd_tensile._sources import (
     ONTODOCKER_ADDRESS_ENV,
     ONTODOCKER_TOKEN_ENV,
@@ -101,4 +114,16 @@ __all__ = [
     "validate_knowledge_graph",
     "write_graph",
     "write_turtle",
+    # Figures in the style of the mesh demonstrator (_plotting)
+    "curves_overview_figure",
+    "elastic_step_figure",
+    "format_value",
+    "lab_comparison_step_figure",
+    "maximum_force_step_figure",
+    "orientation_styles",
+    "results_overview_figure",
+    "specimen_colors",
+    "specimen_label",
+    "specimen_order",
+    "yield_step_figure",
 ]
