@@ -235,6 +235,19 @@ def _ontodocker_client() -> OntodockerClient:
     return OntodockerClient(address, token=token)
 
 
+def ontodocker_client() -> OntodockerClient:
+    """The praeco ``OntodockerClient`` of an ``ontodocker`` source, for notebooks.
+
+    For calls that :func:`select` and :func:`ask` do not cover, such as
+    ``client.datasets.list()`` or ``client.datasets.fetch_turtle(name)``.
+    The address and the optional token are read from the environment here,
+    as for every Ontodocker query of this module, so the caller never holds
+    the token. Raises :class:`SourceError` if ``ONTODOCKER_ADDRESS`` is not
+    set.
+    """
+    return _ontodocker_client()
+
+
 # --------------------------------------------------------------------------
 # Token-free downloads and curve parsing
 # --------------------------------------------------------------------------

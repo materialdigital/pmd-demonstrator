@@ -61,6 +61,7 @@ from pmd_tensile._sources import (
     SourceError,
     ask,
     clear_graph_cache,
+    ontodocker_client,
     select,
     validate_source,
 )
@@ -72,6 +73,7 @@ __all__ = [
     "SourceError",
     "ask",
     "clear_graph_cache",
+    "ontodocker_client",
     "select",
     "validate_source",
     # Exploration and acquisition without a workflow (_exploration, _acquisition)

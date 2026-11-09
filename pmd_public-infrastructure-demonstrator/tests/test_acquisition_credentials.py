@@ -174,6 +174,26 @@ def test_the_pinned_and_data_urls_are_accepted(pmdco2_source):
         sources.reject_url_credentials(record.curve_url)
 
 
+def test_demo_builds_the_ontodocker_client_from_the_environment(ontodocker_source):
+    """Notebooks get the client from ``demo``, so they never read the token themselves (T9.1 NR1-1)."""
+    from pmd_tensile import demo
+
+    client = demo.ontodocker_client()
+    assert isinstance(client, _FakeOntodockerClient)
+    assert client.address == ADDRESS and client.token == TOKEN
+
+
+def test_demo_client_without_address_fails_without_echoing_the_token(monkeypatch):
+    from pmd_tensile import demo
+
+    monkeypatch.delenv("ONTODOCKER_ADDRESS", raising=False)
+    monkeypatch.setenv("ONTODOCKER_TOKEN", TOKEN)
+    monkeypatch.setattr(sources, "OntodockerClient", _FakeOntodockerClient)
+    with pytest.raises(sources.SourceError) as error:
+        demo.ontodocker_client()
+    assert TOKEN not in str(error.value)
+
+
 def test_missing_address_fails_without_echoing_the_token(monkeypatch):
     monkeypatch.delenv("ONTODOCKER_ADDRESS", raising=False)
     monkeypatch.setenv("ONTODOCKER_TOKEN", TOKEN)
