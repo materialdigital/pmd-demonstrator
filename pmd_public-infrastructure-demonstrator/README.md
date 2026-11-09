@@ -3,7 +3,7 @@
 This directory holds two parts that share one environment:
 
 - `notebooks/demonstrator.ipynb` uses `praeco` to access Ontodocker and the MaterialDigital Dataportal, query RDF data, and publish datasets and assets.
-- A series of five notebooks on ten tensile tests of S355 steel. It analyses the raw curves with a semantic workflow built from the nodes of the package [`pmd_tensile`](pmd_tensile/) in this directory, on research graphs in two generations of the PMD core ontology (PMDco 2 and PMDco 3 with the Tensile Test Ontology, TTO).
+- A series of five notebooks on ten tensile tests of S355 steel. It analyses the raw curves with a semantic workflow built from the nodes of the package [`pmd_tensile`](pmd_tensile/) in this directory, on research graphs in two generations of the PMD core ontology (PMDco 2 and PMDco 3, both used together with the Tensile Test Ontology, TTO).
 
 ## Notebooks
 
@@ -51,7 +51,7 @@ python -m pip install -e /path/to/praeco
 python -m pip check
 ```
 
-When migrating an existing environment, first remove the old editable package with `python -m pip uninstall courier`. Restart any running notebook kernel after changing the installation.
+Restart any running notebook kernel after changing the installation.
 
 ## Credentials and execution
 
@@ -59,7 +59,7 @@ Set `ONTODOCKER_ADDRESS`, `ONTODOCKER_TOKEN` (if required by the service) and, f
 
 `demonstrator.ipynb` combines local computation, remote queries, and operations that create datasets and upload assets. Review the creation, publication, and cleanup cells before executing them against a service.
 
-The tensile notebooks read only `ONTODOCKER_ADDRESS` and `ONTODOCKER_TOKEN` and print neither. Credentials are never workflow inputs, so they cannot enter results or knowledge graphs. No Dataportal token is needed: notebook 01 reads the two Dataportal records publicly. Each notebook states its execution class; all five are network-read: SPARQL queries and Turtle downloads from Ontodocker, curve CSVs from the public data host, and public Dataportal reads. They create, upload or delete no remote resources. Notebook 04 writes graph files only to a temporary directory that it creates and removes. Each tensile notebook can be run with papermill, e.g. from `notebooks/`: `papermill -k pmd-demonstrator 05-tensile-analysis-overview.ipynb /tmp/05-tensile-analysis-overview.ipynb`.
+The tensile notebooks read only `ONTODOCKER_ADDRESS` and `ONTODOCKER_TOKEN` and print neither. Credentials are never workflow inputs, so they cannot enter results or knowledge graphs; [`tests/test_separation.py`](tests/test_separation.py) checks this with a dummy token. The notebooks get the Ontodocker client from `pmd_tensile.demo.ontodocker_client()` and never read the token themselves. No Dataportal token is needed: notebook 01 reads the two Dataportal records publicly. Each notebook states its execution class; all five are network-read: SPARQL queries and Turtle downloads from Ontodocker, curve CSVs from the public data host, and public Dataportal reads. They create, upload or delete no remote resources. Notebook 04 writes graph files only to a temporary directory that it creates and removes. Each tensile notebook can be run with papermill, a development tool that is not part of `environment.yml` (install it locally, like `pytest`), e.g. from `notebooks/`: `papermill -k pmd-demonstrator 05-tensile-analysis-overview.ipynb /tmp/05-tensile-analysis-overview.ipynb`.
 
 ## What is hosted where
 
@@ -83,7 +83,7 @@ The tensile notebooks read only `ONTODOCKER_ADDRESS` and `ONTODOCKER_TOKEN` and 
 - `profiles`: the ontology profiles `pmdco2-tto` and `pmdco3-tto` (SPARQL queries, unit aliases, conventions) and their registry.
 - **Private helpers** in `_`-prefixed modules: graph sources and the token-free curve download, the plain-function forms of the nodes, building and running the batch workflow (`run_tensile_analysis`), the method parameters, knowledge-graph export and queries, and the figures. Notebooks reach them through the facade `pmd_tensile.demo`.
 
-This layout makes the package ready for collection by [sim_atlas](https://github.com/XzzX/sim_atlas/): [`tests/test_sim_atlas_collection.py`](tests/test_sim_atlas_collection.py) imitates its collector (commit `753205b`) and checks that only nodes, macros and dataclass types are collected, no helper, and that importing the package opens no network connection. The nodes have not been uploaded to a sim_atlas instance.
+This layout prepares the package for collection by [sim_atlas](https://github.com/XzzX/sim_atlas/): [`tests/test_sim_atlas_collection.py`](tests/test_sim_atlas_collection.py) imitates its collector (commit `753205b`) and checks that only nodes, macros and dataclass types are collected, no helper, and that importing the package opens no network connection. The nodes have not been uploaded to a sim_atlas instance, and one gap remains: semantikon stores units and quantity kinds as a flat tuple in the type hint's metadata, while sim_atlas at that commit reads units only from a dictionary, so a catalogue entry would currently lose the units (notebook 03, section 7).
 
 ## Tests
 
