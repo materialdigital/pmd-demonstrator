@@ -366,12 +366,12 @@ def _result_views(result, colors: Mapping[str, str] | None) -> list[_View]:
 
 
 def _result_parameters(result) -> AnalysisParameters:
-    """The analysis parameters a batch run used (its ``parameters`` input), else the defaults."""
-    try:
-        values = result.batch_run.result.input_ports["parameters"].value
-    except (AttributeError, KeyError, TypeError):
-        return DEFAULT_PARAMETERS
-    return parameters_from_values(values)
+    """The analysis parameters the batch run used: its ``parameters`` input (``None``: the defaults).
+
+    No fallback: if the run data have no such input, the figure is not drawn,
+    rather than drawn with parameters the run did not use.
+    """
+    return parameters_from_values(result.batch_run.result.input_ports["parameters"].value)
 
 
 # ---------------------------------------------------------------------------
@@ -563,7 +563,7 @@ def _method_panel(ax, view: _View, params: AnalysisParameters, *, inset: bool = 
         e_mpa, e0 = 1000.0 * view.e_gpa, view.strain_origin
         x_lo, x_hi = 100 * e0 - 0.02, 100 * (e0 + 2.0 * offset + top_value / e_mpa)
         y_hi = top_value + 15.0
-        axins = ax.inset_axes([0.40, 0.40, 0.57, 0.34])
+        axins = ax.inset_axes([0.40, 0.46, 0.57, 0.28])  # above the legend's top edge, tick labels included
         axins.plot(100 * strain[valid], stress[valid], color=view.color, linewidth=1.2)
         if _is_value(lo) and _is_value(hi):
             axins.axhspan(lo, hi, color=view.color, alpha=0.15)
@@ -1130,8 +1130,7 @@ def elastic_step_figure(
     ax_c.set_title("(c) E in each window of the sensitivity grid")
     ax_c.set_xlabel("window / % of the reference stress (nominal: "
                     f"{100 * p.f_lo:.0f}–{100 * p.f_hi:.0f})")
-    ax_c.set_ylabel("E / GPa")
-    _note(ax_c, "horizontal lines: lab E", loc="lower right")
+    ax_c.set_ylabel("E / GPa (horizontal lines: lab E)")  # a note box inside the panel could hide a point
 
     reference = [v for view in views for v in (view.reh_mpa, view.rp02_mpa) if _is_value(v)]
     y_hi = 5.0 * math.ceil((max(reference) + 20.0) / 5.0) if reference else 500.0

@@ -169,6 +169,35 @@ def test_curves_overview_draws_exactly_the_arrays_the_run_used(result):
         np.testing.assert_array_equal(y, curve.force_n[:k][valid] / table.loc[sid, "s0_mm2"])
 
 
+def test_curves_overview_uses_the_offset_of_the_run(result):
+    """A run with offset 0.003 is drawn with its own offset line and Rp markers (T9.1 NR1-7)."""
+    offset_result, _ = run_with_stubbed_curves(
+        curve_bytes_for(SPECIMENS), PMDCO2, PMDCO2_SOURCE, specimen_ids=SPECIMENS,
+        parameters={"offset_plastic_strain": 0.003},
+    )
+    fig = demo.curves_overview_figure(offset_result, method_specimen="Zx1")
+    table = offset_result.results.set_index("specimen_id")
+
+    ax_c = _panel(fig, "(c)")
+    labels = [line.get_label() for line in ax_c.get_lines()]
+    assert "offset line, shifted by 0.3 % plastic strain" in labels
+    (rp_line,) = [line for line in ax_c.get_lines() if line.get_label().startswith("Rp0.2 =")]
+    zx1 = table.loc["Zx1"]
+    x, y = rp_line.get_data()
+    np.testing.assert_allclose(x, [100 * (zx1["rp02_mpa"] / (1000 * zx1["e_gpa"]) + 0.003 + zx1["strain_origin"])])
+    np.testing.assert_allclose(y, [zx1["rp02_mpa"]])
+
+    # (b): one Rp marker per specimen, at Rp/E + 0.003 of shifted strain
+    ax_b = _panel(fig, "(b)")
+    markers = {(round(line.get_xdata()[0], 9), round(line.get_ydata()[0], 9))
+               for line in ax_b.get_lines() if line.get_marker() == _plotting.PROPERTY_MARKERS["Rp0.2"]}
+    expected = {(round(100 * (row["rp02_mpa"] / (1000 * row["e_gpa"]) + 0.003), 9), round(row["rp02_mpa"], 9))
+                for _, row in table.loc[list(SPECIMENS)].iterrows()}
+    assert markers == expected
+    # the default run differs, so the test is not vacuous
+    assert not table["rp02_mpa"].equals(result.results.set_index("specimen_id")["rp02_mpa"])
+
+
 def test_curves_overview_without_a_timestamp_says_so(result):
     fig = demo.curves_overview_figure(result, method_specimen="Zx1")
     assert any("not recorded" in text for text in _legend_texts(fig))
