@@ -20,7 +20,9 @@ dependencies:
   - rdflib
   - python-graphviz
   - pip:
-      # pmd_tensile (pyproject.toml next to this file), editable. The pip step
-      # runs in this file's directory, so "." is that directory wherever the
-      # command is started.
+      # pmd_tensile (pyproject.toml next to this file), editable. "." is
+      # pip's working directory. conda runs pip in this file's directory only
+      # if the file is given as a local path and its directory is writable;
+      # otherwise pip runs where the command is started, so start it from
+      # this directory in that case.
       - -e .
