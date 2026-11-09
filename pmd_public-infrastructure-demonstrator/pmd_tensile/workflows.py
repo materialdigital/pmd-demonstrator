@@ -23,7 +23,9 @@ record's ``rate_switch_strain``.
 
 Workflow inputs are JSON-able only (T1 finding, IC3): ``profile_id`` (str),
 ``source`` (dict, see ``pmd_tensile._sources``), ``curve_locator``
-(dict or ``None``; only for profiles whose graph does not link the curves),
+(dict or ``None``; a non-semantic locator that replaces the graph's curve
+tables, accepted by ``pmdco3-tto`` for the original TTO graph without curve
+tables and rejected by ``pmdco2-tto``; see ``acquisition.get_specimen_record``),
 ``parameters`` (dict or ``None``) and one ``specimen_id_<i>`` (str) per
 specimen. Credentials are never inputs; the Ontodocker access path reads them
 from the environment (decision D5).

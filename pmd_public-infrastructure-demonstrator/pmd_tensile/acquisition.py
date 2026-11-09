@@ -25,9 +25,14 @@ def get_specimen_record(
 ) -> SpecimenRecord:
     """Neutral record of one specimen: geometry, orientation, notes, curve link.
 
-    ``curve_locator`` is only for profiles whose graph does not link curves
-    (a visibly non-semantic override of the profile's default locator, see
-    ``profiles.base.CurveLocator``); it is rejected for semantic profiles.
+    A semantic profile reads the curve link from the graph's curve tables.
+    ``curve_locator`` is a visibly non-semantic URL template with column
+    meanings (``profiles.base.CurveLocator``). A profile with
+    ``accepts_curve_locator`` (``pmdco3-tto``) also accepts one, which then
+    replaces the graph's curve tables; this is needed for the original TTO
+    graph, which has none, and a run records it as an input in its knowledge
+    graph. Other semantic profiles (``pmdco2-tto``) reject it; a profile
+    without semantic curve links uses it instead of its own locator.
     """
     record = build_specimen_record(profile_id, source, specimen_id, curve_locator)
     return record
