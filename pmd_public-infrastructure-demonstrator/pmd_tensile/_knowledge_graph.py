@@ -35,7 +35,7 @@ Graphs
   Credentials never enter either graph: they are not node inputs or outputs
   (decision D5, ``pmd_tensile._sources``).
 
-- :func:`validate_knowledge_graph`: ``semantikon.validate_values`` (OWL-RL
+- :func:`validate_knowledge_graph`: ``semantikon.validate_values`` (RDFS
   reasoning and SHACL), returning ``(conforms, report text)``.
 
 Saving and display
@@ -286,7 +286,9 @@ def run_knowledge_graph(run, *, hash_data: bool = True, remove_data: bool = Fals
 def validate_knowledge_graph(graph: rdflib.Graph) -> tuple[bool, str]:
     """``semantikon.validate_values`` on ``graph``: ``(conforms, report text)``.
 
-    Runs on a copy, so ``graph`` is not changed by the OWL-RL reasoner.
+    Runs on a copy, so ``graph`` is not changed by the reasoner. semantikon
+    1.4.4 expands the copy with RDFS semantics (``DeductiveClosure(RDFS_Semantics)``),
+    although its own docstring mentions an OWL RL reasoner.
     """
     result = semantikon.validate_values(graph, copy_graph=True)
     conforms = bool(result[0])

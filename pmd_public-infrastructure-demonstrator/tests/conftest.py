@@ -58,7 +58,7 @@ def pytest_addoption(parser):
         "--run-network",
         action="store_true",
         default=False,
-        help="run tests marked 'network' (read-only fetches of pinned public files)",
+        help="run tests marked 'network' (only the check that the connection block is lifted, loopback only)",
     )
     parser.addoption(
         "--run-statistical",
