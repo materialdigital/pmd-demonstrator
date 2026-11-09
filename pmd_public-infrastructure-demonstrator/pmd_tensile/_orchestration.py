@@ -17,6 +17,7 @@ import flowrep as fr
 import pandas as pd
 import pyiron_workflow as pwf
 
+from pmd_tensile._parameters import parameter_values, parameters_from_values
 from pmd_tensile.analysis import summarize_by_group
 from pmd_tensile.workflows import (
     GROUP_COLUMN,
@@ -36,7 +37,9 @@ def build_exploration_workflow(label: str = "exploration"):
 def build_specimen_node(label: str = "specimen"):
     """One per-specimen workflow as a runnable node.
 
-    Run with ``.run(profile_id=..., source=..., specimen_id=..., curve_locator=None)``.
+    Run with ``.run(profile_id=..., source=..., specimen_id=...)``, optionally
+    with ``curve_locator=...`` and ``parameters=...`` (the dictionary form of
+    the analysis parameters; ``None`` means the method defaults).
     """
     return pwf.node(specimen_workflow, label)
 
@@ -52,7 +55,7 @@ def build_batch_workflow(specimen_ids: Sequence[str], label: str = "tensile_batc
     The IDs only fix the number of branches; their values are workflow inputs
     ``specimen_id_<i>`` (see :func:`batch_inputs`), so the recipe holds no
     data-specific values. Inputs: ``profile_id``, ``source``,
-    ``curve_locator`` and ``specimen_id_0`` ... Outputs: ``results``
+    ``curve_locator``, ``parameters`` and ``specimen_id_0`` ... Outputs: ``results``
     (one row per specimen), ``orientation_summary`` (method-spec §12),
     ``comparison`` (all specimens, method-spec §13) and ``summaries`` (the
     gathered rows).
@@ -65,6 +68,7 @@ def build_batch_workflow(specimen_ids: Sequence[str], label: str = "tensile_batc
     wf.create_input("profile_id", type_hint=str)
     wf.create_input("source", type_hint=dict)
     wf.create_input("curve_locator")
+    wf.create_input("parameters")
     gather_summaries = pwf.node(fr.schemas.TransformNto1(n).recipe, "gather_summaries")
     gather_comparisons = pwf.node(fr.schemas.TransformNto1(n).recipe, "gather_comparisons")
     wf.add_node(gather_summaries, gather_comparisons)
@@ -75,6 +79,7 @@ def build_batch_workflow(specimen_ids: Sequence[str], label: str = "tensile_batc
         wf.connect(wf.inputs.profile_id, node.inputs.profile_id)
         wf.connect(wf.inputs.source, node.inputs.source)
         wf.connect(wf.inputs.curve_locator, node.inputs.curve_locator)
+        wf.connect(wf.inputs.parameters, node.inputs.parameters)
         item = fr.schemas.TransformNto1.input_label(i)
         wf.connect(node.outputs.summary, gather_summaries.inputs[item])
         wf.connect(node.outputs.comparison, gather_comparisons.inputs[item])
@@ -99,12 +104,19 @@ def batch_inputs(
     source: Mapping,
     specimen_ids: Sequence[str],
     curve_locator: Mapping | None = None,
+    parameters: Mapping | None = None,
 ) -> dict:
-    """Keyword inputs for running a workflow from :func:`build_batch_workflow`."""
+    """Keyword inputs for running a workflow from :func:`build_batch_workflow`.
+
+    ``parameters`` (the dictionary form of the analysis parameters, ``None``
+    for the method defaults) is validated here and passed on with *all* field
+    values, so the run's knowledge graph records the complete set used.
+    """
     inputs = {
         "profile_id": str(profile_id),
         "source": dict(source),
         "curve_locator": None if curve_locator is None else dict(curve_locator),
+        "parameters": parameter_values(parameters_from_values(parameters)),
     }
     for i, specimen_id in enumerate(specimen_ids):
         inputs[specimen_input_label(i)] = str(specimen_id)
@@ -137,12 +149,16 @@ def run_tensile_analysis(
     curve_locator: Mapping | None = None,
     *,
     specimen_ids: Sequence[str] | None = None,
+    parameters: Mapping | None = None,
 ) -> TensileAnalysis:
     """Run both stages: exploration, then the batch over the listed specimens.
 
     ``specimen_ids`` optionally restricts the batch to a subset of the listed
     IDs (in the given order); an ID not listed by the exploration raises.
+    ``parameters`` is the dictionary form of the analysis parameters (missing
+    keys keep the method defaults); it is validated before anything runs.
     """
+    parameters_from_values(parameters)  # fail early on invalid parameters
     exploration_node = build_exploration_workflow()
     exploration_run = exploration_node.run(profile_id=profile_id, source=dict(source))
     listed = [str(specimen_id) for specimen_id in exploration_run.outputs.specimen_ids]
@@ -154,7 +170,7 @@ def run_tensile_analysis(
         if unknown:
             raise LookupError(f"specimen IDs not described in the source: {unknown}; listed: {listed}")
     batch = build_batch_workflow(selected)
-    batch_run = batch.run(**batch_inputs(profile_id, source, selected, curve_locator))
+    batch_run = batch.run(**batch_inputs(profile_id, source, selected, curve_locator, parameters))
     return TensileAnalysis(
         profile_id=str(profile_id),
         specimen_ids=tuple(selected),

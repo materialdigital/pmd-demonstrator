@@ -32,6 +32,7 @@ from workflow_helpers import (
 from pmd_tensile import _acquisition, _orchestration, exploration, workflows
 from pmd_tensile import _sources as sources
 from pmd_tensile._analysis import analyse_curve
+from pmd_tensile._parameters import parameter_values
 from pmd_tensile.analysis import (
     CurveAnalysis,
     elongation_after_fracture,
@@ -258,6 +259,7 @@ def test_batch_structure_and_inputs():
         "profile_id": PMDCO2,
         "source": PMDCO2_SOURCE,
         "curve_locator": None,
+        "parameters": parameter_values(),  # all method defaults, recorded in the run graph
         "specimen_id_0": "Zx1",
         "specimen_id_1": "Zy1",
         "specimen_id_2": "Zd2",

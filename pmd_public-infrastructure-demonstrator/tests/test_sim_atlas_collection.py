@@ -30,10 +30,14 @@ does):
   (parsers/dataclass_node.py:239, 279-314).
 - legacy pyiron_workflow node classes only for pyiron_workflow < 0.18
   (parsers/pyiron_workflow.py:113-136); this package uses 0.20.3.
+- anything else, e.g. an instance such as a default-parameter object whose
+  class is defined in the module (so its ``__module__`` matches): no parser,
+  so sim_atlas raises.
 
-So the public modules may contain nodes, macros, dataclass types and the
-constants listed below, and no plain function or other class. Helpers live in
-``_``-prefixed modules and reach notebooks through ``pmd_tensile.demo``.
+So every object collected from the public modules must be a node, a macro or
+a dataclass type. Constants that sim_atlas skips (strings, tuples, dicts:
+no ``__module__``) may stay; helpers and instances live in ``_``-prefixed
+modules and reach notebooks through ``pmd_tensile.demo``.
 """
 
 from __future__ import annotations
@@ -61,6 +65,8 @@ DATACLASS = "dataclass type"
 INSTANCE = "instance"
 FUNCTION = "plain function"
 CLASS = "other class"
+PARSABLE = (ATOMIC, MACRO, DATACLASS)
+"""The kinds a sim_atlas parser accepts (FUNCTION would be mistaken for a node)."""
 
 ANALYSIS_DATACLASSES = (
     "AnalysisParameters",
@@ -108,12 +114,9 @@ NODE_MODULES: dict[str, dict[str, str]] = {
         "compare_with_reported": ATOMIC,
         "summarize_by_group": ATOMIC,
         **dict.fromkeys(ANALYSIS_DATACLASSES, DATACLASS),
-        # The method defaults used in node signatures. An instance of a class
-        # defined in this module, so its __module__ matches; no sim_atlas parser
-        # accepts an instance (parser.py:26-30).
-        "DEFAULT_PARAMETERS": INSTANCE,
     },
     "pmd_tensile.workflows": {
+        "analysis_parameters": ATOMIC,
         "curve_channels": ATOMIC,
         "specimen_geometry": ATOMIC,
         "percent_value": ATOMIC,
@@ -126,7 +129,7 @@ NODE_MODULES: dict[str, dict[str, str]] = {
         "specimen_workflow": MACRO,
     },
 }
-"""What module mode collects from each node module: nodes, macros and the types they need."""
+"""What module mode collects from each node module: nodes, macros and the dataclass types they need."""
 
 OTHER_PUBLIC_MODULES: dict[str, dict[str, str]] = {
     "pmd_tensile.contract": dict.fromkeys(
@@ -233,6 +236,23 @@ def test_filesystem_mode_collects_no_helper():
     assert collected == expected
 
 
+def test_every_collected_object_has_a_sim_atlas_parser():
+    """Module and filesystem mode collect only atomic recipes, workflow recipes and dataclass types.
+
+    Anything else would make sim_atlas raise (parser.py:26-30), e.g. a
+    default-parameter instance, or be catalogued as a node (a plain function).
+    """
+    modules = sorted({*NODE_MODULES, *_filesystem_modules(PACKAGE)})
+    collected = {
+        f"{module}.{name}": _kind(value) for module in modules for name, value in _collect_module(module)
+    }
+    assert collected  # not vacuous
+    unparsable = {name: kind for name, kind in collected.items() if kind not in PARSABLE}
+    assert not unparsable, f"sim_atlas has no parser for: {unparsable}"
+    for expected in (*NODE_MODULES.values(), *OTHER_PUBLIC_MODULES.values()):
+        assert set(expected.values()) <= set(PARSABLE)
+
+
 def test_demo_facade_defines_nothing_and_resolves_every_name():
     from pmd_tensile import demo
 
@@ -241,8 +261,17 @@ def test_demo_facade_defines_nothing_and_resolves_every_name():
         value = getattr(demo, name)
         module = getattr(value, "__module__", None)
         assert module != demo.__name__, name
-        if module is not None and module.startswith(PACKAGE + "."):
+        if module is None or not module.startswith(PACKAGE + "."):
+            continue
+        if inspect.isfunction(value) or isinstance(value, type):
             assert module.split(".")[-1].startswith("_"), f"{name} comes from public {module}"
+        else:
+            # An instance reports its class's module (e.g. DEFAULT_PARAMETERS:
+            # pmd_tensile.analysis); that public module must not expose it,
+            # otherwise sim_atlas would collect it there.
+            public = importlib.import_module(module)
+            exposed = [key for key, item in vars(public).items() if item is value and not key.startswith("_")]
+            assert not exposed, f"{name} is public in {module} as {exposed}"
     public = {name for name in vars(demo) if not name.startswith("_") and name != "annotations"}
     assert public == set(demo.__all__)
 

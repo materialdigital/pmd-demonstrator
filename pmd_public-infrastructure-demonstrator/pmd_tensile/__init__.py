@@ -30,6 +30,8 @@ Helpers for notebooks, re-exported by ``demo``:
   curve download, ``analyse_curve``).
 - ``_orchestration``: the batch workflow and
   ``run_tensile_analysis`` (both stages).
+- ``_parameters``: the default analysis parameters and their JSON-able
+  dictionary form, the ``parameters`` input of the workflows.
 - ``_knowledge_graph``: semantikon knowledge-graph export, validation, Turtle
   helpers and example SPARQL queries.
 

@@ -23,11 +23,19 @@ record's ``rate_switch_strain``.
 
 Workflow inputs are JSON-able only (T1 finding, IC3): ``profile_id`` (str),
 ``source`` (dict, see ``pmd_tensile._sources``), ``curve_locator``
-(dict or ``None``; only for profiles whose graph does not link the curves) and
-one ``specimen_id_<i>`` (str) per specimen. The analysis parameters are the
-method defaults (:data:`pmd_tensile.analysis.DEFAULT_PARAMETERS`) and are
-not exposed as workflow inputs. Credentials are never inputs; the Ontodocker
-access path reads them from the environment (decision D5).
+(dict or ``None``; only for profiles whose graph does not link the curves),
+``parameters`` (dict or ``None``) and one ``specimen_id_<i>`` (str) per
+specimen. Credentials are never inputs; the Ontodocker access path reads them
+from the environment (decision D5).
+
+``parameters`` holds the method parameters (decision D4) as a dictionary of
+:class:`~pmd_tensile.analysis.AnalysisParameters` field values; missing keys
+keep the method defaults, and ``None`` means all defaults (the form is
+described in ``pmd_tensile._parameters``). The node :func:`analysis_parameters`
+validates and converts it, and passes the dataclass to every analysis node
+that takes ``params``, so a run's knowledge graph records the values used
+(as the value of that node's output, and, for the batch, as the workflow
+input, which ``batch_inputs`` fills with all field values).
 
 Node roles (used by ``pmd_tensile._knowledge_graph``):
 
@@ -35,19 +43,21 @@ Node roles (used by ``pmd_tensile._knowledge_graph``):
   :mod:`pmd_tensile.acquisition`;
 - ontology-agnostic analysis: :mod:`pmd_tensile.analysis`;
 - ontology-agnostic contract adapters in this module
-  (:func:`curve_channels`, :func:`specimen_geometry`, :func:`percent_value`,
+  (:func:`analysis_parameters`, :func:`curve_channels`,
+  :func:`specimen_geometry`, :func:`percent_value`,
   :func:`computed_properties`, :func:`specimen_summary`,
   :func:`summary_quantities`, :func:`results_table`,
-  :func:`comparison_table`): they only unpack or collect the neutral contract
-  dataclasses and analysis results, and give the arrays and scalars their
-  unit annotations;
+  :func:`comparison_table`): they only convert the JSON-able parameters,
+  unpack or collect the neutral contract dataclasses and analysis results, and
+  give the arrays and scalars their unit annotations;
 - workflow compositions: :func:`exploration_workflow`, :func:`specimen_workflow`.
 
 Stage nodes
 -----------
 - Exploration: ``check_conformance`` -> ``list_specimens``.
-- Per specimen (``specimen_<i>``): ``get_specimen_record``,
-  ``get_reported_properties``, ``fetch_curve``; ``curve_channels``,
+- Per specimen (``specimen_<i>``): ``analysis_parameters``;
+  ``get_specimen_record``, ``get_reported_properties``, ``fetch_curve``;
+  ``curve_channels``,
   ``specimen_geometry``; ``check_time_order``, ``elongation_after_fracture``
   (A), ``reduction_of_area`` (Z), ``s0_scatter``, ``percent_value``;
   ``count_dropped_samples``, ``extensometer_validity``, ``bootstrap_fit``,
@@ -71,9 +81,12 @@ private module ``pmd_tensile._orchestration``; notebooks reach them through
 - ``build_specimen_node`` -> a node for one specimen.
 - ``build_batch_workflow`` (``specimen_ids``) -> ``pwf.Workflow``.
 - ``batch_inputs`` -> the keyword inputs for running the batch workflow.
-- ``run_tensile_analysis`` (``profile_id``, ``source``, ``curve_locator=None``)
-  -> ``TensileAnalysis``: runs both stages and returns the run objects
-  and the result tables.
+- ``run_tensile_analysis`` (``profile_id``, ``source``, ``curve_locator=None``,
+  ``*``, ``specimen_ids=None``, ``parameters=None``) -> ``TensileAnalysis``:
+  runs both stages and returns the run objects and the result tables.
+- ``DEFAULT_PARAMETERS``, ``parameter_values`` and ``parameters_from_values``
+  (``pmd_tensile._parameters``): the method defaults and the conversion
+  between the dataclass and the dictionary form.
 """
 
 from __future__ import annotations
@@ -81,8 +94,10 @@ from __future__ import annotations
 import flowrep as fr
 import pandas as pd
 
+from pmd_tensile._parameters import parameters_from_values
 from pmd_tensile.acquisition import fetch_curve, get_reported_properties, get_specimen_record
 from pmd_tensile.analysis import (
+    AnalysisParameters,
     AreaMM2,
     CrossheadArray,
     CurveAnalysis,
@@ -134,6 +149,19 @@ SUMMARY_QUANTITIES: tuple[str, ...] = (
 # ---------------------------------------------------------------------------
 # Contract adapters (ontology-agnostic)
 # ---------------------------------------------------------------------------
+
+
+@fr.atomic
+def analysis_parameters(parameters: dict | None = None) -> AnalysisParameters:
+    """The method parameters from their JSON-able dictionary form (decision D4).
+
+    Keys are :class:`~pmd_tensile.analysis.AnalysisParameters` field names;
+    missing keys keep the method defaults, ``None`` gives all defaults.
+    Unknown keys and invalid values raise ``ValueError`` or ``TypeError``
+    (rules in ``pmd_tensile._parameters``).
+    """
+    params = parameters_from_values(parameters)
+    return params
 
 
 @fr.atomic
@@ -318,8 +346,19 @@ def exploration_workflow(profile_id: str, source: dict):
 
 
 @fr.workflow
-def specimen_workflow(profile_id: str, source: dict, specimen_id: str, curve_locator: dict | None = None):
-    """Acquisition -> analysis -> A, Z, S0 scatter -> comparison for one specimen (flat DAG)."""
+def specimen_workflow(
+    profile_id: str,
+    source: dict,
+    specimen_id: str,
+    curve_locator: dict | None = None,
+    parameters: dict | None = None,
+):
+    """Acquisition -> analysis -> A, Z, S0 scatter -> comparison for one specimen (flat DAG).
+
+    ``parameters`` is the dictionary form of the method parameters (``None``:
+    the method defaults); see the module docstring.
+    """
+    params = analysis_parameters(parameters)
     # Ontology-aware acquisition into the neutral contract.
     record = get_specimen_record(profile_id, source, specimen_id, curve_locator)
     reported = get_reported_properties(profile_id, source, specimen_id)
@@ -335,19 +374,23 @@ def specimen_workflow(profile_id: str, source: dict, specimen_id: str, curve_loc
     a_percent = percent_value(elongation)
     dropped_samples = count_dropped_samples(force_n, strain, crosshead_mm)
     extensometer, k_ext, extensometer_max_valid_strain = extensometer_validity(
-        strain, crosshead_mm, l0_mm, a_percent, rate_switch_strain
+        strain, crosshead_mm, l0_mm, a_percent, rate_switch_strain, params
     )
-    bootstrap, noise_mpa = bootstrap_fit(force_n, strain, s0_mm2, k_ext)
+    bootstrap, noise_mpa = bootstrap_fit(force_n, strain, s0_mm2, k_ext, params)
     yielding, yield_type, reh_mpa, rel_mpa = yield_analysis(
-        force_n, strain, s0_mm2, k_ext, bootstrap, rate_switch_strain
+        force_n, strain, s0_mm2, k_ext, bootstrap, rate_switch_strain, params
     )
-    elastic, e_gpa, strain_origin = final_elastic_fit(force_n, strain, s0_mm2, k_ext, bootstrap, yielding)
-    proof, rp02_mpa = proof_strength(force_n, strain, s0_mm2, k_ext, elastic, yielding, rate_switch_strain)
+    elastic, e_gpa, strain_origin = final_elastic_fit(
+        force_n, strain, s0_mm2, k_ext, bootstrap, yielding, params
+    )
+    proof, rp02_mpa = proof_strength(
+        force_n, strain, s0_mm2, k_ext, elastic, yielding, rate_switch_strain, params
+    )
     maximum, fm_n, rm_mpa = maximum_force(force_n, s0_mm2, yielding)
     elongation_fm, agt_percent, ag_percent = elongation_at_maximum_force(
-        force_n, strain, k_ext, bootstrap, elastic, maximum
+        force_n, strain, k_ext, bootstrap, elastic, maximum, params
     )
-    sensitivity = window_sensitivity(force_n, strain, s0_mm2, k_ext, elastic, maximum, elongation_fm)
+    sensitivity = window_sensitivity(force_n, strain, s0_mm2, k_ext, elastic, maximum, elongation_fm, params)
     analysis = assemble_curve_analysis(
         dropped_samples, extensometer, bootstrap, yielding, elastic, proof, maximum, elongation_fm, sensitivity
     )

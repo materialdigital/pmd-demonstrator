@@ -62,7 +62,7 @@ Saving and display
 
 Example SPARQL queries
 ----------------------
-:data:`EXAMPLE_QUERIES` holds three documented queries over a workflow graph;
+:data:`EXAMPLE_QUERIES` holds four documented queries over a workflow graph;
 run them with :func:`run_example_query`. They rely on how semantikon 1.4.4
 records a workflow:
 
@@ -89,7 +89,15 @@ The queries:
     the outputs of the analysis functions (module
     ``pmd_tensile.analysis``).
 (c) ``run_inputs``: the inputs of the top-level workflow and their values,
-    e.g. the profile ID and source a run used. Works on run graphs.
+    e.g. the profile ID, source and analysis parameters a run used. Works on
+    run graphs. For a batch run, ``parameters`` holds all field values
+    (``batch_inputs`` fills them in); a standalone per-specimen run records
+    the input as given (``None`` for the defaults).
+(d) ``analysis_parameters``: per specimen, the analysis parameters the
+    analysis nodes received, i.e. the value of the output of the
+    ``analysis_parameters`` step (the ``repr`` of the
+    ``AnalysisParameters`` dataclass, with every field). Works on run graphs,
+    batch or single specimen (decision D4).
 """
 
 from __future__ import annotations
@@ -210,8 +218,33 @@ SELECT DISTINCT ?input ?value WHERE {
 }
 ORDER BY ?input
 """,
+    "analysis_parameters": _PREFIXES
+    + """
+# (d) Which analysis parameters did each specimen's analysis use? The output of
+# the analysis_parameters step (the AnalysisParameters the analysis nodes
+# received), with the specimen ID input of the per-specimen workflow around it.
+SELECT DISTINCT ?specimen_id ?parameters WHERE {
+    ?step ro:0000059 ?f ;
+          bfo:0000051 ?port .
+    ?f iao:0000235 ?module_node, ?name_node .
+    ?module_node a pmdco:0000101 ; pmdco:0000006 "pmd_tensile.workflows" .
+    ?name_node a pmdco:0000100 ; pmdco:0000006 "analysis_parameters" .
+    ?port a/rdfs:subClassOf pmdco:0000067 ;
+          ro:0000057 ?data .
+    ?data pmdco:0000006 ?parameters_value .
+    ?workflow bfo:0000051 ?step, ?id_port .
+    ?id_port a/rdfs:subClassOf pmdco:0000066 ;
+             pmdco:0000128 ?id_name ;
+             ro:0000057 ?id_data .
+    FILTER(STR(?id_name) = "specimen_id")
+    ?id_data pmdco:0000006 ?id_value .
+    BIND(STR(?id_value) AS ?specimen_id)
+    BIND(STR(?parameters_value) AS ?parameters)
 }
-"""Example SPARQL queries (a)-(c) over a workflow knowledge graph; see the module docstring."""
+ORDER BY ?specimen_id
+""",
+}
+"""Example SPARQL queries (a)-(d) over a workflow knowledge graph; see the module docstring."""
 
 
 # ---------------------------------------------------------------------------

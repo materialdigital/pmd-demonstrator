@@ -40,6 +40,7 @@ from pmd_tensile._orchestration import (
     run_tensile_analysis,
     specimen_input_label,
 )
+from pmd_tensile._parameters import DEFAULT_PARAMETERS, parameter_values, parameters_from_values
 from pmd_tensile._sources import (
     ONTODOCKER_ADDRESS_ENV,
     ONTODOCKER_TOKEN_ENV,
@@ -69,6 +70,10 @@ __all__ = [
     "download_curve",
     # Analysis of one curve without a workflow (_analysis)
     "analyse_curve",
+    # Analysis parameters and their JSON-able dictionary form (_parameters)
+    "DEFAULT_PARAMETERS",
+    "parameter_values",
+    "parameters_from_values",
     # Building and running the workflows (_orchestration)
     "TensileAnalysis",
     "batch_inputs",

@@ -27,6 +27,7 @@ from workflow_helpers import PMDCO2, PMDCO2_SOURCE, curve_bytes_for, run_with_st
 
 from pmd_tensile import _knowledge_graph as kg
 from pmd_tensile import _sources as sources
+from pmd_tensile._parameters import parameter_values
 from pmd_tensile.analysis import QUANTITY_KIND_IRIS
 from pmd_tensile.profiles import pmdco3_tto
 
@@ -265,6 +266,7 @@ def test_query_run_inputs(graphs):
     assert inputs["profile_id"] == PMDCO2
     assert ast.literal_eval(inputs["source"]) == PMDCO2_SOURCE
     assert inputs["curve_locator"] == "None"
+    assert ast.literal_eval(inputs["parameters"]) == parameter_values()  # every default value
     assert {inputs[f"specimen_id_{i}"] for i in range(len(KG_SPECIMENS))} == set(KG_SPECIMENS)
     exploration = dict(kg.run_example_query(graphs["exploration run"], "run_inputs").itertuples(index=False))
     assert exploration == {"profile_id": PMDCO2, "source": str(PMDCO2_SOURCE)}

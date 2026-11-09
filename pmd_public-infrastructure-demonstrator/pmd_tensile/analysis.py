@@ -263,7 +263,12 @@ NAN = float("nan")
 
 @dataclasses.dataclass(frozen=True)
 class AnalysisParameters:
-    """Method parameters (method-spec v2 defaults). All thresholds are relative."""
+    """Method parameters (method-spec v2 defaults). All thresholds are relative.
+
+    The nodes that use them take ``params`` (``None`` means these defaults).
+    The workflows take them as a JSON-able dictionary instead, converted by the
+    node :func:`pmd_tensile.workflows.analysis_parameters` (decision D4).
+    """
 
     f_lo: float = 0.10  # M4 window fractions of sigma_ref
     f_hi: float = 0.40
@@ -289,7 +294,10 @@ class AnalysisParameters:
     window_rel_tol: float = 1e-4
 
 
-DEFAULT_PARAMETERS = AnalysisParameters()
+# Private: a public instance would be collected by sim_atlas, which has no
+# parser for instances. Notebooks get the defaults as
+# ``pmd_tensile.demo.DEFAULT_PARAMETERS``.
+_DEFAULT_PARAMETERS = AnalysisParameters()
 
 
 @dataclasses.dataclass(frozen=True)
@@ -396,7 +404,7 @@ def elastic_fit(
     lo_mpa: StressMPa,
     hi_mpa: StressMPa,
     *,
-    min_points: int = DEFAULT_PARAMETERS.min_elastic_points,
+    min_points: int = _DEFAULT_PARAMETERS.min_elastic_points,
 ) -> ElasticFit:
     """OLS sigma = E*e + b on the samples with ``lo_mpa <= sigma <= hi_mpa`` (M4).
 
@@ -744,7 +752,7 @@ class WindowSensitivity:
 
 
 def _params(params: AnalysisParameters | None) -> AnalysisParameters:
-    return DEFAULT_PARAMETERS if params is None else params
+    return _DEFAULT_PARAMETERS if params is None else params
 
 
 def _channels(force_n, strain, crosshead_mm=None) -> tuple[np.ndarray, np.ndarray, np.ndarray]:
