@@ -318,6 +318,23 @@ def test_builders_reject_bad_specimen_lists(pmdco2_curves):
         run_with_stubbed_curves(pmdco2_curves, PMDCO2, PMDCO2_SOURCE, specimen_ids=["Zx1", "Zq9"])
 
 
+def test_repeated_specimen_ids_are_rejected(pmdco2_curves):
+    """Curves and analyses are keyed by specimen ID, so a repeated ID would silently merge two branches."""
+    message = r"duplicate specimen IDs \['Zx1'\]"
+    with pytest.raises(ValueError, match=message):
+        _orchestration.build_batch_workflow(["Zx1", "Zd2", "Zx1"])
+    with pytest.raises(ValueError, match=message):
+        _orchestration.specimen_curves(object(), ("Zx1", "Zx1"))  # checked before the run data is read
+    fetch = stub_fetch(pmdco2_curves)
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(sources, "fetch_bytes", fetch)
+        mp.setattr(sources, "select", lambda *args, **kwargs: pytest.fail("graph queried"))
+        mp.setattr(sources, "ask", lambda *args, **kwargs: pytest.fail("graph queried"))
+        with pytest.raises(ValueError, match=message):
+            _orchestration.run_tensile_analysis(PMDCO2, PMDCO2_SOURCE, specimen_ids=["Zx1", "Zx1"])
+    assert fetch.fetched == []  # rejected before any work
+
+
 # ---------------------------------------------------------------------------
 # pmdco2 versus pmdco3 (acceptance criterion 4, offline)
 # ---------------------------------------------------------------------------

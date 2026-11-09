@@ -55,6 +55,15 @@ def specimen_input_label(index: int) -> str:
     return f"specimen_id_{index}"
 
 
+def _unique_specimen_ids(specimen_ids: Sequence[str]) -> list[str]:
+    """The IDs as strings; a repeated ID raises, since results are keyed by specimen ID."""
+    ids = [str(specimen_id) for specimen_id in specimen_ids]
+    duplicates = sorted({specimen_id for specimen_id in ids if ids.count(specimen_id) > 1})
+    if duplicates:
+        raise ValueError(f"duplicate specimen IDs {duplicates}; list each specimen once")
+    return ids
+
+
 def build_batch_workflow(specimen_ids: Sequence[str], label: str = "tensile_batch") -> pwf.Workflow:
     """Stage 2: one per-specimen node per specimen ID, plus aggregation nodes.
 
@@ -64,9 +73,9 @@ def build_batch_workflow(specimen_ids: Sequence[str], label: str = "tensile_batc
     ``curve_locator``, ``parameters`` and ``specimen_id_0`` ... Outputs: ``results``
     (one row per specimen), ``orientation_summary`` (method-spec §12),
     ``comparison`` (all specimens, method-spec §13) and ``summaries`` (the
-    gathered rows).
+    gathered rows). A repeated specimen ID raises ``ValueError``.
     """
-    ids = [str(specimen_id) for specimen_id in specimen_ids]
+    ids = _unique_specimen_ids(specimen_ids)
     if not ids:
         raise ValueError("the batch workflow needs at least one specimen ID")
     n = len(ids)
@@ -180,13 +189,14 @@ def specimen_curves(batch_run, specimen_ids: Sequence[str]) -> tuple[dict[str, C
     """Curves and curve analyses per specimen ID from a finished batch run (no download).
 
     ``specimen_ids`` are the IDs in batch order, as passed to
-    :func:`build_batch_workflow` and :func:`batch_inputs`.
+    :func:`build_batch_workflow` and :func:`batch_inputs`; a repeated ID raises
+    ``ValueError``.
     """
     curves, analyses = {}, {}
-    for index, specimen_id in enumerate(specimen_ids):
-        data = _specimen_data(batch_run, index, str(specimen_id))
-        curves[str(specimen_id)] = _fetched_curve(data)
-        analyses[str(specimen_id)] = data.output_ports["analysis"].value
+    for index, specimen_id in enumerate(_unique_specimen_ids(specimen_ids)):
+        data = _specimen_data(batch_run, index, specimen_id)
+        curves[specimen_id] = _fetched_curve(data)
+        analyses[specimen_id] = data.output_ports["analysis"].value
     return curves, analyses
 
 
@@ -201,18 +211,21 @@ def run_tensile_analysis(
     """Run both stages: exploration, then the batch over the listed specimens.
 
     ``specimen_ids`` optionally restricts the batch to a subset of the listed
-    IDs (in the given order); an ID not listed by the exploration raises.
+    IDs (in the given order); an ID not listed by the exploration raises, and
+    so does a repeated ID (before anything runs).
     ``parameters`` is the dictionary form of the analysis parameters (missing
     keys keep the method defaults); it is validated before anything runs.
     """
     parameters_from_values(parameters)  # fail early on invalid parameters
+    if specimen_ids is not None:
+        specimen_ids = _unique_specimen_ids(specimen_ids)  # fail early on repeated IDs
     exploration_node = build_exploration_workflow()
     exploration_run = exploration_node.run(profile_id=profile_id, source=dict(source))
     listed = [str(specimen_id) for specimen_id in exploration_run.outputs.specimen_ids]
     if specimen_ids is None:
         selected = listed
     else:
-        selected = [str(specimen_id) for specimen_id in specimen_ids]
+        selected = specimen_ids
         unknown = sorted(set(selected) - set(listed))
         if unknown:
             raise LookupError(f"specimen IDs not described in the source: {unknown}; listed: {listed}")
