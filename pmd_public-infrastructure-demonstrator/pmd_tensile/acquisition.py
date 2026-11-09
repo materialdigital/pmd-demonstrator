@@ -1,8 +1,8 @@
 """Acquisition nodes (ontology-aware): graph content -> neutral contract.
 
-These nodes, together with ``tensile_workflow.exploration``, are the only
+These nodes, together with ``pmd_tensile.exploration``, are the only
 workflow nodes that know an ontology. Their outputs are the ontology-free
-dataclasses of ``tensile_workflow.contract``, in contract units. Every unit is
+dataclasses of ``pmd_tensile.contract``, in contract units. Every unit is
 converted through an explicit table; an unknown or mismatched unit raises.
 """
 
@@ -13,8 +13,8 @@ from collections import defaultdict
 
 import flowrep as fr
 
-from tensile_workflow import sources
-from tensile_workflow.contract import (
+from pmd_tensile import sources
+from pmd_tensile.contract import (
     CURVE_ROLE_KINDS,
     CURVE_ROLES,
     ColumnSpec,
@@ -25,9 +25,9 @@ from tensile_workflow.contract import (
     check_unit,
     to_contract_unit,
 )
-from tensile_workflow.exploration import specimen_table
-from tensile_workflow.profiles import CurveLocator, OntologyProfile, get_profile
-from tensile_workflow.profiles.base import QUANTITY_KINDS
+from pmd_tensile.exploration import specimen_table
+from pmd_tensile.profiles import CurveLocator, OntologyProfile, get_profile
+from pmd_tensile.profiles.base import QUANTITY_KINDS
 
 # A measured value from the graph: (individual IRI, value, unit symbol or None).
 _Value = tuple[str, float, str | None]

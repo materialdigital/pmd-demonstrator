@@ -34,7 +34,7 @@ import pytest
 from scipy.stats import beta
 
 import synthetic as sy
-from tensile_workflow.analysis import analyse_curve
+from pmd_tensile.analysis import analyse_curve
 
 pytestmark = pytest.mark.statistical
 

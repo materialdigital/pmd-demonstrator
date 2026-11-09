@@ -12,7 +12,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 
-from tensile_workflow.contract import UnitError
+from pmd_tensile.contract import UnitError
 
 QUDT_UNIT = "http://qudt.org/vocab/unit/"
 

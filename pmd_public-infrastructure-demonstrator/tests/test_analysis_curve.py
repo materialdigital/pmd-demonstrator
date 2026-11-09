@@ -25,7 +25,7 @@ import numpy as np
 import pytest
 
 import synthetic as sy
-from tensile_workflow.analysis import AnalysisParameters, CurveAnalysis, analyse_curve
+from pmd_tensile.analysis import AnalysisParameters, CurveAnalysis, analyse_curve
 
 EXACT = 1e-12
 E_REL_TOL = 1e-3

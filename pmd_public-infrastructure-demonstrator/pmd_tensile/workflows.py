@@ -11,29 +11,29 @@ knowledge graphs (upstream limitation pyiron/semantikon#541):
    ``pyiron_workflow.Workflow``): one :func:`specimen_workflow` node per
    specimen ID, each fed by its own workflow input (convention IC3), gathered
    with ``flowrep.schemas.TransformNto1`` into aggregation nodes: the results
-   table, the per-orientation summary (:func:`~tensile_workflow.analysis.summarize_by_group`)
+   table, the per-orientation summary (:func:`~pmd_tensile.analysis.summarize_by_group`)
    and the combined comparison with lab-reported values.
 
 The per-specimen workflow is a flat DAG: acquisition (record, reported
 properties, curve fetch), the analysis step nodes in the order of
-:func:`~tensile_workflow.analysis.analyse_curve`, A, Z, S0 scatter, and the
+:func:`~pmd_tensile.analysis.analyse_curve`, A, Z, S0 scatter, and the
 comparison with reported values. Its numbers equal ``analyse_curve`` on the
 same arrays, with ``a_percent`` = A from the metadata (L0, Lu) and the
 record's ``rate_switch_strain``.
 
 Workflow inputs are JSON-able only (T1 finding, IC3): ``profile_id`` (str),
-``source`` (dict, see :mod:`tensile_workflow.sources`), ``curve_locator``
+``source`` (dict, see :mod:`pmd_tensile.sources`), ``curve_locator``
 (dict or ``None``; only for profiles whose graph does not link the curves) and
 one ``specimen_id_<i>`` (str) per specimen. The analysis parameters are the
-method defaults (:data:`tensile_workflow.analysis.DEFAULT_PARAMETERS`) and are
+method defaults (:data:`pmd_tensile.analysis.DEFAULT_PARAMETERS`) and are
 not exposed as workflow inputs. Credentials are never inputs; the Ontodocker
 access path reads them from the environment (decision D5).
 
-Node roles (used by :mod:`tensile_workflow.knowledge_graph`):
+Node roles (used by :mod:`pmd_tensile.knowledge_graph`):
 
-- ontology-aware: :mod:`tensile_workflow.exploration`,
-  :mod:`tensile_workflow.acquisition`;
-- ontology-agnostic analysis: :mod:`tensile_workflow.analysis`;
+- ontology-aware: :mod:`pmd_tensile.exploration`,
+  :mod:`pmd_tensile.acquisition`;
+- ontology-agnostic analysis: :mod:`pmd_tensile.analysis`;
 - ontology-agnostic contract adapters in this module
   (:func:`curve_channels`, :func:`specimen_geometry`, :func:`percent_value`,
   :func:`computed_properties`, :func:`specimen_summary`,
@@ -80,8 +80,8 @@ import flowrep as fr
 import pandas as pd
 import pyiron_workflow as pwf
 
-from tensile_workflow.acquisition import fetch_curve, get_reported_properties, get_specimen_record
-from tensile_workflow.analysis import (
+from pmd_tensile.acquisition import fetch_curve, get_reported_properties, get_specimen_record
+from pmd_tensile.analysis import (
     AreaMM2,
     CrossheadArray,
     CurveAnalysis,
@@ -111,8 +111,8 @@ from tensile_workflow.analysis import (
     window_sensitivity,
     yield_analysis,
 )
-from tensile_workflow.contract import Curve, SpecimenRecord
-from tensile_workflow.exploration import check_conformance, list_specimens
+from pmd_tensile.contract import Curve, SpecimenRecord
+from pmd_tensile.exploration import check_conformance, list_specimens
 
 GROUP_COLUMN = "orientation"
 """Grouping column of the per-orientation summary (method-spec §12)."""
@@ -140,7 +140,7 @@ SUMMARY_QUANTITIES: tuple[str, ...] = (
 def curve_channels(
     curve: Curve,
 ) -> tuple[TimeArray, CrossheadArray, ForceArray, StrainArray, str, str]:
-    """Unpack a neutral :class:`~tensile_workflow.contract.Curve` into annotated channels.
+    """Unpack a neutral :class:`~pmd_tensile.contract.Curve` into annotated channels.
 
     Also returns the raw-curve SHA-256 and source URL as plain strings (IC3),
     because array values in a knowledge graph are lossy.
@@ -158,7 +158,7 @@ def curve_channels(
 def specimen_geometry(
     record: SpecimenRecord,
 ) -> tuple[AreaMM2, list, OptionalLengthMM, OptionalLengthMM, OptionalAreaMM2, OptionalStrainRatio]:
-    """Unpack the geometry of a neutral :class:`~tensile_workflow.contract.SpecimenRecord`.
+    """Unpack the geometry of a neutral :class:`~pmd_tensile.contract.SpecimenRecord`.
 
     Returns S0, the individual cross-section measurements, L0, Lu, Su and the
     rate-switch strain (diagnostic only), in contract units.
@@ -174,7 +174,7 @@ def specimen_geometry(
 
 @fr.atomic
 def percent_value(result: ScalarResult) -> OptionalStrainPercent:
-    """The value of A (percent) from :func:`~tensile_workflow.analysis.elongation_after_fracture`.
+    """The value of A (percent) from :func:`~pmd_tensile.analysis.elongation_after_fracture`.
 
     Feeds the M3 end check of the extensometer (NaN if A is not available).
     """
@@ -184,7 +184,7 @@ def percent_value(result: ScalarResult) -> OptionalStrainPercent:
 
 @fr.atomic
 def computed_properties(analysis: CurveAnalysis, elongation: ScalarResult, reduction: ScalarResult) -> dict:
-    """The computed values in the keys of :func:`~tensile_workflow.analysis.compare_with_reported`."""
+    """The computed values in the keys of :func:`~pmd_tensile.analysis.compare_with_reported`."""
     computed = {
         "fm_n": analysis.fm_n,
         "rm_mpa": analysis.rm_mpa,
@@ -213,7 +213,7 @@ def specimen_summary(
     the window ranges are the M15 sensitivity. Flags of A, Z and S0 are added
     to the curve flags. ``*_range_*`` entries are (min, max) tuples,
     ``e_window_mpa`` is (lo, hi) and ``dropped_samples`` is a dictionary
-    channel -> count, as in :class:`~tensile_workflow.analysis.CurveAnalysis`.
+    channel -> count, as in :class:`~pmd_tensile.analysis.CurveAnalysis`.
     """
     flags = (*analysis.flags, *elongation.flags, *reduction.flags, *scatter.flags)
     summary = {
@@ -266,7 +266,7 @@ def summary_quantities() -> list[str]:
 
     A node rather than a constant: pyiron_workflow types a constant list as
     ``list``, which its edge check does not accept for the ``Sequence[str]``
-    input of :func:`~tensile_workflow.analysis.summarize_by_group`.
+    input of :func:`~pmd_tensile.analysis.summarize_by_group`.
     """
     quantities = list(SUMMARY_QUANTITIES)
     return quantities
@@ -467,7 +467,7 @@ class TensileAnalysis:
 
     ``exploration_run`` and ``batch_run`` are pyiron_workflow runs; their
     ``.result`` is the flowrep run data that
-    :func:`tensile_workflow.knowledge_graph.run_knowledge_graph` exports.
+    :func:`pmd_tensile.knowledge_graph.run_knowledge_graph` exports.
     """
 
     profile_id: str

@@ -16,9 +16,9 @@ import pytest
 import rdflib
 from conftest import PMDCO2_ORIENTATION_FILES
 
-from tensile_workflow import acquisition, exploration, sources
-from tensile_workflow.profiles import pmdco3_tto
-from tensile_workflow.profiles.base import CurveLocator
+from pmd_tensile import acquisition, exploration, sources
+from pmd_tensile.profiles import pmdco3_tto
+from pmd_tensile.profiles.base import CurveLocator
 
 TOKEN = "DUMMY_TOKEN_XYZ"
 ADDRESS = "ontodocker.example.invalid"

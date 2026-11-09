@@ -29,8 +29,8 @@ from workflow_helpers import (
     stub_fetch,
 )
 
-from tensile_workflow import acquisition, exploration, sources, workflows
-from tensile_workflow.analysis import (
+from pmd_tensile import acquisition, exploration, sources, workflows
+from pmd_tensile.analysis import (
     CurveAnalysis,
     analyse_curve,
     elongation_after_fracture,

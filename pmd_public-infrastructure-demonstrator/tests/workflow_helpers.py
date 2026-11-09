@@ -17,7 +17,7 @@ import pytest
 from conftest import PMDCO2_ORIENTATION_FILES
 
 import synthetic as sy
-from tensile_workflow import acquisition, sources, workflows
+from pmd_tensile import acquisition, sources, workflows
 
 PMDCO2 = "pmdco2-tto"
 PMDCO3 = "pmdco3-tto"

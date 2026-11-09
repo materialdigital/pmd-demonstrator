@@ -21,10 +21,10 @@ import pyiron_workflow as pwf
 import pytest
 from workflow_helpers import PMDCO3_PREFIXES, pmdco3_test
 
-from tensile_workflow import acquisition, exploration, sources
-from tensile_workflow.contract import UnitError, to_contract_unit
-from tensile_workflow.profiles import available_profiles, get_profile, pmdco3_tto
-from tensile_workflow.profiles.base import QUANTITY_KINDS
+from pmd_tensile import acquisition, exploration, sources
+from pmd_tensile.contract import UnitError, to_contract_unit
+from pmd_tensile.profiles import available_profiles, get_profile, pmdco3_tto
+from pmd_tensile.profiles.base import QUANTITY_KINDS
 
 PROFILE = "pmdco3-tto"
 

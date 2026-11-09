@@ -12,11 +12,11 @@ The package separates *data description* from *data analysis*:
 - ``analysis``: ontology-agnostic analysis nodes (method-defined,
   ISO 6892-1-inspired).
 - ``workflows``: the two-stage assembly (exploration workflow, per-specimen
-  workflow and batch workflow) and :func:`~tensile_workflow.workflows.run_tensile_analysis`.
+  workflow and batch workflow) and :func:`~pmd_tensile.workflows.run_tensile_analysis`.
 - ``knowledge_graph``: semantikon knowledge-graph export, validation, Turtle
   helpers and example SPARQL queries.
 
 This module deliberately imports nothing, so that importing an
-ontology-agnostic submodule (e.g. ``tensile_workflow.contract``) does not pull
+ontology-agnostic submodule (e.g. ``pmd_tensile.contract``) does not pull
 in rdflib, praeco or the profiles.
 """

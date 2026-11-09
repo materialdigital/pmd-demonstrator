@@ -1,7 +1,7 @@
 """Exploration nodes (ontology-aware): conformance check and specimen listing.
 
-Inputs are JSON-able: a profile ID (see ``tensile_workflow.profiles``) and a
-source dict (see ``tensile_workflow.sources``).
+Inputs are JSON-able: a profile ID (see ``pmd_tensile.profiles``) and a
+source dict (see ``pmd_tensile.sources``).
 """
 
 from __future__ import annotations
@@ -11,8 +11,8 @@ import re
 import flowrep as fr
 import pandas as pd
 
-from tensile_workflow import sources
-from tensile_workflow.profiles import get_profile
+from pmd_tensile import sources
+from pmd_tensile.profiles import get_profile
 
 
 class ConformanceError(RuntimeError):

@@ -20,8 +20,8 @@ import pandas as pd
 import pytest
 
 import synthetic as sy
-from tensile_workflow import analysis
-from tensile_workflow.analysis import (
+from pmd_tensile import analysis
+from pmd_tensile.analysis import (
     analyse_curve,
     check_time_order,
     compare_with_reported,
@@ -31,7 +31,7 @@ from tensile_workflow.analysis import (
     s0_scatter,
     summarize_by_group,
 )
-from tensile_workflow.contract import ReportedProperties
+from pmd_tensile.contract import ReportedProperties
 
 E = sy.E_MPA
 E0 = 4.9e-4
@@ -350,10 +350,10 @@ ANALYSIS_PATH = Path(analysis.__file__)
 FORBIDDEN = (
     "rdflib",
     "praeco",
-    "tensile_workflow.sources",
-    "tensile_workflow.profiles",
-    "tensile_workflow.exploration",
-    "tensile_workflow.acquisition",
+    "pmd_tensile.sources",
+    "pmd_tensile.profiles",
+    "pmd_tensile.exploration",
+    "pmd_tensile.acquisition",
 )
 
 
@@ -366,7 +366,7 @@ def _imported_modules(path: Path) -> set[str]:
         elif isinstance(node, ast.ImportFrom):
             base = node.module or ""
             if node.level:
-                base = "tensile_workflow" + ("." + base if base else "")
+                base = "pmd_tensile" + ("." + base if base else "")
             names.add(base)
             names.update(f"{base}.{alias.name}" for alias in node.names)
         elif isinstance(node, ast.Call):
@@ -381,8 +381,8 @@ def _imported_modules(path: Path) -> set[str]:
 
 def test_analysis_module_imports_no_ontology_aware_module():
     imported = _imported_modules(ANALYSIS_PATH)
-    assert "tensile_workflow.contract" in imported or any(
-        n.startswith("tensile_workflow.contract") for n in imported
+    assert "pmd_tensile.contract" in imported or any(
+        n.startswith("pmd_tensile.contract") for n in imported
     )
     for name in imported:
         for forbidden in FORBIDDEN:
@@ -397,9 +397,9 @@ def test_analysis_module_source_has_no_pmd_ontology_iris():
 
 def test_importing_analysis_loads_no_ontology_aware_module():
     code = (
-        "import sys; import tensile_workflow.analysis; "
+        "import sys; import pmd_tensile.analysis; "
         "print('\\n'.join(sorted(m for m in sys.modules "
-        "if m.startswith('tensile_workflow') or m.split('.')[0] == 'praeco')))"
+        "if m.startswith('pmd_tensile') or m.split('.')[0] == 'praeco')))"
     )
     out = subprocess.run(
         [sys.executable, "-c", code],
@@ -409,4 +409,4 @@ def test_importing_analysis_loads_no_ontology_aware_module():
         check=True,
         env=dict(os.environ, PYTHONDONTWRITEBYTECODE="1"),
     ).stdout.split()
-    assert set(out) <= {"tensile_workflow", "tensile_workflow.analysis", "tensile_workflow.contract"}
+    assert set(out) <= {"pmd_tensile", "pmd_tensile.analysis", "pmd_tensile.contract"}

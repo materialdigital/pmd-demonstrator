@@ -8,8 +8,8 @@ import numpy as np
 import pyiron_workflow as pwf
 import pytest
 
-from tensile_workflow import acquisition, sources
-from tensile_workflow.contract import ColumnSpec, UnitError
+from pmd_tensile import acquisition, sources
+from pmd_tensile.contract import ColumnSpec, UnitError
 
 # Synthetic CSV in the layout of the S355 curve files: ';' delimiter, ','
 # decimal mark, a header row and a unit row. The numbers are made up.

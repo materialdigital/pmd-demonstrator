@@ -25,10 +25,10 @@ from conftest import PMDCO2_ORIENTATION_FILES
 from rdflib.compare import isomorphic
 from workflow_helpers import PMDCO2, PMDCO2_SOURCE, curve_bytes_for, run_with_stubbed_curves
 
-from tensile_workflow import knowledge_graph as kg
-from tensile_workflow import sources, workflows
-from tensile_workflow.analysis import QUANTITY_KIND_IRIS
-from tensile_workflow.profiles import pmdco3_tto
+from pmd_tensile import knowledge_graph as kg
+from pmd_tensile import sources, workflows
+from pmd_tensile.analysis import QUANTITY_KIND_IRIS
+from pmd_tensile.profiles import pmdco3_tto
 
 KG_SPECIMENS = ("Zx1", "Zd2")
 PMD = "https://w3id.org/pmd/"
@@ -38,13 +38,13 @@ QK = "http://qudt.org/vocab/quantitykind/"
 UNIT = "http://qudt.org/vocab/unit/"
 
 EXPLORATION_FUNCTIONS = {
-    ("tensile_workflow.exploration", "check_conformance"),
-    ("tensile_workflow.exploration", "list_specimens"),
+    ("pmd_tensile.exploration", "check_conformance"),
+    ("pmd_tensile.exploration", "list_specimens"),
 }
 ACQUISITION_FUNCTIONS = {
-    ("tensile_workflow.acquisition", "get_specimen_record"),
-    ("tensile_workflow.acquisition", "get_reported_properties"),
-    ("tensile_workflow.acquisition", "fetch_curve"),
+    ("pmd_tensile.acquisition", "get_specimen_record"),
+    ("pmd_tensile.acquisition", "get_reported_properties"),
+    ("pmd_tensile.acquisition", "fetch_curve"),
 }
 
 # semantikon's data hashing calls networkx, which warns that its graph hashes
@@ -143,7 +143,7 @@ PREFIX pmdco: <https://w3id.org/pmd/co/PMD_>
 SELECT DISTINCT ?data WHERE {
     ?step ro:0000059 ?f ; bfo:0000051 ?port .
     ?f iao:0000235 ?module .
-    ?module a pmdco:0000101 ; pmdco:0000006 "tensile_workflow.analysis" .
+    ?module a pmdco:0000101 ; pmdco:0000006 "pmd_tensile.analysis" .
     ?port ro:0000057 ?data .
 }
 """
@@ -220,10 +220,10 @@ def test_query_step_roles(graphs, name):
     aware = {(m, f) for m, f, r in roles.itertuples(index=False) if r.startswith("ontology-aware")}
     assert aware == ACQUISITION_FUNCTIONS
     by_module = roles.groupby("module")["role"].agg(set).to_dict()
-    assert by_module["tensile_workflow.analysis"] == {"ontology-agnostic: analysis"}
-    analysis_functions = set(roles.loc[roles["module"] == "tensile_workflow.analysis", "function"])
+    assert by_module["pmd_tensile.analysis"] == {"ontology-agnostic: analysis"}
+    analysis_functions = set(roles.loc[roles["module"] == "pmd_tensile.analysis", "function"])
     assert {"yield_analysis", "final_elastic_fit", "maximum_force", "summarize_by_group"} <= analysis_functions
-    assert ("tensile_workflow.workflows", "specimen_workflow", "workflow composition") in set(
+    assert ("pmd_tensile.workflows", "specimen_workflow", "workflow composition") in set(
         roles.itertuples(index=False, name=None)
     )
 

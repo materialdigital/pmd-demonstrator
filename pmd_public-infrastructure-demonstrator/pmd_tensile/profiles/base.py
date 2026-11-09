@@ -4,7 +4,7 @@ A profile describes how one ontology (and data-modelling style) expresses the
 concepts the workflow needs. It holds SPARQL text, the expected unit
 vocabulary and any naming conventions, but no graph-access code: the generic
 exploration and acquisition code runs the queries and turns the rows into the
-neutral contract (``tensile_workflow.contract``).
+neutral contract (``pmd_tensile.contract``).
 
 Query result contracts (column names are fixed; profiles must bind them):
 
@@ -28,9 +28,9 @@ import dataclasses
 from collections.abc import Mapping
 from urllib.parse import quote
 
-from tensile_workflow.contract import CURVE_ROLES, ColumnSpec
-from tensile_workflow.profiles.units import qudt_unit_symbol
-from tensile_workflow.sources import reject_url_credentials
+from pmd_tensile.contract import CURVE_ROLES, ColumnSpec
+from pmd_tensile.profiles.units import qudt_unit_symbol
+from pmd_tensile.sources import reject_url_credentials
 
 QUANTITY_KINDS: dict[str, str] = {
     # specimen geometry (analysis inputs)

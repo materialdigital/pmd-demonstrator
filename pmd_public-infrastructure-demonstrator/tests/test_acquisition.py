@@ -13,11 +13,11 @@ import pyiron_workflow as pwf
 import pytest
 from conftest import PMDCO2_ORIENTATION_FILES
 
-from tensile_workflow import acquisition, exploration, sources
-from tensile_workflow.contract import CURVE_ROLES, SpecimenRecord, UnitError, to_contract_unit
-from tensile_workflow.profiles import available_profiles, get_profile
-from tensile_workflow.profiles.base import QUANTITY_KINDS
-from tensile_workflow.profiles.units import qudt_unit_symbol
+from pmd_tensile import acquisition, exploration, sources
+from pmd_tensile.contract import CURVE_ROLES, SpecimenRecord, UnitError, to_contract_unit
+from pmd_tensile.profiles import available_profiles, get_profile
+from pmd_tensile.profiles.base import QUANTITY_KINDS
+from pmd_tensile.profiles.units import qudt_unit_symbol
 
 PROFILE = "pmdco2-tto"
 

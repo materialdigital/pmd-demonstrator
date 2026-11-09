@@ -60,8 +60,8 @@ Gaps and non-semantic parts (reported as findings):
 
 from __future__ import annotations
 
-from tensile_workflow.contract import ColumnSpec
-from tensile_workflow.profiles.base import (
+from pmd_tensile.contract import ColumnSpec
+from pmd_tensile.profiles.base import (
     NOTE_COLUMNS,
     QUANTITY_COLUMNS,
     SPECIMEN_COLUMNS,
@@ -69,7 +69,7 @@ from tensile_workflow.profiles.base import (
     OntologyProfile,
     SelectQuery,
 )
-from tensile_workflow.profiles.units import QUDT_UNIT
+from pmd_tensile.profiles.units import QUDT_UNIT
 
 PROFILE_ID = "pmdco3-tto"
 

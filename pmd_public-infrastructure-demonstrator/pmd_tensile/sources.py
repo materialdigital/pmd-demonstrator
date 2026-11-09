@@ -37,7 +37,7 @@ import rdflib
 from praeco import HttpClient, OntodockerClient
 from rdflib.util import guess_format
 
-from tensile_workflow.contract import (
+from pmd_tensile.contract import (
     CURVE_ROLE_KINDS,
     CURVE_ROLES,
     ColumnSpec,

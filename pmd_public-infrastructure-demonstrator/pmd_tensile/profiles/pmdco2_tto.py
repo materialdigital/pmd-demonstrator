@@ -34,7 +34,7 @@ does not query it and the reported ReL is ``None``.
 
 The pmdco2 files write some nodes as pseudo-IRIs ``<_:tNNN>`` (not blank
 nodes). Their labels repeat across files, so the files must be queried one by
-one and never merged into one graph; ``tensile_workflow.sources`` does that.
+one and never merged into one graph; ``pmd_tensile.sources`` does that.
 
 The queries adapt patterns of ``query_collection.S355queries`` (notably the
 CSVW column-list walk of ``csv_columns``) but are self-contained, so the
@@ -43,7 +43,7 @@ package does not depend on that notebook helper module.
 
 from __future__ import annotations
 
-from tensile_workflow.profiles.base import (
+from pmd_tensile.profiles.base import (
     CURVE_COLUMN_COLUMNS,
     NOTE_COLUMNS,
     QUANTITY_COLUMNS,
@@ -51,7 +51,7 @@ from tensile_workflow.profiles.base import (
     OntologyProfile,
     SelectQuery,
 )
-from tensile_workflow.profiles.units import QUDT_UNIT
+from pmd_tensile.profiles.units import QUDT_UNIT
 
 PROFILE_ID = "pmdco2-tto"
 

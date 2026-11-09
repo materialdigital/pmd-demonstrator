@@ -12,7 +12,7 @@ defined are ``float("nan")``, never ``None``. Flags are strings
 ``"<property>:<flag>"`` (e.g. ``"a:missing_input"``).
 
 Module boundary (acceptance criterion 2): this module imports no rdflib,
-praeco, SPARQL helper or profile, and no ``tensile_workflow`` module other
+praeco, SPARQL helper or profile, and no ``pmd_tensile`` module other
 than ``contract``. It sees no ontology IRIs; its only IRIs are the generic
 QUDT quantity kinds below.
 
@@ -188,7 +188,7 @@ import numpy as np
 import pandas as pd
 from semantikon import SemantikonURI, u
 
-from tensile_workflow.contract import ReportedProperties
+from pmd_tensile.contract import ReportedProperties
 
 # ---------------------------------------------------------------------------
 # Labels for outputs and reports (method-spec §1, §11)

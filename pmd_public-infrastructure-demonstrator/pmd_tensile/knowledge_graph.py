@@ -29,7 +29,7 @@ Graphs
     graph without results.
 
   Credentials never enter either graph: they are not node inputs or outputs
-  (decision D5, :mod:`tensile_workflow.sources`).
+  (decision D5, :mod:`pmd_tensile.sources`).
 
 - :func:`validate_knowledge_graph`: ``semantikon.validate_values`` (OWL-RL
   reasoning and SHACL), returning ``(conforms, report text)``.
@@ -83,7 +83,7 @@ The queries:
     (the per-specimen and exploration workflows) is a "workflow composition".
 (b) ``analysis_output_units``: the units and QUDT quantity kinds carried by
     the outputs of the analysis functions (module
-    ``tensile_workflow.analysis``).
+    ``pmd_tensile.analysis``).
 (c) ``run_inputs``: the inputs of the top-level workflow and their values,
     e.g. the profile ID and source a run used. Works on run graphs.
 """
@@ -114,19 +114,19 @@ TURTLE_PRECISION_NOTE = (
 """Why Turtle output is for display only (see the module docstring)."""
 
 MODULE_ROLES: dict[str, str] = {
-    "tensile_workflow.exploration": "ontology-aware: exploration",
-    "tensile_workflow.acquisition": "ontology-aware: acquisition",
-    "tensile_workflow.analysis": "ontology-agnostic: analysis",
-    "tensile_workflow.workflows": "ontology-agnostic: contract adapter",
+    "pmd_tensile.exploration": "ontology-aware: exploration",
+    "pmd_tensile.acquisition": "ontology-aware: acquisition",
+    "pmd_tensile.analysis": "ontology-agnostic: analysis",
+    "pmd_tensile.workflows": "ontology-agnostic: contract adapter",
     "flowrep.prospective.transformers": "workflow plumbing (flowrep)",
 }
 """Role of each Python module whose functions appear as workflow steps."""
 
 ONTOLOGY_AWARE_MODULES: tuple[str, ...] = (
-    "tensile_workflow.exploration",
-    "tensile_workflow.acquisition",
+    "pmd_tensile.exploration",
+    "pmd_tensile.acquisition",
 )
-ANALYSIS_MODULE = "tensile_workflow.analysis"
+ANALYSIS_MODULE = "pmd_tensile.analysis"
 
 _PREFIXES = """\
 PREFIX bfo:   <http://purl.obolibrary.org/obo/BFO_>
@@ -174,7 +174,7 @@ SELECT DISTINCT ?function ?output ?unit ?quantity_kind WHERE {
     ?step ro:0000059 ?f ;
           bfo:0000051 ?port .
     ?f iao:0000235 ?module_node, ?name_node .
-    ?module_node a pmdco:0000101 ; pmdco:0000006 "tensile_workflow.analysis" .
+    ?module_node a pmdco:0000101 ; pmdco:0000006 "pmd_tensile.analysis" .
     ?name_node a pmdco:0000100 ; pmdco:0000006 ?function_value .
     ?port a/rdfs:subClassOf pmdco:0000067 ;
           pmdco:0000128 ?output_value ;
