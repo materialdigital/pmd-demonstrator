@@ -74,6 +74,12 @@ def build_batch_workflow(specimen_ids: Sequence[str], label: str = "tensile_batc
     (one row per specimen), ``orientation_summary`` (method-spec §12),
     ``comparison`` (all specimens, method-spec §13) and ``summaries`` (the
     gathered rows). A repeated specimen ID raises ``ValueError``.
+
+    Every input is required, ``curve_locator`` and ``parameters`` included,
+    even where ``None`` means "not used" or "method defaults": in
+    pyiron_workflow 0.20.3, workflow inputs cannot hold default values, and a
+    run without one of them raises ``InputDataUnavailable``. Build the inputs
+    with :func:`batch_inputs`, which fills all of them.
     """
     ids = _unique_specimen_ids(specimen_ids)
     if not ids:
@@ -123,10 +129,19 @@ def batch_inputs(
 ) -> dict:
     """Keyword inputs for running a workflow from :func:`build_batch_workflow`.
 
+    The returned dictionary holds every batch-workflow input. All of them are
+    required, because pyiron_workflow 0.20.3 workflow inputs cannot hold
+    default values; use this function rather than writing the inputs by hand,
+    so that ``curve_locator`` and ``parameters`` are present even when they
+    take their "unused" and "defaults" values.
+
     ``parameters`` (the dictionary form of the analysis parameters, ``None``
     for the method defaults) is validated here and passed on with *all* field
     values, so the run's knowledge graph records the complete set used.
+    ``specimen_ids`` must be in the order given to
+    :func:`build_batch_workflow`; a repeated ID raises ``ValueError``.
     """
+    specimen_ids = _unique_specimen_ids(specimen_ids)
     inputs = {
         "profile_id": str(profile_id),
         "source": dict(source),

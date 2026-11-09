@@ -324,6 +324,8 @@ def test_repeated_specimen_ids_are_rejected(pmdco2_curves):
     with pytest.raises(ValueError, match=message):
         _orchestration.build_batch_workflow(["Zx1", "Zd2", "Zx1"])
     with pytest.raises(ValueError, match=message):
+        _orchestration.batch_inputs(PMDCO2, PMDCO2_SOURCE, ["Zx1", "Zd2", "Zx1"])
+    with pytest.raises(ValueError, match=message):
         _orchestration.specimen_curves(object(), ("Zx1", "Zx1"))  # checked before the run data is read
     fetch = stub_fetch(pmdco2_curves)
     with pytest.MonkeyPatch.context() as mp:

@@ -7,7 +7,8 @@ and no helper. Import mode (``recursive="import"``) is not imitated: D6 does
 not require it, and it walks every imported submodule, ``_``-prefixed ones
 included (collector.py:53-56 come before the ``_`` check), so on
 ``pmd_tensile`` it would collect the private helpers that D5.1 keeps out of
-the public modules.
+the public modules, and on ``pmd_tensile.profiles`` it would add
+``_units.qudt_unit_symbol``. Both are out of scope under D6.
 
 sim_atlas is not installed. The test imitates the collection code of the
 sim_atlas toolkit at commit 753205bd61ef821517f5ea26bd5c564730e6a114
