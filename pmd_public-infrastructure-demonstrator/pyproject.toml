@@ -11,6 +11,7 @@ requires-python = ">=3.12"
 # them from conda-forge and pins the workflow stack there.
 dependencies = [
     "flowrep",
+    "matplotlib",
     "numpy",
     "pandas",
     "praeco",
