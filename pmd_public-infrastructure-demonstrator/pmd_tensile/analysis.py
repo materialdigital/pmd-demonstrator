@@ -484,8 +484,8 @@ _COMPARISONS: tuple[tuple[str, str, str, float, float, str], ...] = (
     ("reh_mpa", "reh_mpa", "relative", 0.02, 0.0, "±2 %"),
     ("rp02_mpa", "rp02_mpa", "relative", 0.02, 0.0, "±2 %"),
     ("e_gpa", "e_gpa", "relative", 0.10, 0.0, "±10 %"),
-    ("a_percent", "a_percent", "rounding", 0.0, 0.5, "rounding-aware: ±0.5 pp, i.e. rounds to an integer lab value (ties within)"),
-    ("z_percent", "z_percent", "rounding", 0.0, 0.5, "rounding-aware: ±0.5 pp, i.e. rounds to an integer lab value (ties within)"),
+    ("a_percent", "a_percent", "rounding", 0.0, 0.5, "rounding-aware: ±0.5 pp (for an integer lab value: the computed value rounds to it, ties within)"),
+    ("z_percent", "z_percent", "rounding", 0.0, 0.5, "rounding-aware: ±0.5 pp (for an integer lab value: the computed value rounds to it, ties within)"),
 )
 """Tolerances fixed at G1 (method-spec §13). ReL has no lab values and no row."""
 
