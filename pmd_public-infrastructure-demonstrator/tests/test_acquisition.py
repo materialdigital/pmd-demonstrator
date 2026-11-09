@@ -1,16 +1,19 @@
 """Offline acquisition tests for the pmdco2-tto profile on the local Turtle files.
 
-The expected values below were read from ``datasets/pmdco2_tto_example_*.ttl``
-(read-only assets of the demonstrator).
+The local files are ``downloaded/pmdco2_tto_example_*.ttl``, copies of the
+hosted Ontodocker graphs (decision D7; read-only assets of the demonstrator).
+The expected values below were first read from the older
+``datasets/pmdco2_tto_example_*.ttl``; both give the same records
+(``test_pmdco2_sources.py``).
 """
 
 from __future__ import annotations
 
-import re
 import statistics
 
 import pyiron_workflow as pwf
 import pytest
+import rdflib
 from conftest import PMDCO2_ORIENTATION_FILES
 
 from pmd_tensile import _acquisition, _exploration, acquisition, exploration
@@ -46,12 +49,6 @@ def _source_with(tmp_path, orientation: str, text: str) -> dict:
     path = tmp_path / f"{orientation}.ttl"
     path.write_text(text, encoding="utf-8")
     return {"kind": "turtle", "locations": [str(path)]}
-
-
-def _replace_once(text: str, pattern: str, replacement: str) -> str:
-    new_text, count = re.subn(pattern, replacement, text, count=0, flags=re.DOTALL)
-    assert count == 1, f"pattern matched {count} times"
-    return new_text
 
 
 # ---------------------------------------------------------------------------
@@ -273,53 +270,87 @@ def test_unit_tables():
         to_contract_unit(1.0, "mm", "area")
 
 
-S0_UNIT_PATTERN = (
-    r"(pmdao-tto-tt-S355-1_crossSectionArea_S0> a [^.]*?"
-    r"ns1:unit <http://qudt\.org/vocab/unit/)MilliM2>"
-)
+# The unit tests below edit the parsed graph with rdflib and write it back, so
+# they do not depend on how the Turtle file is serialized.
+PMD = rdflib.Namespace("https://w3id.org/pmd/co/")
+QUDT = rdflib.Namespace("http://qudt.org/vocab/unit/")
+ZX1_S0 = rdflib.URIRef("https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-1_crossSectionArea_S0")
+ZX1_FORCE_COLUMN = """
+PREFIX pmd:  <https://w3id.org/pmd/co/>
+PREFIX csvw: <http://www.w3.org/ns/csvw#>
+PREFIX rdf:  <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+SELECT ?column WHERE {
+  ?process a pmd:TensileTest ;
+           pmd:characteristic <https://w3id.org/pmd/ao/tte/pmdao-tto-tt-S355-1_crossSectionArea_S0> ,
+                              ?dataset .
+  ?dataset a pmd:Dataset ; pmd:resource ?table .
+  ?table csvw:tableSchema/csvw:column/rdf:rest*/rdf:first ?column .
+  ?column a pmd:Force .
+}
+"""
+
+
+def _edited_source(tmp_path, orientation: str, edit) -> dict:
+    """A one-file Turtle source: the local pmdco2 graph, changed by ``edit(graph)``."""
+    graph = rdflib.Graph().parse(PMDCO2_ORIENTATION_FILES[orientation])
+    edit(graph)
+    path = tmp_path / f"{orientation}.ttl"
+    graph.serialize(destination=path, format="turtle")
+    return {"kind": "turtle", "locations": [str(path)]}
+
+
+def _set_unit(subject: rdflib.URIRef, unit: rdflib.URIRef | None):
+    def edit(graph: rdflib.Graph) -> None:
+        assert graph.value(subject, PMD.unit) is not None, subject  # the edit changes something
+        graph.remove((subject, PMD.unit, None))
+        if unit is not None:
+            graph.add((subject, PMD.unit, unit))
+
+    return edit
+
+
+def _set_zx1_force_column_unit(unit: rdflib.URIRef):
+    def edit(graph: rdflib.Graph) -> None:
+        (column,) = [row.column for row in graph.query(ZX1_FORCE_COLUMN)]
+        assert graph.value(column, PMD.unit) == QUDT.KiloN
+        _set_unit(column, unit)(graph)
+
+    return edit
 
 
 def test_unknown_unit_raises(tmp_path):
-    text = PMDCO2_ORIENTATION_FILES["parallel"].read_text(encoding="utf-8")
-    source = _source_with(tmp_path, "parallel", _replace_once(text, S0_UNIT_PATTERN, r"\1FURLONG2>"))
+    source = _edited_source(tmp_path, "parallel", _set_unit(ZX1_S0, QUDT.FURLONG2))
     with pytest.raises(UnitError, match="FURLONG2"):
         _acquisition.build_specimen_record(PROFILE, source, "Zx1")
 
 
 def test_mismatched_unit_raises(tmp_path):
     # A valid QUDT unit of the wrong kind (length instead of area) for S0.
-    text = PMDCO2_ORIENTATION_FILES["parallel"].read_text(encoding="utf-8")
-    source = _source_with(tmp_path, "parallel", _replace_once(text, S0_UNIT_PATTERN, r"\1MilliM>"))
+    source = _edited_source(tmp_path, "parallel", _set_unit(ZX1_S0, QUDT.MilliM))
     with pytest.raises(UnitError, match="'mm' is not valid for quantity kind 'area'"):
         _acquisition.build_specimen_record(PROFILE, source, "Zx1")
 
 
 def test_mismatched_curve_column_unit_raises(tmp_path):
     # Declare the force column of the Zx1 curve table in millimetres.
-    text = PMDCO2_ORIENTATION_FILES["parallel"].read_text(encoding="utf-8")
-    graph_text = _replace_once(
-        text,
-        # <_:t711> is the force column of Zx1's curve table; stay within its block.
-        r"(<_:t711> a csvw:Column,\s+ns1:Force ;(?:(?!\n\n).)*?"
-        r"ns1:unit <http://qudt\.org/vocab/unit/)KiloN>",
-        r"\1MilliM>",
-    )
-    source = _source_with(tmp_path, "parallel", graph_text)
+    source = _edited_source(tmp_path, "parallel", _set_zx1_force_column_unit(QUDT.MilliM))
     with pytest.raises(UnitError, match="'force'"):
         _acquisition.build_specimen_record(PROFILE, source, "Zx1")
 
 
 def test_missing_unit_raises(tmp_path):
-    text = PMDCO2_ORIENTATION_FILES["parallel"].read_text(encoding="utf-8")
-    graph_text = _replace_once(
-        text,
-        r"(pmdao-tto-tt-S355-1_crossSectionArea_S0> a [^.]*?)"
-        r"ns1:unit <http://qudt\.org/vocab/unit/MilliM2> ;",
-        r"\1",
-    )
-    source = _source_with(tmp_path, "parallel", graph_text)
+    source = _edited_source(tmp_path, "parallel", _set_unit(ZX1_S0, None))
     with pytest.raises(UnitError, match="has no unit"):
         _acquisition.build_specimen_record(PROFILE, source, "Zx1")
+
+
+def test_unchanged_edited_source_still_acquires(tmp_path):
+    """The parse-and-write round trip alone changes nothing, so the edits above cause the errors."""
+    source = _edited_source(tmp_path, "parallel", lambda graph: None)
+    record = _acquisition.build_specimen_record(PROFILE, source, "Zx1")
+    assert record == _acquisition.build_specimen_record(
+        PROFILE, {"kind": "turtle", "locations": [str(PMDCO2_ORIENTATION_FILES["parallel"])]}, "Zx1"
+    )
 
 
 def test_unrecognized_cross_section_name_raises(tmp_path):

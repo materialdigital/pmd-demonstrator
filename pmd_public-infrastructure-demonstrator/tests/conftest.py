@@ -20,9 +20,17 @@ import pytest
 
 DEMO_DIR = Path(__file__).resolve().parents[1]
 DATASETS_DIR = DEMO_DIR / "datasets"
+DOWNLOADED_DIR = DEMO_DIR / "downloaded"
+ORIENTATIONS = ("parallel", "perpendicular", "diagonal")
+# The pmdco2 graphs as hosted on Ontodocker (decision D7): downloaded/ holds
+# copies isomorphic to the hosted datasets. The older datasets/ files describe
+# the same tests (tests/test_pmdco2_sources.py) but write some nodes as
+# pseudo-IRIs <_:tNNN>.
 PMDCO2_ORIENTATION_FILES = {
-    orientation: DATASETS_DIR / f"pmdco2_tto_example_{orientation}.ttl"
-    for orientation in ("parallel", "perpendicular", "diagonal")
+    orientation: DOWNLOADED_DIR / f"pmdco2_tto_example_{orientation}.ttl" for orientation in ORIENTATIONS
+}
+PMDCO2_DATASETS_FILES = {
+    orientation: DATASETS_DIR / f"pmdco2_tto_example_{orientation}.ttl" for orientation in ORIENTATIONS
 }
 
 if str(DEMO_DIR) not in sys.path:

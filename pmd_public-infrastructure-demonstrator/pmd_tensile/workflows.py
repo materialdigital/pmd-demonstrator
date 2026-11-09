@@ -83,7 +83,10 @@ private module ``pmd_tensile._orchestration``; notebooks reach them through
 - ``batch_inputs`` -> the keyword inputs for running the batch workflow.
 - ``run_tensile_analysis`` (``profile_id``, ``source``, ``curve_locator=None``,
   ``*``, ``specimen_ids=None``, ``parameters=None``) -> ``TensileAnalysis``:
-  runs both stages and returns the run objects and the result tables.
+  runs both stages and returns the run objects, the result tables and, per
+  specimen, the curve and curve analysis the run used.
+- ``specimen_curves`` (``batch_run``, ``specimen_ids``) -> the curves and
+  curve analyses of a finished batch run, from its run data.
 - ``DEFAULT_PARAMETERS``, ``parameter_values`` and ``parameters_from_values``
   (``pmd_tensile._parameters``): the method defaults and the conversion
   between the dataclass and the dictionary form.

@@ -38,6 +38,7 @@ from pmd_tensile._orchestration import (
     build_exploration_workflow,
     build_specimen_node,
     run_tensile_analysis,
+    specimen_curves,
     specimen_input_label,
 )
 from pmd_tensile._parameters import DEFAULT_PARAMETERS, parameter_values, parameters_from_values
@@ -81,6 +82,7 @@ __all__ = [
     "build_exploration_workflow",
     "build_specimen_node",
     "run_tensile_analysis",
+    "specimen_curves",
     "specimen_input_label",
     # Knowledge graphs (_knowledge_graph)
     "EXAMPLE_QUERIES",

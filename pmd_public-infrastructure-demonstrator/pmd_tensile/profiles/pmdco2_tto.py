@@ -1,7 +1,10 @@
 """Profile ``pmdco2-tto``: PMDco 2.x with the TTO v2-era mapping of the S355 data.
 
-Graphs: the demonstrator's ``datasets/pmdco2_tto_example_*.ttl`` files and the
-Ontodocker datasets ``pmdco2_tto_example_{parallel,perpendicular,diagonal}``.
+Graphs: the Ontodocker datasets
+``pmdco2_tto_example_{parallel,perpendicular,diagonal}``, their local copies
+``downloaded/pmdco2_tto_example_*.ttl`` (isomorphic to the hosted graphs; the
+offline tests use them), and the older ``datasets/pmdco2_tto_example_*.ttl``
+files, which describe the same tests with the same results.
 
 How the concepts are expressed (observed in the local Turtle files):
 
@@ -32,9 +35,11 @@ relies on IRI local names.
 Lower yield strength (ReL) is not described in these graphs, so the profile
 does not query it and the reported ReL is ``None``.
 
-The pmdco2 files write some nodes as pseudo-IRIs ``<_:tNNN>`` (not blank
-nodes). Their labels repeat across files, so the files must be queried one by
-one and never merged into one graph; ``pmd_tensile._sources`` does that.
+The older ``datasets/`` pmdco2 files write some nodes as pseudo-IRIs
+``<_:tNNN>`` (not blank nodes; the ``downloaded/`` copies use blank nodes).
+Their labels repeat across files, so the files must be queried one by one and
+never merged into one graph; ``pmd_tensile._sources`` does that for every
+source.
 
 The queries adapt patterns of ``query_collection.S355queries`` (notably the
 CSVW column-list walk of ``csv_columns``) but are self-contained, so the

@@ -18,7 +18,9 @@ import pandas as pd
 import pyiron_workflow as pwf
 
 from pmd_tensile._parameters import parameter_values, parameters_from_values
-from pmd_tensile.analysis import summarize_by_group
+from pmd_tensile.acquisition import fetch_curve
+from pmd_tensile.analysis import CurveAnalysis, summarize_by_group
+from pmd_tensile.contract import Curve
 from pmd_tensile.workflows import (
     GROUP_COLUMN,
     comparison_table,
@@ -42,6 +44,10 @@ def build_specimen_node(label: str = "specimen"):
     the analysis parameters; ``None`` means the method defaults).
     """
     return pwf.node(specimen_workflow, label)
+
+
+def _specimen_node_label(index: int) -> str:
+    return f"specimen_{index}"
 
 
 def specimen_input_label(index: int) -> str:
@@ -73,7 +79,7 @@ def build_batch_workflow(specimen_ids: Sequence[str], label: str = "tensile_batc
     gather_comparisons = pwf.node(fr.schemas.TransformNto1(n).recipe, "gather_comparisons")
     wf.add_node(gather_summaries, gather_comparisons)
     for i in range(n):
-        node = pwf.node(specimen_workflow, f"specimen_{i}")
+        node = pwf.node(specimen_workflow, _specimen_node_label(i))
         wf.add_node(node)
         wf.create_input_for(node.inputs.specimen_id, label=specimen_input_label(i))
         wf.connect(wf.inputs.profile_id, node.inputs.profile_id)
@@ -130,6 +136,14 @@ class TensileAnalysis:
     ``exploration_run`` and ``batch_run`` are pyiron_workflow runs; their
     ``.result`` is the flowrep run data that
     :func:`pmd_tensile._knowledge_graph.run_knowledge_graph` exports.
+
+    ``curves`` and ``curve_analyses`` map each specimen ID (in the order of
+    ``specimen_ids``) to the neutral :class:`~pmd_tensile.contract.Curve`
+    that the specimen's ``fetch_curve`` step returned and to the
+    :class:`~pmd_tensile.analysis.CurveAnalysis` computed from it. Both are
+    the objects of the batch run's own data, not a second download, so a
+    figure drawn from them shows exactly the arrays the analysis used
+    (decision D12.1).
     """
 
     profile_id: str
@@ -141,6 +155,39 @@ class TensileAnalysis:
     results: pd.DataFrame
     orientation_summary: pd.DataFrame
     comparison: pd.DataFrame
+    curves: dict[str, Curve]
+    curve_analyses: dict[str, CurveAnalysis]
+
+
+def _specimen_data(batch_run, index: int, specimen_id: str):
+    """The run data of the ``index``-th per-specimen node, checked against its specimen ID."""
+    data = batch_run.result.nodes[_specimen_node_label(index)]
+    recorded = data.input_ports["specimen_id"].value
+    if recorded != specimen_id:
+        raise RuntimeError(f"{_specimen_node_label(index)} ran for {recorded!r}, expected {specimen_id!r}")
+    return data
+
+
+def _fetched_curve(specimen_data) -> Curve:
+    """The output of the one ``fetch_curve`` step in a per-specimen run."""
+    steps = [node for node in specimen_data.nodes.values() if getattr(node, "function", None) is fetch_curve]
+    if len(steps) != 1:
+        raise RuntimeError(f"expected one fetch_curve step in the specimen run, found {len(steps)}")
+    return steps[0].output_ports["curve"].value
+
+
+def specimen_curves(batch_run, specimen_ids: Sequence[str]) -> tuple[dict[str, Curve], dict[str, CurveAnalysis]]:
+    """Curves and curve analyses per specimen ID from a finished batch run (no download).
+
+    ``specimen_ids`` are the IDs in batch order, as passed to
+    :func:`build_batch_workflow` and :func:`batch_inputs`.
+    """
+    curves, analyses = {}, {}
+    for index, specimen_id in enumerate(specimen_ids):
+        data = _specimen_data(batch_run, index, str(specimen_id))
+        curves[str(specimen_id)] = _fetched_curve(data)
+        analyses[str(specimen_id)] = data.output_ports["analysis"].value
+    return curves, analyses
 
 
 def run_tensile_analysis(
@@ -171,6 +218,7 @@ def run_tensile_analysis(
             raise LookupError(f"specimen IDs not described in the source: {unknown}; listed: {listed}")
     batch = build_batch_workflow(selected)
     batch_run = batch.run(**batch_inputs(profile_id, source, selected, curve_locator, parameters))
+    curves, curve_analyses = specimen_curves(batch_run, selected)
     return TensileAnalysis(
         profile_id=str(profile_id),
         specimen_ids=tuple(selected),
@@ -181,4 +229,6 @@ def run_tensile_analysis(
         results=batch_run.outputs.results,
         orientation_summary=batch_run.outputs.orientation_summary,
         comparison=batch_run.outputs.comparison,
+        curves=curves,
+        curve_analyses=curve_analyses,
     )

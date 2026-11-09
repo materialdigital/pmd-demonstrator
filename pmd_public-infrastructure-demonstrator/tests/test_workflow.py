@@ -204,6 +204,49 @@ def test_batch_results_equal_analyse_curve(pmdco2_run, pmdco2_curves):
         assert set(expected.flags) <= flags
 
 
+def test_result_carries_the_curves_and_analyses_the_run_used(pmdco2_run, pmdco2_curves):
+    """D12.1: each specimen's Curve and CurveAnalysis come from the run itself."""
+    result, fetched = pmdco2_run
+    assert list(result.curves) == list(SPECIMENS) == list(result.curve_analyses)
+    # One download per specimen, all during the run; reading the result fetches nothing.
+    assert len(set(fetched)) == len(fetched) == len(SPECIMENS)
+    rows = result.results.set_index("specimen_id")
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(sources, "fetch_bytes", lambda url: pytest.fail(f"second download of {url}"))
+        for i, sid in enumerate(SPECIMENS):
+            curve, analysis = result.curves[sid], result.curve_analyses[sid]
+            record, parsed, expected, _, _, _ = reference_analysis(PMDCO2, PMDCO2_SOURCE, sid, pmdco2_curves[sid])
+            # The bytes that were analysed: hash and URL as in the result row and the stub.
+            assert curve.sha256 == rows.loc[sid, "curve_sha256"] == hashlib.sha256(pmdco2_curves[sid]).hexdigest()
+            assert curve.source_url == rows.loc[sid, "curve_url"] == record.curve_url
+            for channel in ("time_s", "crosshead_mm", "force_n", "strain"):
+                assert np.array_equal(getattr(curve, channel), getattr(parsed, channel), equal_nan=True), channel
+            # The very objects of the run: the curve fed the analysis steps, the analysis is their result.
+            specimen = result.batch_run.result.nodes[f"specimen_{i}"]
+            assert specimen.nodes["curve_channels_0"].input_ports["curve"].value is curve
+            assert specimen.nodes["bootstrap_fit_0"].input_ports["force_n"].value is curve.force_n
+            assert specimen.output_ports["analysis"].value is analysis
+            assert differing_fields(analysis, expected) == []
+            for column in ("e_gpa", "reh_mpa", "rp02_mpa", "fm_n", "rm_mpa"):
+                assert same(rows.loc[sid, column], getattr(analysis, column)), (sid, column)
+
+
+def test_specimen_curves_of_a_batch_run_built_by_hand(pmdco2_curves):
+    """The same extraction works for a batch built with build_batch_workflow and batch_inputs."""
+    ids = ("Zd2", "Zx1")
+    fetch = stub_fetch(pmdco2_curves)
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(sources, "fetch_bytes", fetch)
+        batch = _orchestration.build_batch_workflow(ids)
+        run = batch.run(**_orchestration.batch_inputs(PMDCO2, PMDCO2_SOURCE, ids))
+    curves, analyses = _orchestration.specimen_curves(run, ids)
+    assert list(curves) == list(ids) == list(analyses)
+    assert sorted(curve.source_url for curve in curves.values()) == sorted(fetch.fetched)
+    assert [curves[sid].sha256 for sid in ids] == [hashlib.sha256(pmdco2_curves[sid]).hexdigest() for sid in ids]
+    with pytest.raises(RuntimeError, match="ran for 'Zd2', expected 'Zx1'"):
+        _orchestration.specimen_curves(run, ("Zx1", "Zd2"))  # wrong order is detected
+
+
 def test_per_specimen_workflow_equals_analyse_curve(pmdco2_curves):
     """Every CurveAnalysis field of the step-node composition equals analyse_curve (NaN-aware)."""
     sid = "Zx1"
