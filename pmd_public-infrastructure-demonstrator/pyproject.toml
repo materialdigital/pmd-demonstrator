@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pmd-tensile"
+version = "0.1.0"
+description = "Tensile-test workflow nodes and macros of the PMD public-infrastructure demonstrator"
+requires-python = ">=3.12"
+# The packages pmd_tensile imports, without versions: environment.yml installs
+# them from conda-forge and pins the workflow stack there.
+dependencies = [
+    "flowrep",
+    "numpy",
+    "pandas",
+    "praeco",
+    "pyiron_workflow",
+    "rdflib",
+    "semantikon",
+]
+
+[tool.setuptools.packages.find]
+# Only the package: tests, notebooks, datasets and query_collection.py stay out.
+include = ["pmd_tensile", "pmd_tensile.*"]

@@ -8,7 +8,7 @@ dependencies:
   - git
   - jupyterlab
   - ipykernel
-  - praeco =0.1.0
+  - praeco =0.2.0
   - pyiron_workflow =0.20.3
   - semantikon =1.4.4
   - flowrep =0.6.7
@@ -19,3 +19,8 @@ dependencies:
   - pint
   - rdflib
   - python-graphviz
+  - pip:
+      # pmd_tensile (pyproject.toml next to this file), editable. The pip step
+      # runs in this file's directory, so "." is that directory wherever the
+      # command is started.
+      - -e .
