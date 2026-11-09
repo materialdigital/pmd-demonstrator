@@ -262,9 +262,12 @@ def fetch_bytes(url: str) -> tuple[bytes, str]:
     return data, hashlib.sha256(data).hexdigest()
 
 
-# Layout of the S355 curve CSVs (a declared assumption, stated by neither
-# graph): ';' delimiter, ',' decimal mark, one header row with channel names,
-# one row with units in parentheses, then data rows.
+# Layout of the S355 curve CSVs: ';' delimiter, ',' decimal mark, one header
+# row with channel names, one row with units in parentheses, then data rows.
+# A declared assumption for the pmdco2 graphs and the original PMDco3 graph,
+# which state no dialect. The PMDco3 slices declare it in their curve tables
+# (csvw:Dialect, csvw:NumericFormat); acquisition checks that declaration
+# against these values (``pmd_tensile._acquisition``).
 CSV_DELIMITER = ";"
 CSV_DECIMAL = ","
 CSV_HEADER_ROWS = 2

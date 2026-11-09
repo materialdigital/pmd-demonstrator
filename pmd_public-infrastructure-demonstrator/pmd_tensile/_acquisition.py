@@ -121,8 +121,15 @@ def _semantic_curve_columns(
     rows = sources.select(source, query.query, query.columns)
     rows = rows[rows["process"] == process]
     urls = sorted(set(rows["url"]))
+    if not urls and profile.accepts_curve_locator:
+        raise LookupError(
+            f"the graph links no curve table for specimen {specimen_id!r} (profile "
+            f"{profile.profile_id!r}); for a graph without curve tables, pass an explicit "
+            "curve_locator (see the profile's CURVE_LOCATOR)"
+        )
     if len(urls) != 1:
         raise LookupError(f"specimen {specimen_id!r} needs exactly one curve URL, found {urls}")
+    _check_declared_dialect(rows, specimen_id)
     columns = {}
     for role in CURVE_ROLES:
         matches = rows[rows["role"] == role]
@@ -139,6 +146,29 @@ def _semantic_curve_columns(
     return urls[0], columns
 
 
+_PARSER_DIALECT = {
+    # dialect column of the curve_columns query -> the curve parser's fixed value, as text
+    "delimiter": sources.CSV_DELIMITER,
+    "decimal_char": sources.CSV_DECIMAL,
+    "header_row_count": str(sources.CSV_HEADER_ROWS),
+}
+
+
+def _check_declared_dialect(rows, specimen_id: str) -> None:
+    """A CSV dialect declared in the graph must be the layout the curve parser reads."""
+    for column, expected in _PARSER_DIALECT.items():
+        if column not in rows.columns:
+            continue
+        declared = {value for value in rows[column] if value is not None}
+        if column == "header_row_count":
+            declared = {str(int(float(value))) for value in declared}
+        if declared - {expected}:
+            raise ValueError(
+                f"the curve table of {specimen_id!r} declares {column} {sorted(declared)}, but the "
+                f"curve parser reads only {expected!r}"
+            )
+
+
 def _located_curve_columns(
     profile: OntologyProfile, specimen_id: str, curve_locator: dict | None
 ) -> tuple[str, dict[str, ColumnSpec]]:
@@ -153,7 +183,7 @@ def build_specimen_record(
 ) -> SpecimenRecord:
     """Plain-function form of :func:`pmd_tensile.acquisition.get_specimen_record`."""
     profile = get_profile(profile_id)
-    if curve_locator is not None and profile.links_curves_semantically:
+    if curve_locator is not None and profile.links_curves_semantically and not profile.accepts_curve_locator:
         raise ValueError(
             f"profile {profile_id!r} links curves semantically; "
             "a non-semantic curve_locator is not accepted"
@@ -161,9 +191,9 @@ def build_specimen_record(
     row = _specimen_row(profile_id, source, specimen_id)
     process = row["process"]
     values = _quantity_values(profile, source, process)
-    if profile.links_curves_semantically:
+    if profile.links_curves_semantically and curve_locator is None:
         curve_url, curve_columns = _semantic_curve_columns(profile, source, process, specimen_id)
-    else:
+    else:  # the profile's own locator, or an explicit one that replaces the graph's links
         curve_url, curve_columns = _located_curve_columns(profile, specimen_id, curve_locator)
     return SpecimenRecord(
         specimen_id=specimen_id,

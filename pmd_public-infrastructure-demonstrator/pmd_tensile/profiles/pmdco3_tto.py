@@ -1,10 +1,24 @@
 """Profile ``pmdco3-tto``: PMDco 3.x with the Tensile Test Ontology (TTO).
 
-Target graph (read-only, not committed; no licence detected for the repository):
-``S355_data_tto_pmdco3.ttl`` in materialdigital/tensile-test-ontology at commit
-08a7aec359f1072b823362bd67fbb93a88643e6f, see :data:`PINNED_GRAPH_URL`.
+Graphs:
 
-How the concepts are expressed (observed in that graph):
+- The original ``S355_data_tto_pmdco3.ttl`` in
+  materialdigital/tensile-test-ontology at commit
+  08a7aec359f1072b823362bd67fbb93a88643e6f (:data:`PINNED_GRAPH_URL`; no
+  licence was detected for that repository), committed unchanged as
+  ``datasets/S355_data_tto_pmdco3.ttl``. It has no per-test curve tables
+  (see "Gaps" below), so it is analysed with the explicit
+  :data:`CURVE_LOCATOR`.
+- The demonstrator's slices ``datasets/pmdco3_tto_example_{parallel,
+  perpendicular,diagonal}.ttl`` and the full file
+  ``datasets/pmdco3_tto_example.ttl``, written by
+  ``scripts/slice_pmdco3.py`` (the slices are meant for Ontodocker as
+  ``pmdco3_tto_example_*``). They are the original plus one CSVW curve table
+  per test (handoff decision D8.6), read by :data:`CURVE_COLUMNS`; no locator
+  is needed.
+
+How the concepts are expressed (observed in the original graph; the slices
+keep all of it):
 
 - A test is a ``pmdco:PMD_0000974`` (tensile testing process) whose
   ``obo:OBI_0000293`` (has specified input) is the test piece.
@@ -37,13 +51,32 @@ How the concepts are expressed (observed in that graph):
   generically typed quality with a textual value (acquisition fails if there
   are several).
 
+- Curves (slices and full file only): the test ``obo:OBI_0000299`` (has
+  specified output) a ``csvw:Table`` that is also a ``pmdco:PMD_0000992``
+  (time series), with ``csvw:url`` (the data-host CSV) and a
+  ``csvw:tableSchema`` whose ``csvw:column`` RDF list gives the column
+  order. Each column is a measurement datum (``obo:IAO_0000109``) with its
+  unit (``obo:IAO_0000039``), that ``obo:IAO_0000136`` (is about) a per-test
+  entity typed ``obo:BFO_0000202`` (temporal interval: time),
+  ``tto:TTO_0000013`` (crosshead separation), ``pmdco:PMD_0020200`` (force)
+  or ``pmdco:PMD_0060011`` (percentage extension: strain). The table's
+  ``csvw:dialect`` and the columns' ``csvw:datatype``/``csvw:format`` declare
+  the CSV layout, which acquisition checks against the curve parser's.
+  The aggregate lab table ``S355_data.csv`` is not a time series and is not
+  matched.
+
 Gaps and non-semantic parts (reported as findings):
 
-- **No curve links.** The graph links only the aggregate table
-  ``S355_data.csv`` via CSVW, not the per-test curve CSVs. The curve location
-  therefore comes from :data:`CURVE_LOCATOR`, an explicit, NON-SEMANTIC URL
-  template with ``{specimen_id}``, and the column semantics from its declared,
-  NON-SEMANTIC header-name map. Neither is knowledge from the graph.
+- **No curve links in the original graph.** The original links only the
+  aggregate table ``S355_data.csv`` via CSVW, not the per-test curve CSVs.
+  For it, the curve location comes from :data:`CURVE_LOCATOR`, an explicit,
+  NON-SEMANTIC URL template with ``{specimen_id}``, and the column semantics
+  from its declared, NON-SEMANTIC header-name map; neither is knowledge from
+  the graph. It is not the profile's default: pass
+  ``curve_locator=CURVE_LOCATOR.as_dict()`` explicitly; without it,
+  acquisition on the original fails with a message saying so. The slices
+  close this gap with their curve tables; there, an explicit locator still
+  replaces the graph's links if given.
 - **Notes by instance label.** Lab notes and the process identifier are both
   information entities that denote the test; only the instance label
   ``"process note"`` tells them apart (NON-SEMANTIC selection).
@@ -62,6 +95,8 @@ from __future__ import annotations
 
 from pmd_tensile.contract import ColumnSpec
 from pmd_tensile.profiles.base import (
+    CURVE_COLUMN_COLUMNS,
+    CURVE_DIALECT_COLUMNS,
     NOTE_COLUMNS,
     QUANTITY_COLUMNS,
     SPECIMEN_COLUMNS,
@@ -78,8 +113,11 @@ _TTO_RAW = f"https://raw.githubusercontent.com/materialdigital/tensile-test-onto
 PINNED_GRAPH_URL = f"{_TTO_RAW}/tensile_test_data/S355_data_tto_pmdco3.ttl"
 """The S355 PMDco3/TTO graph at the pinned commit."""
 
-# NON-SEMANTIC: the graph does not link per-test curves. This locator is a
-# declared assumption about where the curves are and what their columns mean.
+# NON-SEMANTIC, for the original graph only, which does not link per-test
+# curves: a declared assumption about where the curves are and what their
+# columns mean. Not the profile's default; pass it explicitly as
+# ``curve_locator=CURVE_LOCATOR.as_dict()``. The slices link the curves in
+# their curve tables (:data:`CURVE_COLUMNS`).
 CURVE_LOCATOR = CurveLocator(
     url_template=f"{_TTO_RAW}/tensile_test_data/primary_data/{{specimen_id}}.csv",
     columns={
@@ -203,6 +241,53 @@ WHERE {
     columns=NOTE_COLUMNS,
 )
 
+CURVE_COLUMNS = SelectQuery(
+    query=_PREFIXES
+    + """PREFIX csvw:  <http://www.w3.org/ns/csvw#>
+PREFIX rdf:   <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+SELECT ?process ?url ?role ?column_number ?unit ?delimiter ?header_row_count ?decimal_char
+WHERE {
+  VALUES (?class ?role) {
+    (obo:BFO_0000202   "time")        # temporal interval
+    (tto:TTO_0000013   "crosshead")   # crosshead separation
+    (pmdco:PMD_0020200 "force")       # force
+    (pmdco:PMD_0060011 "strain")      # percentage extension
+  }
+  {
+    # Position of each column in the csvw:column RDF list (1-based).
+    SELECT ?process ?table ?url ?column (COUNT(DISTINCT ?position) AS ?column_number)
+    WHERE {
+      ?process a pmdco:PMD_0000974 ;                # tensile testing process
+               obo:OBI_0000299 ?table .             # has specified output
+      ?table a csvw:Table, pmdco:PMD_0000992 ;      # time series
+             csvw:url ?url ;
+             csvw:tableSchema ?schema .
+      ?schema csvw:column/rdf:rest* ?position .
+      ?position rdf:rest* ?cell .
+      ?cell rdf:first ?column .
+    }
+    GROUP BY ?process ?table ?url ?column
+  }
+  ?column obo:IAO_0000136 ?entity .                 # is about
+  ?entity a ?class .
+  OPTIONAL { ?column obo:IAO_0000039 ?unit }        # has measurement unit label
+  OPTIONAL {
+    ?table csvw:dialect ?dialect .
+    OPTIONAL { ?dialect csvw:delimiter ?delimiter }
+    OPTIONAL { ?dialect csvw:headerRowCount ?header_row_count }
+  }
+  OPTIONAL { ?column csvw:datatype/csvw:format/csvw:decimalChar ?decimal_char }
+}
+""",
+    columns=CURVE_COLUMN_COLUMNS + CURVE_DIALECT_COLUMNS,
+)
+"""Curve columns from the per-test CSVW tables of the slices (D8.3, query of the T4 report).
+
+Units are QUDT IRIs (``unit:SEC``, ``unit:MilliM``, ``unit:KiloN``,
+``unit:PERCENT``), mapped through the shared unit table. Column numbers are
+1-based list positions.
+"""
+
 CONFORMANCE_ASKS = {
     "tensile testing process with test-piece identifier": _PREFIXES
     + """
@@ -284,19 +369,27 @@ IRI_LABELS: tuple[tuple[str, str, str], ...] = (
     ("tto:TTO_0000033", "percentage elongation after fracture", "reported A; deprecated in src"),
     ("tto:TTO_0000038", "percentage reduction of area", "reported Z; deprecated in src"),
     ("tto:TTO_0000058", "transition point testing rate", "strain at the test-speed switch (diagnostic)"),
+    # Curve tables of the slices (CURVE_COLUMNS; labels as in the T3 proposal, handoff D8.6).
+    ("pmdco:PMD_0000992", "time series", "type of the per-test curve tables (slices only)"),
+    ("obo:BFO_0000202", "temporal interval", "what the time column is about"),
+    ("tto:TTO_0000013", "crosshead separation", "what the crosshead column is about"),
+    ("pmdco:PMD_0020200", "force", "what the force column is about"),
+    ("pmdco:PMD_0060011", "percentage extension", "what the strain column is about; not in the released tto-full"),
 )
 
 PROFILE = OntologyProfile(
     profile_id=PROFILE_ID,
     description=(
         "PMDco 3.x + TTO S355 mapping; specimens, geometry and reported values "
-        "from the graph; curve location and columns from a NON-SEMANTIC locator "
-        "because the graph does not link the per-test curves."
+        "from the graph; curves from the per-test CSVW curve tables of the "
+        "demonstrator's slices. The original graph has none and needs the "
+        "explicit, NON-SEMANTIC CURVE_LOCATOR."
     ),
     conformance_asks=CONFORMANCE_ASKS,
     specimens=SPECIMENS,
     quantities=QUANTITIES,
     notes=NOTES,
-    curve_locator=CURVE_LOCATOR,
+    curve_columns=CURVE_COLUMNS,
     unit_aliases=UNIT_ALIASES,
+    accepts_curve_locator=True,
 )

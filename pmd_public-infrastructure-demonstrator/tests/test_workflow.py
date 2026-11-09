@@ -39,6 +39,7 @@ from pmd_tensile.analysis import (
     reduction_of_area,
     s0_scatter,
 )
+from pmd_tensile.profiles import pmdco3_tto
 
 SPECIMENS = ("Zx1", "Zy1", "Zd2")  # one per orientation
 
@@ -332,15 +333,17 @@ PARITY_SPECIMENS = ("Zx1", "Zd2")
 def test_pmdco2_and_pmdco3_give_identical_analysis_for_identical_curve_bytes(tmp_path):
     curves = curve_bytes_for(PARITY_SPECIMENS)
     pmdco3_source = pmdco3_twin_of_pmdco2(PARITY_SPECIMENS, tmp_path)
+    # The fixture, like the original graph, has no curve tables: explicit locator.
+    locator = pmdco3_tto.CURVE_LOCATOR.as_dict()
     for sid in PARITY_SPECIMENS:  # the neutral records agree on what the analysis sees
         r2 = _acquisition.build_specimen_record(PMDCO2, PMDCO2_SOURCE, sid)
-        r3 = _acquisition.build_specimen_record(PMDCO3, pmdco3_source, sid)
+        r3 = _acquisition.build_specimen_record(PMDCO3, pmdco3_source, sid, curve_locator=locator)
         for field in ("s0_mm2", "cross_section_measurements_mm2", "l0_mm", "lu_mm", "su_mm2", "orientation"):
             assert getattr(r2, field) == getattr(r3, field), (sid, field)
         assert r2.rate_switch_strain == pytest.approx(r3.rate_switch_strain, rel=1e-12)
 
     run2, fetched2 = run_with_stubbed_curves(curves, PMDCO2, PMDCO2_SOURCE, specimen_ids=PARITY_SPECIMENS)
-    run3, fetched3 = run_with_stubbed_curves(curves, PMDCO3, pmdco3_source)
+    run3, fetched3 = run_with_stubbed_curves(curves, PMDCO3, pmdco3_source, curve_locator=locator)
 
     # Only the profile ID and the source differ; the recipe is the same.
     assert run2.batch_workflow.recipe == run3.batch_workflow.recipe

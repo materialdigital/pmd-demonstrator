@@ -5,10 +5,12 @@ reproduces the modelling pattern of the pinned PMDco3/TTO S355 graph with the
 same IRIs the profile queries, including its distractors (extensometer gauge
 length with the L0 class, load-cell force range with the Fm class, process
 identifier next to the process note). Its numbers are made up; it is not real
-data.
+data. Like the original graph, it has no per-test curve tables, so curves
+need the explicit, NON-SEMANTIC ``CURVE_LOCATOR``.
 
-The test against the real pinned graph needs network access and is marked
-``network`` (skipped by default).
+The real pinned graph is committed as ``datasets/S355_data_tto_pmdco3.ttl``
+and tested offline at the end. The curve tables of the demonstrator's slices
+are tested in ``test_pmdco3_curve_tables.py``.
 """
 
 from __future__ import annotations
@@ -19,6 +21,7 @@ import re
 import numpy as np
 import pyiron_workflow as pwf
 import pytest
+from conftest import PMDCO3_ORIGINAL_FILE
 from workflow_helpers import PMDCO3_PREFIXES, pmdco3_test
 
 from pmd_tensile import _acquisition, _exploration, acquisition, exploration
@@ -28,6 +31,7 @@ from pmd_tensile.profiles import available_profiles, get_profile, pmdco3_tto
 from pmd_tensile.profiles.base import QUANTITY_KINDS
 
 PROFILE = "pmdco3-tto"
+LOCATOR = pmdco3_tto.CURVE_LOCATOR.as_dict()  # explicit, for graphs without curve tables
 
 FIXTURE = (
     PMDCO3_PREFIXES
@@ -59,12 +63,15 @@ def fixture_source(tmp_path) -> dict:
 # ---------------------------------------------------------------------------
 
 
-def test_profile_is_registered_and_non_semantic_for_curves():
+def test_profile_reads_curve_tables_and_accepts_an_explicit_locator():
     assert PROFILE in available_profiles()
     profile = get_profile(PROFILE)
-    assert not profile.links_curves_semantically
-    assert profile.curve_locator is pmdco3_tto.CURVE_LOCATOR
-    assert profile.curve_locator.url_for("Zx1") == (
+    assert profile.links_curves_semantically
+    assert profile.curve_columns is pmdco3_tto.CURVE_COLUMNS
+    assert profile.curve_locator is None  # no default locator any more (D8.3)
+    assert profile.accepts_curve_locator
+    # The explicit option for the original graph is unchanged.
+    assert pmdco3_tto.CURVE_LOCATOR.url_for("Zx1") == (
         "https://raw.githubusercontent.com/materialdigital/tensile-test-ontology/"
         "08a7aec359f1072b823362bd67fbb93a88643e6f/tensile_test_data/primary_data/Zx1.csv"
     )
@@ -104,7 +111,7 @@ def test_list_specimens(fixture_source):
 
 def test_specimen_record(fixture_source):
     run = pwf.node(acquisition.get_specimen_record, "r").run(
-        profile_id=PROFILE, source=fixture_source, specimen_id="Zb7"
+        profile_id=PROFILE, source=fixture_source, specimen_id="Zb7", curve_locator=LOCATOR
     )
     record = run.outputs.record
     assert record.specimen_id == "Zb7"
@@ -125,7 +132,16 @@ def test_specimen_record(fixture_source):
     }
 
 
-def test_explicit_curve_locator_overrides_default(fixture_source):
+def test_without_curve_tables_a_locator_is_required(fixture_source):
+    with pytest.raises(LookupError, match="links no curve table for specimen 'Za1'.*curve_locator"):
+        _acquisition.build_specimen_record(PROFILE, fixture_source, "Za1")
+    with pytest.raises(LookupError, match="curve_locator"):
+        pwf.node(acquisition.get_specimen_record, "r").run(
+            profile_id=PROFILE, source=fixture_source, specimen_id="Za1"
+        )
+
+
+def test_explicit_curve_locator(fixture_source):
     locator = pmdco3_tto.CURVE_LOCATOR.as_dict()
     locator["url_template"] = "https://curves.example.org/s355/{specimen_id}.csv"
     record = _acquisition.build_specimen_record(PROFILE, fixture_source, "Za1", curve_locator=locator)
@@ -170,23 +186,24 @@ def test_rate_switch_strain_is_a_ratio(fixture_source):
     assert _rate_switch_strain(PROFILE, fixture_source, "Za1") == pytest.approx(0.016, rel=1e-12)
     assert _rate_switch_strain(PROFILE, fixture_source, "Zb7") == pytest.approx(0.040, rel=1e-12)
     # Acquisition still succeeds with the extra quantity in the graph.
-    assert _acquisition.build_specimen_record(PROFILE, fixture_source, "Za1").specimen_id == "Za1"
+    record = _acquisition.build_specimen_record(PROFILE, fixture_source, "Za1", curve_locator=LOCATOR)
+    assert record.specimen_id == "Za1"
 
 
 def test_unknown_unit_raises(tmp_path):
     text = PMDCO3_PREFIXES + pmdco3_test("test_1", "Za1", "in rolling direction", s0_unit="unit:FURLONG2")
     with pytest.raises(UnitError, match="FURLONG2"):
-        _acquisition.build_specimen_record(PROFILE, _source(tmp_path, text), "Za1")
+        _acquisition.build_specimen_record(PROFILE, _source(tmp_path, text), "Za1", curve_locator=LOCATOR)
 
 
 def test_mismatched_unit_raises(tmp_path):
     text = PMDCO3_PREFIXES + pmdco3_test("test_1", "Za1", "in rolling direction", s0_unit="unit:MilliM")
     with pytest.raises(UnitError, match="'area'"):
-        _acquisition.build_specimen_record(PROFILE, _source(tmp_path, text), "Za1")
+        _acquisition.build_specimen_record(PROFILE, _source(tmp_path, text), "Za1", curve_locator=LOCATOR)
 
 
 def test_fetch_curve_by_header_with_stubbed_fetch(monkeypatch, fixture_source):
-    record = _acquisition.build_specimen_record(PROFILE, fixture_source, "Za1")
+    record = _acquisition.build_specimen_record(PROFILE, fixture_source, "Za1", curve_locator=LOCATOR)
     monkeypatch.setattr(sources, "fetch_bytes", lambda url: (CSV, hashlib.sha256(CSV).hexdigest()))
     curve = pwf.node(acquisition.fetch_curve, "f").run(record=record).outputs.curve
     np.testing.assert_allclose(curve.force_n, [0.0, 2500.0])
@@ -197,7 +214,7 @@ def test_fetch_curve_by_header_with_stubbed_fetch(monkeypatch, fixture_source):
 
 def test_iri_label_table_covers_every_iri_used():
     profile = get_profile(PROFILE)
-    texts = [profile.specimens.query, profile.quantities.query, profile.notes.query]
+    texts = [profile.specimens.query, profile.quantities.query, profile.notes.query, profile.curve_columns.query]
     texts += list(profile.conformance_asks.values())
     used = set(re.findall(r"\b(?:pmdco|obo|tto):[A-Za-z]+_[0-9]+\b", " ".join(texts)))
     listed = {iri for iri, _label, _note in pmdco3_tto.IRI_LABELS}
@@ -205,13 +222,13 @@ def test_iri_label_table_covers_every_iri_used():
 
 
 # ---------------------------------------------------------------------------
-# Real pinned graph (network)
+# Real pinned graph (committed copy, offline)
 # ---------------------------------------------------------------------------
 
 
-@pytest.mark.network
 def test_real_pinned_graph_matches_pmdco2(pmdco2_source):
-    source = {"kind": "turtle", "locations": [pmdco3_tto.PINNED_GRAPH_URL]}
+    """The original graph, with the explicit locator, describes the pmdco2 specimens identically."""
+    source = {"kind": "turtle", "locations": [str(PMDCO3_ORIGINAL_FILE)]}
     assert _exploration.is_conformant(PROFILE, source)
     ids = list(_exploration.specimen_table(PROFILE, source)["specimen_id"])
     assert sorted(ids) == sorted(_exploration.specimen_table("pmdco2-tto", pmdco2_source)["specimen_id"])
@@ -222,8 +239,9 @@ def test_real_pinned_graph_matches_pmdco2(pmdco2_source):
         "rate_switch_strain", "notes",
     ]
     for sid in ids:
-        r3 = _acquisition.build_specimen_record(PROFILE, source, sid)
+        r3 = _acquisition.build_specimen_record(PROFILE, source, sid, curve_locator=LOCATOR)
         r2 = _acquisition.build_specimen_record("pmdco2-tto", pmdco2_source, sid)
+        assert r3.curve_url == pmdco3_tto.CURVE_LOCATOR.url_for(sid)
         for field in compared:
             assert getattr(r3, field) == getattr(r2, field), (sid, field)
         q3 = _acquisition.build_reported_properties(PROFILE, source, sid)

@@ -32,6 +32,13 @@ PMDCO2_ORIENTATION_FILES = {
 PMDCO2_DATASETS_FILES = {
     orientation: DATASETS_DIR / f"pmdco2_tto_example_{orientation}.ttl" for orientation in ORIENTATIONS
 }
+# The PMDco3 graphs (decision D8): the slices and the full file carry one CSVW
+# curve table per test; the pinned original has none.
+PMDCO3_SLICE_FILES = {
+    orientation: DATASETS_DIR / f"pmdco3_tto_example_{orientation}.ttl" for orientation in ORIENTATIONS
+}
+PMDCO3_FULL_FILE = DATASETS_DIR / "pmdco3_tto_example.ttl"
+PMDCO3_ORIGINAL_FILE = DATASETS_DIR / "S355_data_tto_pmdco3.ttl"
 
 if str(DEMO_DIR) not in sys.path:
     sys.path.insert(0, str(DEMO_DIR))

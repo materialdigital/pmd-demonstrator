@@ -16,10 +16,17 @@ Query result contracts (column names are fixed; profiles must bind them):
 - ``notes`` (optional): ``process``, ``note``.
 - ``curve_columns`` (semantic curve links): ``process``, ``url``, ``role``,
   ``column_number`` (1-based), ``unit``. ``role`` is one of
-  ``contract.CURVE_ROLES``.
+  ``contract.CURVE_ROLES``. Optionally also the CSV dialect the graph
+  declares, :data:`CURVE_DIALECT_COLUMNS` (``delimiter``,
+  ``header_row_count``, ``decimal_char``; each may be unbound). The curve
+  parser reads one fixed layout (``pmd_tensile._sources``); acquisition
+  checks a declared dialect against it and fails on a difference.
 
 A profile whose graph does not link curves semantically declares a
-:class:`CurveLocator` instead of ``curve_columns``.
+:class:`CurveLocator` instead of ``curve_columns``. A profile with
+``curve_columns`` may set ``accepts_curve_locator``: then an explicit
+locator passed by the caller replaces the graph's curve links, e.g. for an
+older version of the graph without them.
 """
 
 from __future__ import annotations
@@ -57,6 +64,7 @@ SPECIMEN_COLUMNS = ("process", "specimen_id", "orientation")
 QUANTITY_COLUMNS = ("process", "quantity", "individual", "value", "unit")
 NOTE_COLUMNS = ("process", "note")
 CURVE_COLUMN_COLUMNS = ("process", "url", "role", "column_number", "unit")
+CURVE_DIALECT_COLUMNS = ("delimiter", "header_row_count", "decimal_char")
 
 
 @dataclasses.dataclass(frozen=True)
@@ -123,6 +131,10 @@ class OntologyProfile:
     not canonical QUDT IRIs to the canonical QUDT IRI they evidently mean.
     The aliases are explicit and per profile; any other unknown unit IRI
     raises ``contract.UnitError``.
+
+    ``accepts_curve_locator`` (only with ``curve_columns``): an explicit
+    :class:`CurveLocator` given by the caller replaces the graph's curve
+    links. Without it, a semantic profile rejects a locator.
     """
 
     profile_id: str
@@ -134,6 +146,7 @@ class OntologyProfile:
     curve_columns: SelectQuery | None = None
     curve_locator: CurveLocator | None = None
     unit_aliases: Mapping[str, str] = dataclasses.field(default_factory=dict)
+    accepts_curve_locator: bool = False
 
     def __post_init__(self) -> None:
         if (self.curve_columns is None) == (self.curve_locator is None):
@@ -141,18 +154,20 @@ class OntologyProfile:
                 "a profile needs exactly one of curve_columns (semantic) "
                 "or curve_locator (non-semantic)"
             )
+        if self.accepts_curve_locator and self.curve_columns is None:
+            raise ValueError("accepts_curve_locator applies only to a profile with curve_columns")
         if not self.conformance_asks:
             raise ValueError("a profile needs at least one conformance ASK query")
         expected = {
-            "specimens": SPECIMEN_COLUMNS,
-            "quantities": QUANTITY_COLUMNS,
-            "notes": NOTE_COLUMNS,
-            "curve_columns": CURVE_COLUMN_COLUMNS,
+            "specimens": (SPECIMEN_COLUMNS,),
+            "quantities": (QUANTITY_COLUMNS,),
+            "notes": (NOTE_COLUMNS,),
+            "curve_columns": (CURVE_COLUMN_COLUMNS, CURVE_COLUMN_COLUMNS + CURVE_DIALECT_COLUMNS),
         }
-        for name, columns in expected.items():
+        for name, allowed in expected.items():
             query = getattr(self, name)
-            if query is not None and tuple(query.columns) != columns:
-                raise ValueError(f"{name} query must bind {columns}, got {query.columns}")
+            if query is not None and tuple(query.columns) not in allowed:
+                raise ValueError(f"{name} query must bind {' or '.join(map(str, allowed))}, got {query.columns}")
 
     @property
     def links_curves_semantically(self) -> bool:
