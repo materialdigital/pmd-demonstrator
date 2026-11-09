@@ -1,0 +1,2139 @@
+@prefix abox: <https://w3id.org/pmd/demodata/tensiletest_S355/> .
+@prefix csvw: <http://www.w3.org/ns/csvw#> .
+@prefix dc: <http://purl.org/dc/elements/1.1/> .
+@prefix dct: <http://purl.org/dc/terms/> .
+@prefix obo: <http://purl.obolibrary.org/obo/> .
+@prefix owl: <http://www.w3.org/2002/07/owl#> .
+@prefix pmdco: <https://w3id.org/pmd/co/> .
+@prefix rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#> .
+@prefix rdfs: <http://www.w3.org/2000/01/rdf-schema#> .
+@prefix time: <http://www.w3.org/2006/time#> .
+@prefix tto: <https://w3id.org/pmd/tto/> .
+@prefix unit: <http://qudt.org/vocab/unit/> .
+@prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
+
+abox: a owl:Ontology ;
+    dc:title "TTO/PMDco 3.0 A-Box mapping example of S355 steel tensile test data (diagonal to rolling direction)"^^xsd:string ;
+    dct:created "2026-04-16"^^xsd:date ;
+    owl:imports tto: .
+
+abox:pmdao-tto-tt-S355-10_caliper_manufacturer_name a pmdco:PMD_0000017 ;
+    rdfs:label "caliper manufacturer name"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-10_caliper_manufacturer ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_caliper_manufacturer_name_value .
+
+abox:pmdao-tto-tt-S355-10_caliper_serial_number a pmdco:PMD_0000017 ;
+    rdfs:label "caliper serial number"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-10_caliper ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_caliper_serial_number_value .
+
+abox:pmdao-tto-tt-S355-10_extensometer_name a pmdco:PMD_0000017 ;
+    rdfs:label "extensometer name"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-10_extensometer ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_extensometer_name_value .
+
+abox:pmdao-tto-tt-S355-10_extensometer_serial_number a pmdco:PMD_0000017 ;
+    rdfs:label "extensometer serial number"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-10_extensometer ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_extensometer_serial_number_value .
+
+abox:pmdao-tto-tt-S355-10_extensometer_standard a pmdco:PMD_0000017 ;
+    rdfs:label "extensometer standard"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-10_extensometer ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_extensometer_standard_value .
+
+abox:pmdao-tto-tt-S355-10_institution_address a pmdco:PMD_0000017 ;
+    rdfs:label "institution address"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-10_institution ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_institution_address_value .
+
+abox:pmdao-tto-tt-S355-10_institution_name a pmdco:PMD_0000017 ;
+    rdfs:label "institution name"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-10_institution ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_institution_name_value .
+
+abox:pmdao-tto-tt-S355-10_micrometer_gauge_manufacturer_name a pmdco:PMD_0000017 ;
+    rdfs:label "micrometer_gauge manufacturer name"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-10_micrometer_gauge_manufacturer ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_micrometer_gauge_manufacturer_name_value .
+
+abox:pmdao-tto-tt-S355-10_process_identifier a pmdco:PMD_0000017 ;
+    rdfs:label "Process identifier"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-10_process ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_process_identifier_value .
+
+abox:pmdao-tto-tt-S355-10_process_note a pmdco:PMD_0000017 ;
+    rdfs:label "process note"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-10_process ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_process_note_value .
+
+abox:pmdao-tto-tt-S355-10_project_identifier a pmdco:PMD_0000017 ;
+    rdfs:label "project identifier"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-10_project ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_project_identifier_value .
+
+abox:pmdao-tto-tt-S355-10_tensile_test_method_standard a pmdco:PMD_0000017 ;
+    rdfs:label "tensile test method standard"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-10_tensile_test_method ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_tensile_test_method_standard_value .
+
+abox:pmdao-tto-tt-S355-10_tensile_testing_machine_manufacturer_name a pmdco:PMD_0000017 ;
+    rdfs:label "tensile_testing_machine manufacturer name"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-10_tensile_testing_machine_manufacturer ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_tensile_testing_machine_manufacturer_name_value .
+
+abox:pmdao-tto-tt-S355-10_tensile_testing_machine_name a pmdco:PMD_0000017 ;
+    rdfs:label "tensile_testing_machine name"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-10_tensile_testing_machine ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_tensile_testing_machine_name_value .
+
+abox:pmdao-tto-tt-S355-10_tensile_testing_machine_serial_number a pmdco:PMD_0000017 ;
+    rdfs:label "tensile_testing_machine serial number"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-10_tensile_testing_machine ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_tensile_testing_machine_serial_number_value .
+
+abox:pmdao-tto-tt-S355-10_tensile_testing_machine_standard a pmdco:PMD_0000017 ;
+    rdfs:label "tensile_testing_machine standard"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-10_tensile_testing_machine ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_tensile_testing_machine_standard_value .
+
+abox:pmdao-tto-tt-S355-10_tensile_testing_machine_type a pmdco:PMD_0000017 ;
+    rdfs:label "tensile_testing_machine type"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-10_tensile_testing_machine ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_tensile_testing_machine_type_value .
+
+abox:pmdao-tto-tt-S355-9_caliper_manufacturer_name a pmdco:PMD_0000017 ;
+    rdfs:label "caliper manufacturer name"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-9_caliper_manufacturer ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_caliper_manufacturer_name_value .
+
+abox:pmdao-tto-tt-S355-9_caliper_serial_number a pmdco:PMD_0000017 ;
+    rdfs:label "caliper serial number"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-9_caliper ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_caliper_serial_number_value .
+
+abox:pmdao-tto-tt-S355-9_extensometer_name a pmdco:PMD_0000017 ;
+    rdfs:label "extensometer name"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-9_extensometer ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_extensometer_name_value .
+
+abox:pmdao-tto-tt-S355-9_extensometer_serial_number a pmdco:PMD_0000017 ;
+    rdfs:label "extensometer serial number"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-9_extensometer ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_extensometer_serial_number_value .
+
+abox:pmdao-tto-tt-S355-9_extensometer_standard a pmdco:PMD_0000017 ;
+    rdfs:label "extensometer standard"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-9_extensometer ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_extensometer_standard_value .
+
+abox:pmdao-tto-tt-S355-9_institution_address a pmdco:PMD_0000017 ;
+    rdfs:label "institution address"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-9_institution ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_institution_address_value .
+
+abox:pmdao-tto-tt-S355-9_institution_name a pmdco:PMD_0000017 ;
+    rdfs:label "institution name"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-9_institution ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_institution_name_value .
+
+abox:pmdao-tto-tt-S355-9_micrometer_gauge_manufacturer_name a pmdco:PMD_0000017 ;
+    rdfs:label "micrometer_gauge manufacturer name"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-9_micrometer_gauge_manufacturer ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_micrometer_gauge_manufacturer_name_value .
+
+abox:pmdao-tto-tt-S355-9_process_identifier a pmdco:PMD_0000017 ;
+    rdfs:label "Process identifier"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-9_process ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_process_identifier_value .
+
+abox:pmdao-tto-tt-S355-9_process_note a pmdco:PMD_0000017 ;
+    rdfs:label "process note"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-9_process ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_process_note_value .
+
+abox:pmdao-tto-tt-S355-9_project_identifier a pmdco:PMD_0000017 ;
+    rdfs:label "project identifier"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-9_project ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_project_identifier_value .
+
+abox:pmdao-tto-tt-S355-9_tensile_test_method_standard a pmdco:PMD_0000017 ;
+    rdfs:label "tensile test method standard"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-9_tensile_test_method ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_tensile_test_method_standard_value .
+
+abox:pmdao-tto-tt-S355-9_tensile_testing_machine_manufacturer_name a pmdco:PMD_0000017 ;
+    rdfs:label "tensile_testing_machine manufacturer name"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-9_tensile_testing_machine_manufacturer ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_tensile_testing_machine_manufacturer_name_value .
+
+abox:pmdao-tto-tt-S355-9_tensile_testing_machine_name a pmdco:PMD_0000017 ;
+    rdfs:label "tensile_testing_machine name"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-9_tensile_testing_machine ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_tensile_testing_machine_name_value .
+
+abox:pmdao-tto-tt-S355-9_tensile_testing_machine_serial_number a pmdco:PMD_0000017 ;
+    rdfs:label "tensile_testing_machine serial number"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-9_tensile_testing_machine ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_tensile_testing_machine_serial_number_value .
+
+abox:pmdao-tto-tt-S355-9_tensile_testing_machine_standard a pmdco:PMD_0000017 ;
+    rdfs:label "tensile_testing_machine standard"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-9_tensile_testing_machine ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_tensile_testing_machine_standard_value .
+
+abox:pmdao-tto-tt-S355-9_tensile_testing_machine_type a pmdco:PMD_0000017 ;
+    rdfs:label "tensile_testing_machine type"^^xsd:string ;
+    obo:IAO_0000219 abox:pmdao-tto-tt-S355-9_tensile_testing_machine ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_tensile_testing_machine_type_value .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd2_material_material_identifier> a pmdco:PMD_0000017 ;
+    rdfs:label "material identifier (Werkstoff)"^^xsd:string ;
+    obo:IAO_0000219 <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd2_material> ;
+    obo:OBI_0001938 <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd2_material_material_identifier_value> .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd2_testpiece_identifier> a pmdco:PMD_0000017 ;
+    rdfs:label "Test piece identifier"^^xsd:string ;
+    obo:IAO_0000219 <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd2> ;
+    obo:OBI_0001938 <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd2_testpiece_identifier_value> .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd3_material_material_identifier> a pmdco:PMD_0000017 ;
+    rdfs:label "material identifier (Werkstoff)"^^xsd:string ;
+    obo:IAO_0000219 <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd3_material> ;
+    obo:OBI_0001938 <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd3_material_material_identifier_value> .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd3_testpiece_identifier> a pmdco:PMD_0000017 ;
+    rdfs:label "Test piece identifier"^^xsd:string ;
+    obo:IAO_0000219 <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd3> ;
+    obo:OBI_0001938 <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd3_testpiece_identifier_value> .
+
+abox:S355_data_csvw_schema a csvw:Schema ;
+    csvw:column <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/A>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Adresse>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Dehngeschwindigkeit>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/E>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Extensometer>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Extensometer-Nenngerätemesslänger>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Extensometer-Seriennummer>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Extensometer-Standard>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/F0_2>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/FeH>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/FeL>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Fm>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Institut>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Kraftmessdose-Kraftbereich>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/L0>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Lu>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Messschieber-Hersteller>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Messschieber-Seriennummer>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Mikrometerschraube-Hersteller>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Norm>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Note>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Operator>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Ort>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Probenform>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Project>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Prüfmaschinen-Name>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Prüfmaschinen-Seriennummer>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Prüfmaschinen-Standard>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Prüfmaschinen-Typ>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Prüfmaschinenhersteller>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/ReH>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/ReL>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Rm>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Rp0_2>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/S0>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Su>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Umgebungstemperatur>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Umschaltpunkt>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Walzrichtung>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Werkstoff>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Z>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/au>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/b1>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/b2>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/b3>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/bu>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/d1___a1>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/d2___a2>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/d3___a3>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/date>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/du1>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/du2>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/process>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/s1>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/s2>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/s3>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/testpiece> .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/A> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "A"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Adresse> a csvw:Column ;
+    csvw:datatype "string"^^xsd:string ;
+    csvw:name "Adresse"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Dehngeschwindigkeit> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "Dehngeschwindigkeit"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/E> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "E"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Extensometer> a csvw:Column ;
+    csvw:datatype "string"^^xsd:string ;
+    csvw:name "Extensometer"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Extensometer-Nenngerätemesslänger> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "Extensometer-Nenngerätemesslänger"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Extensometer-Seriennummer> a csvw:Column ;
+    csvw:datatype "string"^^xsd:string ;
+    csvw:name "Extensometer-Seriennummer"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Extensometer-Standard> a csvw:Column ;
+    csvw:datatype "string"^^xsd:string ;
+    csvw:name "Extensometer-Standard"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/F0_2> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "F0,2"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/FeH> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "FeH"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/FeL> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "FeL"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Fm> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "Fm"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Institut> a csvw:Column ;
+    csvw:datatype "string"^^xsd:string ;
+    csvw:name "Institut"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Kraftmessdose-Kraftbereich> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "Kraftmessdose-Kraftbereich"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/L0> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "L0"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Lu> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "Lu"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Messschieber-Hersteller> a csvw:Column ;
+    csvw:datatype "string"^^xsd:string ;
+    csvw:name "Messschieber-Hersteller"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Messschieber-Seriennummer> a csvw:Column ;
+    csvw:datatype "string"^^xsd:string ;
+    csvw:name "Messschieber-Seriennummer"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Mikrometerschraube-Hersteller> a csvw:Column ;
+    csvw:datatype "string"^^xsd:string ;
+    csvw:name "Mikrometerschraube-Hersteller"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Norm> a csvw:Column ;
+    csvw:datatype "string"^^xsd:string ;
+    csvw:name "Norm"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Note> a csvw:Column ;
+    csvw:datatype "string"^^xsd:string ;
+    csvw:name "Note"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Operator> a csvw:Column ;
+    csvw:datatype "string"^^xsd:string ;
+    csvw:name "Operator"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Ort> a csvw:Column ;
+    csvw:datatype "string"^^xsd:string ;
+    csvw:name "Ort"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Probenform> a csvw:Column ;
+    csvw:datatype "string"^^xsd:string ;
+    csvw:name "Probenform"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Project> a csvw:Column ;
+    csvw:datatype "string"^^xsd:string ;
+    csvw:name "Project"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Prüfmaschinen-Name> a csvw:Column ;
+    csvw:datatype "string"^^xsd:string ;
+    csvw:name "Prüfmaschinen-Name"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Prüfmaschinen-Seriennummer> a csvw:Column ;
+    csvw:datatype "string"^^xsd:string ;
+    csvw:name "Prüfmaschinen-Seriennummer"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Prüfmaschinen-Standard> a csvw:Column ;
+    csvw:datatype "string"^^xsd:string ;
+    csvw:name "Prüfmaschinen-Standard"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Prüfmaschinen-Typ> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "Prüfmaschinen-Typ"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Prüfmaschinenhersteller> a csvw:Column ;
+    csvw:datatype "string"^^xsd:string ;
+    csvw:name "Prüfmaschinenhersteller"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/ReH> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "ReH"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/ReL> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "ReL"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Rm> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "Rm"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Rp0_2> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "Rp0,2"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/S0> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "S0"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Su> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "Su"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Umgebungstemperatur> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "Umgebungstemperatur"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Umschaltpunkt> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "Umschaltpunkt"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Walzrichtung> a csvw:Column ;
+    csvw:datatype "string"^^xsd:string ;
+    csvw:name "Walzrichtung"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Werkstoff> a csvw:Column ;
+    csvw:datatype "string"^^xsd:string ;
+    csvw:name "Werkstoff"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/Z> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "Z"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/au> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "au"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/b1> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "b1"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/b2> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "b2"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/b3> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "b3"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/bu> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "bu"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/d1___a1> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "d1 / a1"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/d2___a2> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "d2 / a2"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/d3___a3> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "d3 / a3"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/date> a csvw:Column ;
+    csvw:datatype "string"^^xsd:string ;
+    csvw:name "date"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/du1> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "du1"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/du2> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "du2"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/process> a csvw:Column ;
+    csvw:datatype "string"^^xsd:string ;
+    csvw:name "process"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/s1> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "s1"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/s2> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "s2"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/s3> a csvw:Column ;
+    csvw:datatype "decimal"^^xsd:string ;
+    csvw:name "s3"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/S355_data_csvw_table/col/testpiece> a csvw:Column ;
+    csvw:datatype "string"^^xsd:string ;
+    csvw:name "testpiece"^^xsd:string .
+
+abox:Zd2_csvw_dialect a csvw:Dialect ;
+    csvw:delimiter ";"^^xsd:string ;
+    csvw:encoding "utf-8"^^xsd:string ;
+    csvw:headerRowCount "2"^^xsd:nonNegativeInteger .
+
+abox:Zd2_csvw_numeric_format a csvw:NumericFormat ;
+    csvw:decimalChar ","^^xsd:string .
+
+abox:Zd2_csvw_schema a csvw:Schema ;
+    csvw:column ( <https://w3id.org/pmd/demodata/tensiletest_S355/Zd2_csvw_table/col/Time> <https://w3id.org/pmd/demodata/tensiletest_S355/Zd2_csvw_table/col/Crosshead_separation> <https://w3id.org/pmd/demodata/tensiletest_S355/Zd2_csvw_table/col/Load> <https://w3id.org/pmd/demodata/tensiletest_S355/Zd2_csvw_table/col/Extensometer_elongation> ) .
+
+abox:Zd2_csvw_table a csvw:Table,
+        pmdco:PMD_0000992 ;
+    rdfs:label "Zd2 test record"^^xsd:string ;
+    rdfs:comment "Added by the PMD demonstrator (materialdigital/pmd-demonstrator, scripts/slice_pmdco3.py); not part of the TTO graph at commit 08a7aec."^^xsd:string ;
+    csvw:dialect abox:Zd2_csvw_dialect ;
+    csvw:tableSchema abox:Zd2_csvw_schema ;
+    csvw:url "https://data.pmds-mpcdf-2.pyiron.com/Zd2.csv"^^xsd:anyURI .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/Zd2_csvw_table/col/Crosshead_separation> a obo:IAO_0000109,
+        csvw:Column ;
+    obo:IAO_0000039 unit:MilliM ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_crosshead_separation ;
+    csvw:datatype abox:Zd2_csvw_datatype ;
+    csvw:name "Crosshead_separation"^^xsd:string ;
+    csvw:title "Crosshead separation"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/Zd2_csvw_table/col/Extensometer_elongation> a obo:IAO_0000109,
+        csvw:Column ;
+    obo:IAO_0000039 unit:PERCENT ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_percentage_extension ;
+    csvw:datatype abox:Zd2_csvw_datatype ;
+    csvw:name "Extensometer_elongation"^^xsd:string ;
+    csvw:title "Extensometer elongation"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/Zd2_csvw_table/col/Load> a obo:IAO_0000109,
+        csvw:Column ;
+    obo:IAO_0000039 unit:KiloN ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_force ;
+    csvw:datatype abox:Zd2_csvw_datatype ;
+    csvw:name "Load"^^xsd:string ;
+    csvw:title "Load"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/Zd2_csvw_table/col/Time> a obo:IAO_0000109,
+        csvw:Column ;
+    obo:IAO_0000039 unit:SEC ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_process_testing_interval ;
+    csvw:datatype abox:Zd2_csvw_datatype ;
+    csvw:name "Time"^^xsd:string ;
+    csvw:title "Time"^^xsd:string .
+
+abox:Zd3_csvw_dialect a csvw:Dialect ;
+    csvw:delimiter ";"^^xsd:string ;
+    csvw:encoding "utf-8"^^xsd:string ;
+    csvw:headerRowCount "2"^^xsd:nonNegativeInteger .
+
+abox:Zd3_csvw_numeric_format a csvw:NumericFormat ;
+    csvw:decimalChar ","^^xsd:string .
+
+abox:Zd3_csvw_schema a csvw:Schema ;
+    csvw:column ( <https://w3id.org/pmd/demodata/tensiletest_S355/Zd3_csvw_table/col/Time> <https://w3id.org/pmd/demodata/tensiletest_S355/Zd3_csvw_table/col/Crosshead_separation> <https://w3id.org/pmd/demodata/tensiletest_S355/Zd3_csvw_table/col/Load> <https://w3id.org/pmd/demodata/tensiletest_S355/Zd3_csvw_table/col/Extensometer_elongation> ) .
+
+abox:Zd3_csvw_table a csvw:Table,
+        pmdco:PMD_0000992 ;
+    rdfs:label "Zd3 test record"^^xsd:string ;
+    rdfs:comment "Added by the PMD demonstrator (materialdigital/pmd-demonstrator, scripts/slice_pmdco3.py); not part of the TTO graph at commit 08a7aec."^^xsd:string ;
+    csvw:dialect abox:Zd3_csvw_dialect ;
+    csvw:tableSchema abox:Zd3_csvw_schema ;
+    csvw:url "https://data.pmds-mpcdf-2.pyiron.com/Zd3.csv"^^xsd:anyURI .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/Zd3_csvw_table/col/Crosshead_separation> a obo:IAO_0000109,
+        csvw:Column ;
+    obo:IAO_0000039 unit:MilliM ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_crosshead_separation ;
+    csvw:datatype abox:Zd3_csvw_datatype ;
+    csvw:name "Crosshead_separation"^^xsd:string ;
+    csvw:title "Crosshead separation"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/Zd3_csvw_table/col/Extensometer_elongation> a obo:IAO_0000109,
+        csvw:Column ;
+    obo:IAO_0000039 unit:PERCENT ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_percentage_extension ;
+    csvw:datatype abox:Zd3_csvw_datatype ;
+    csvw:name "Extensometer_elongation"^^xsd:string ;
+    csvw:title "Extensometer elongation"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/Zd3_csvw_table/col/Load> a obo:IAO_0000109,
+        csvw:Column ;
+    obo:IAO_0000039 unit:KiloN ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_force ;
+    csvw:datatype abox:Zd3_csvw_datatype ;
+    csvw:name "Load"^^xsd:string ;
+    csvw:title "Load"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/Zd3_csvw_table/col/Time> a obo:IAO_0000109,
+        csvw:Column ;
+    obo:IAO_0000039 unit:SEC ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_process_testing_interval ;
+    csvw:datatype abox:Zd3_csvw_datatype ;
+    csvw:name "Time"^^xsd:string ;
+    csvw:title "Time"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-10_caliper_function a pmdco:PMD_0000610 ;
+    obo:BFO_0000054 abox:pmdao-tto-tt-S355-10_process,
+        abox:pmdao-tto-tt-S355-10_process_postMeasuring,
+        abox:pmdao-tto-tt-S355-10_process_preMeasuring .
+
+abox:pmdao-tto-tt-S355-10_caliper_manufacturer_name_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "Orion"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-10_caliper_serial_number_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "AK807114"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-10_cross_section_area_s1_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM2 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_cross_section_area_s1 ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-10_cross_section_area_s1 ;
+    pmdco:PMD_0000006 "120.867"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-10_cross_section_area_s2_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM2 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_cross_section_area_s2 ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-10_cross_section_area_s2 ;
+    pmdco:PMD_0000006 "120.544"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-10_cross_section_area_s3_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM2 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_cross_section_area_s3 ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-10_cross_section_area_s3 ;
+    pmdco:PMD_0000006 "120.71"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-10_date a time:Instant ;
+    time:inXSDDate "2001-01-01"^^xsd:date .
+
+abox:pmdao-tto-tt-S355-10_diameter_after_fracture_du1_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_diameter_after_fracture_du1 ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-10_diameter_after_fracture_du1 ;
+    pmdco:PMD_0000006 "NaN"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-10_diameter_after_fracture_du2_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_diameter_after_fracture_du2 ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-10_diameter_after_fracture_du2 ;
+    pmdco:PMD_0000006 "NaN"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-10_elastic_modulus_E_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:GigaPa ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_elastic_modulus_E ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-10_elastic_modulus_E ;
+    pmdco:PMD_0000006 "195.0"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-10_environmental_temperature_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:DEG_C ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_environmental_temperature ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-10_environmental_temperature ;
+    pmdco:PMD_0000006 "20.0"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-10_extensometer_function a pmdco:PMD_0000610 ;
+    obo:BFO_0000054 abox:pmdao-tto-tt-S355-10_process,
+        abox:pmdao-tto-tt-S355-10_process_testing .
+
+abox:pmdao-tto-tt-S355-10_extensometer_name_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "HBM"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-10_extensometer_nominal_gauge_length_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_extensometer_nominal_gauge_length ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-10_extensometer_nominal_gauge_length ;
+    pmdco:PMD_0000006 "50.0"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-10_extensometer_serial_number_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "28323/28324"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-10_extensometer_standard_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "DIN EN ISO 17025"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-10_final_gauge_length_after_fracture_Lu_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_final_gauge_length_after_fracture_Lu ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-10_final_gauge_length_after_fracture_Lu ;
+    pmdco:PMD_0000006 "79.97"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-10_force_at_lower_yield_strength_FeL_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:KiloN ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_force_at_lower_yield_strength_FeL ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-10_force_at_lower_yield_strength_FeL ;
+    pmdco:PMD_0000006 "NaN"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-10_force_at_proof_strength_plastic_extension_Fp0_2_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:KiloN ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_force_at_proof_strength_plastic_extension_Fp0_2 ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-10_force_at_proof_strength_plastic_extension_Fp0_2 ;
+    pmdco:PMD_0000006 "NaN"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-10_force_at_upper_yield_strength_FeH_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:KiloN ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_force_at_upper_yield_strength_FeH ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-10_force_at_upper_yield_strength_FeH ;
+    pmdco:PMD_0000006 "47.8"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-10_institution_address_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "Unter den Eichen 87. 12205 Berlin Berlin"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-10_institution_name_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "Bundesanstalt für Materialforschung und -prüfung (BAM)"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-10_load_cell_force_range_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:KiloN ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_load_cell_force_range ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-10_load_cell_force_range ;
+    pmdco:PMD_0000006 "100.0"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-10_load_cell_function a pmdco:PMD_0000644 ;
+    obo:BFO_0000054 abox:pmdao-tto-tt-S355-10_process,
+        abox:pmdao-tto-tt-S355-10_process_testing .
+
+abox:pmdao-tto-tt-S355-10_lower_yield_strength_ReL_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MegaPa ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_lower_yield_strength_ReL ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-10_lower_yield_strength_ReL ;
+    pmdco:PMD_0000006 "NaN"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-10_maximum_force_Fm_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:KiloN ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_maximum_force_Fm ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-10_maximum_force_Fm ;
+    pmdco:PMD_0000006 "61.681"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-10_micrometer_gauge_function a pmdco:PMD_0000610 ;
+    obo:BFO_0000054 abox:pmdao-tto-tt-S355-10_process,
+        abox:pmdao-tto-tt-S355-10_process_postMeasuring,
+        abox:pmdao-tto-tt-S355-10_process_preMeasuring .
+
+abox:pmdao-tto-tt-S355-10_micrometer_gauge_manufacturer_name_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "Orion"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-10_minimum_cross_section_area_after_fracture_Su_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM2 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_minimum_cross_section_area_after_fracture_Su ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-10_minimum_cross_section_area_after_fracture_Su ;
+    pmdco:PMD_0000006 "43.924"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-10_operator a pmdco:PMD_0000881 ;
+    rdfs:label "M./S./G."^^xsd:string .
+
+abox:pmdao-tto-tt-S355-10_original_cross_section_area_S0_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM2 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_original_cross_section_area_S0 ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-10_original_cross_section_area_S0 ;
+    pmdco:PMD_0000006 "120.707"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-10_original_gauge_length_L0_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_original_gauge_length_L0 ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-10_original_gauge_length_L0 ;
+    pmdco:PMD_0000006 "60.0"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-10_original_thickness_a1_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_original_thickness_a1 ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-10_original_thickness_a1 ;
+    pmdco:PMD_0000006 "5.993"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-10_original_thickness_a2_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_original_thickness_a2 ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-10_original_thickness_a2 ;
+    pmdco:PMD_0000006 "5.985"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-10_original_thickness_a3_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_original_thickness_a3 ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-10_original_thickness_a3 ;
+    pmdco:PMD_0000006 "5.99"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-10_original_width_b1_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_original_width_b1 ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-10_original_width_b1 ;
+    pmdco:PMD_0000006 "20.168"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-10_original_width_b2_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_original_width_b2 ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-10_original_width_b2 ;
+    pmdco:PMD_0000006 "20.141"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-10_original_width_b3_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_original_width_b3 ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-10_original_width_b3 ;
+    pmdco:PMD_0000006 "20.152"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-10_percentage_elongation_after_fracture_A_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:PERCENT ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_percentage_elongation_after_fracture_A ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-10_percentage_elongation_after_fracture_A ;
+    pmdco:PMD_0000006 "33.0"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-10_percentage_reduction_of_area_Z_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:PERCENT ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_percentage_reduction_of_area_Z ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-10_percentage_reduction_of_area_Z ;
+    pmdco:PMD_0000006 "64.0"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-10_process_identifier_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "pmdao-tto-tt-S355-10"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-10_process_note_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "Proben aus Stahlblech entnommen, diagonal der Walzrichtung"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-10_project a pmdco:PMD_0000909 ;
+    obo:BFO_0000117 abox:pmdao-tto-tt-S355-10_process .
+
+abox:pmdao-tto-tt-S355-10_project_identifier_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "PMDao-onto_1"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-10_proof_strength_Rp0_2_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MegaPa ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_proof_strength_Rp0_2 ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-10_proof_strength_Rp0_2 ;
+    pmdco:PMD_0000006 "NaN"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-10_result a tto:TTO_0000008 ;
+    obo:BFO_0000051 abox:pmdao-tto-tt-S355-10_cross_section_area_s1_smd,
+        abox:pmdao-tto-tt-S355-10_cross_section_area_s2_smd,
+        abox:pmdao-tto-tt-S355-10_cross_section_area_s3_smd,
+        abox:pmdao-tto-tt-S355-10_diameter_after_fracture_du1_smd,
+        abox:pmdao-tto-tt-S355-10_diameter_after_fracture_du2_smd,
+        abox:pmdao-tto-tt-S355-10_elastic_modulus_E_smd,
+        abox:pmdao-tto-tt-S355-10_environmental_temperature_smd,
+        abox:pmdao-tto-tt-S355-10_extensometer_nominal_gauge_length_smd,
+        abox:pmdao-tto-tt-S355-10_final_gauge_length_after_fracture_Lu_smd,
+        abox:pmdao-tto-tt-S355-10_force_at_lower_yield_strength_FeL_smd,
+        abox:pmdao-tto-tt-S355-10_force_at_proof_strength_plastic_extension_Fp0_2_smd,
+        abox:pmdao-tto-tt-S355-10_force_at_upper_yield_strength_FeH_smd,
+        abox:pmdao-tto-tt-S355-10_load_cell_force_range_smd,
+        abox:pmdao-tto-tt-S355-10_lower_yield_strength_ReL_smd,
+        abox:pmdao-tto-tt-S355-10_maximum_force_Fm_smd,
+        abox:pmdao-tto-tt-S355-10_minimum_cross_section_area_after_fracture_Su_smd,
+        abox:pmdao-tto-tt-S355-10_original_cross_section_area_S0_smd,
+        abox:pmdao-tto-tt-S355-10_original_gauge_length_L0_smd,
+        abox:pmdao-tto-tt-S355-10_original_thickness_a1_smd,
+        abox:pmdao-tto-tt-S355-10_original_thickness_a2_smd,
+        abox:pmdao-tto-tt-S355-10_original_thickness_a3_smd,
+        abox:pmdao-tto-tt-S355-10_original_width_b1_smd,
+        abox:pmdao-tto-tt-S355-10_original_width_b2_smd,
+        abox:pmdao-tto-tt-S355-10_original_width_b3_smd,
+        abox:pmdao-tto-tt-S355-10_percentage_elongation_after_fracture_A_smd,
+        abox:pmdao-tto-tt-S355-10_percentage_reduction_of_area_Z_smd,
+        abox:pmdao-tto-tt-S355-10_proof_strength_Rp0_2_smd,
+        abox:pmdao-tto-tt-S355-10_strain_rate_smd,
+        abox:pmdao-tto-tt-S355-10_tensile_strength_Rm_smd,
+        abox:pmdao-tto-tt-S355-10_thickness_after_fracture_au_smd,
+        abox:pmdao-tto-tt-S355-10_transition_point_testing_rate_smd,
+        abox:pmdao-tto-tt-S355-10_upper_yield_strength_ReH_smd,
+        abox:pmdao-tto-tt-S355-10_width_after_fracture_bu_smd .
+
+abox:pmdao-tto-tt-S355-10_strain_rate_svs a obo:OBI_0001931 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_strain_rate ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-10_strain_rate ;
+    pmdco:PMD_0000006 "0.00025"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-10_tensile_strength_Rm_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MegaPa ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_tensile_strength_Rm ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-10_tensile_strength_Rm ;
+    pmdco:PMD_0000006 "511.0"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-10_tensile_test_method_standard_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "DIN EN ISO 6892-1"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-10_tensile_testing_machine_function a pmdco:PMD_0000976 ;
+    obo:BFO_0000054 abox:pmdao-tto-tt-S355-10_process,
+        abox:pmdao-tto-tt-S355-10_process_testing .
+
+abox:pmdao-tto-tt-S355-10_tensile_testing_machine_manufacturer_name_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "Instron"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-10_tensile_testing_machine_name_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "Maschine 1"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-10_tensile_testing_machine_serial_number_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "h2486"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-10_tensile_testing_machine_standard_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "DIN EN ISO 7500-1:2018, DIN EN ISO 9513"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-10_tensile_testing_machine_type_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "4505"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-10_thickness_after_fracture_au_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_thickness_after_fracture_au ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-10_thickness_after_fracture_au ;
+    pmdco:PMD_0000006 "3.16"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-10_transition_point_testing_rate_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:PERCENT ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_transition_point_testing_rate ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-10_transition_point_testing_rate ;
+    pmdco:PMD_0000006 "4.0"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-10_upper_yield_strength_ReH_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MegaPa ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_upper_yield_strength_ReH ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-10_upper_yield_strength_ReH ;
+    pmdco:PMD_0000006 "396.0"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-10_width_after_fracture_bu_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_width_after_fracture_bu ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-10_width_after_fracture_bu ;
+    pmdco:PMD_0000006 "13.9"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-9_caliper_function a pmdco:PMD_0000610 ;
+    obo:BFO_0000054 abox:pmdao-tto-tt-S355-9_process,
+        abox:pmdao-tto-tt-S355-9_process_postMeasuring,
+        abox:pmdao-tto-tt-S355-9_process_preMeasuring .
+
+abox:pmdao-tto-tt-S355-9_caliper_manufacturer_name_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "Orion"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-9_caliper_serial_number_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "AK807114"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-9_cross_section_area_s1_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM2 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_cross_section_area_s1 ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-9_cross_section_area_s1 ;
+    pmdco:PMD_0000006 "120.649"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-9_cross_section_area_s2_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM2 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_cross_section_area_s2 ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-9_cross_section_area_s2 ;
+    pmdco:PMD_0000006 "120.683"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-9_cross_section_area_s3_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM2 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_cross_section_area_s3 ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-9_cross_section_area_s3 ;
+    pmdco:PMD_0000006 "120.813"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-9_date a time:Instant ;
+    time:inXSDDate "2001-01-01"^^xsd:date .
+
+abox:pmdao-tto-tt-S355-9_diameter_after_fracture_du1_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_diameter_after_fracture_du1 ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-9_diameter_after_fracture_du1 ;
+    pmdco:PMD_0000006 "NaN"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-9_diameter_after_fracture_du2_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_diameter_after_fracture_du2 ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-9_diameter_after_fracture_du2 ;
+    pmdco:PMD_0000006 "NaN"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-9_elastic_modulus_E_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:GigaPa ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_elastic_modulus_E ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-9_elastic_modulus_E ;
+    pmdco:PMD_0000006 "201.0"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-9_environmental_temperature_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:DEG_C ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_environmental_temperature ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-9_environmental_temperature ;
+    pmdco:PMD_0000006 "20.0"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-9_extensometer_function a pmdco:PMD_0000610 ;
+    obo:BFO_0000054 abox:pmdao-tto-tt-S355-9_process,
+        abox:pmdao-tto-tt-S355-9_process_testing .
+
+abox:pmdao-tto-tt-S355-9_extensometer_name_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "HBM"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-9_extensometer_nominal_gauge_length_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_extensometer_nominal_gauge_length ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-9_extensometer_nominal_gauge_length ;
+    pmdco:PMD_0000006 "50.0"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-9_extensometer_serial_number_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "28323/28324"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-9_extensometer_standard_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "DIN EN ISO 17025"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-9_final_gauge_length_after_fracture_Lu_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_final_gauge_length_after_fracture_Lu ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-9_final_gauge_length_after_fracture_Lu ;
+    pmdco:PMD_0000006 "80.02"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-9_force_at_lower_yield_strength_FeL_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:KiloN ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_force_at_lower_yield_strength_FeL ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-9_force_at_lower_yield_strength_FeL ;
+    pmdco:PMD_0000006 "NaN"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-9_force_at_proof_strength_plastic_extension_Fp0_2_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:KiloN ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_force_at_proof_strength_plastic_extension_Fp0_2 ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-9_force_at_proof_strength_plastic_extension_Fp0_2 ;
+    pmdco:PMD_0000006 "NaN"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-9_force_at_upper_yield_strength_FeH_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:KiloN ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_force_at_upper_yield_strength_FeH ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-9_force_at_upper_yield_strength_FeH ;
+    pmdco:PMD_0000006 "48.165"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-9_institution_address_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "Unter den Eichen 87. 12205 Berlin Berlin"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-9_institution_name_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "Bundesanstalt für Materialforschung und -prüfung (BAM)"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-9_load_cell_force_range_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:KiloN ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_load_cell_force_range ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-9_load_cell_force_range ;
+    pmdco:PMD_0000006 "100.0"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-9_load_cell_function a pmdco:PMD_0000644 ;
+    obo:BFO_0000054 abox:pmdao-tto-tt-S355-9_process,
+        abox:pmdao-tto-tt-S355-9_process_testing .
+
+abox:pmdao-tto-tt-S355-9_lower_yield_strength_ReL_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MegaPa ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_lower_yield_strength_ReL ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-9_lower_yield_strength_ReL ;
+    pmdco:PMD_0000006 "NaN"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-9_maximum_force_Fm_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:KiloN ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_maximum_force_Fm ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-9_maximum_force_Fm ;
+    pmdco:PMD_0000006 "62.168"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-9_micrometer_gauge_function a pmdco:PMD_0000610 ;
+    obo:BFO_0000054 abox:pmdao-tto-tt-S355-9_process,
+        abox:pmdao-tto-tt-S355-9_process_postMeasuring,
+        abox:pmdao-tto-tt-S355-9_process_preMeasuring .
+
+abox:pmdao-tto-tt-S355-9_micrometer_gauge_manufacturer_name_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "Orion"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-9_minimum_cross_section_area_after_fracture_Su_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM2 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_minimum_cross_section_area_after_fracture_Su ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-9_minimum_cross_section_area_after_fracture_Su ;
+    pmdco:PMD_0000006 "48.813"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-9_operator a pmdco:PMD_0000881 ;
+    rdfs:label "M./S./G."^^xsd:string .
+
+abox:pmdao-tto-tt-S355-9_original_cross_section_area_S0_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM2 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_original_cross_section_area_S0 ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-9_original_cross_section_area_S0 ;
+    pmdco:PMD_0000006 "120.715"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-9_original_gauge_length_L0_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_original_gauge_length_L0 ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-9_original_gauge_length_L0 ;
+    pmdco:PMD_0000006 "60.0"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-9_original_thickness_a1_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_original_thickness_a1 ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-9_original_thickness_a1 ;
+    pmdco:PMD_0000006 "5.992"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-9_original_thickness_a2_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_original_thickness_a2 ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-9_original_thickness_a2 ;
+    pmdco:PMD_0000006 "5.991"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-9_original_thickness_a3_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_original_thickness_a3 ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-9_original_thickness_a3 ;
+    pmdco:PMD_0000006 "5.993"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-9_original_width_b1_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_original_width_b1 ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-9_original_width_b1 ;
+    pmdco:PMD_0000006 "20.135"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-9_original_width_b2_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_original_width_b2 ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-9_original_width_b2 ;
+    pmdco:PMD_0000006 "20.144"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-9_original_width_b3_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_original_width_b3 ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-9_original_width_b3 ;
+    pmdco:PMD_0000006 "20.159"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-9_percentage_elongation_after_fracture_A_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:PERCENT ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_percentage_elongation_after_fracture_A ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-9_percentage_elongation_after_fracture_A ;
+    pmdco:PMD_0000006 "33.5"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-9_percentage_reduction_of_area_Z_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:PERCENT ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_percentage_reduction_of_area_Z ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-9_percentage_reduction_of_area_Z ;
+    pmdco:PMD_0000006 "60.0"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-9_process_identifier_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "pmdao-tto-tt-S355-9"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-9_process_note_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "Proben aus Stahlblech entnommen, diagonal der Walzrichtung"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-9_project a pmdco:PMD_0000909 ;
+    obo:BFO_0000117 abox:pmdao-tto-tt-S355-9_process .
+
+abox:pmdao-tto-tt-S355-9_project_identifier_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "PMDao-onto_1"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-9_proof_strength_Rp0_2_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MegaPa ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_proof_strength_Rp0_2 ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-9_proof_strength_Rp0_2 ;
+    pmdco:PMD_0000006 "390.0"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-9_result a tto:TTO_0000008 ;
+    obo:BFO_0000051 abox:pmdao-tto-tt-S355-9_cross_section_area_s1_smd,
+        abox:pmdao-tto-tt-S355-9_cross_section_area_s2_smd,
+        abox:pmdao-tto-tt-S355-9_cross_section_area_s3_smd,
+        abox:pmdao-tto-tt-S355-9_diameter_after_fracture_du1_smd,
+        abox:pmdao-tto-tt-S355-9_diameter_after_fracture_du2_smd,
+        abox:pmdao-tto-tt-S355-9_elastic_modulus_E_smd,
+        abox:pmdao-tto-tt-S355-9_environmental_temperature_smd,
+        abox:pmdao-tto-tt-S355-9_extensometer_nominal_gauge_length_smd,
+        abox:pmdao-tto-tt-S355-9_final_gauge_length_after_fracture_Lu_smd,
+        abox:pmdao-tto-tt-S355-9_force_at_lower_yield_strength_FeL_smd,
+        abox:pmdao-tto-tt-S355-9_force_at_proof_strength_plastic_extension_Fp0_2_smd,
+        abox:pmdao-tto-tt-S355-9_force_at_upper_yield_strength_FeH_smd,
+        abox:pmdao-tto-tt-S355-9_load_cell_force_range_smd,
+        abox:pmdao-tto-tt-S355-9_lower_yield_strength_ReL_smd,
+        abox:pmdao-tto-tt-S355-9_maximum_force_Fm_smd,
+        abox:pmdao-tto-tt-S355-9_minimum_cross_section_area_after_fracture_Su_smd,
+        abox:pmdao-tto-tt-S355-9_original_cross_section_area_S0_smd,
+        abox:pmdao-tto-tt-S355-9_original_gauge_length_L0_smd,
+        abox:pmdao-tto-tt-S355-9_original_thickness_a1_smd,
+        abox:pmdao-tto-tt-S355-9_original_thickness_a2_smd,
+        abox:pmdao-tto-tt-S355-9_original_thickness_a3_smd,
+        abox:pmdao-tto-tt-S355-9_original_width_b1_smd,
+        abox:pmdao-tto-tt-S355-9_original_width_b2_smd,
+        abox:pmdao-tto-tt-S355-9_original_width_b3_smd,
+        abox:pmdao-tto-tt-S355-9_percentage_elongation_after_fracture_A_smd,
+        abox:pmdao-tto-tt-S355-9_percentage_reduction_of_area_Z_smd,
+        abox:pmdao-tto-tt-S355-9_proof_strength_Rp0_2_smd,
+        abox:pmdao-tto-tt-S355-9_strain_rate_smd,
+        abox:pmdao-tto-tt-S355-9_tensile_strength_Rm_smd,
+        abox:pmdao-tto-tt-S355-9_thickness_after_fracture_au_smd,
+        abox:pmdao-tto-tt-S355-9_transition_point_testing_rate_smd,
+        abox:pmdao-tto-tt-S355-9_upper_yield_strength_ReH_smd,
+        abox:pmdao-tto-tt-S355-9_width_after_fracture_bu_smd .
+
+abox:pmdao-tto-tt-S355-9_strain_rate_svs a obo:OBI_0001931 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_strain_rate ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-9_strain_rate ;
+    pmdco:PMD_0000006 "0.00025"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-9_tensile_strength_Rm_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MegaPa ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_tensile_strength_Rm ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-9_tensile_strength_Rm ;
+    pmdco:PMD_0000006 "515.0"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-9_tensile_test_method_standard_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "DIN EN ISO 6892-1"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-9_tensile_testing_machine_function a pmdco:PMD_0000976 ;
+    obo:BFO_0000054 abox:pmdao-tto-tt-S355-9_process,
+        abox:pmdao-tto-tt-S355-9_process_testing .
+
+abox:pmdao-tto-tt-S355-9_tensile_testing_machine_manufacturer_name_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "Instron"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-9_tensile_testing_machine_name_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "Maschine 1"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-9_tensile_testing_machine_serial_number_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "h2486"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-9_tensile_testing_machine_standard_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "DIN EN ISO 7500-1:2018, DIN EN ISO 9513"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-9_tensile_testing_machine_type_value a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "4505"^^xsd:string .
+
+abox:pmdao-tto-tt-S355-9_thickness_after_fracture_au_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_thickness_after_fracture_au ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-9_thickness_after_fracture_au ;
+    pmdco:PMD_0000006 "3.55"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-9_transition_point_testing_rate_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:PERCENT ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_transition_point_testing_rate ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-9_transition_point_testing_rate ;
+    pmdco:PMD_0000006 "4.0"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-9_upper_yield_strength_ReH_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MegaPa ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_upper_yield_strength_ReH ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-9_upper_yield_strength_ReH ;
+    pmdco:PMD_0000006 "399.0"^^xsd:float .
+
+abox:pmdao-tto-tt-S355-9_width_after_fracture_bu_svs a obo:OBI_0001931 ;
+    obo:IAO_0000039 unit:MilliM ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_width_after_fracture_bu ;
+    obo:OBI_0001927 abox:pmdao-tto-tt-S355-9_width_after_fracture_bu ;
+    pmdco:PMD_0000006 "13.75"^^xsd:float .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd2_afterTest_1> a obo:BFO_0000030 ;
+    obo:BFO_0000196 <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd2_afterTest_1_role> ;
+    obo:RO_0000086 abox:pmdao-tto-tt-S355-9_diameter_after_fracture_du1,
+        abox:pmdao-tto-tt-S355-9_diameter_after_fracture_du2,
+        abox:pmdao-tto-tt-S355-9_final_gauge_length_after_fracture_Lu,
+        abox:pmdao-tto-tt-S355-9_minimum_cross_section_area_after_fracture_Su,
+        abox:pmdao-tto-tt-S355-9_thickness_after_fracture_au,
+        abox:pmdao-tto-tt-S355-9_width_after_fracture_bu .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd2_afterTest_1_role> a tto:TTO_0000006 .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd2_afterTest_2> a obo:BFO_0000030 ;
+    obo:BFO_0000196 <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd2_afterTest_2_role> .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd2_afterTest_2_role> a tto:TTO_0000006 .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd2_geometry_shape> a pmdco:PMD_0050156 ;
+    obo:OBI_0001938 <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd2_geometry_shape_value_spec> .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd2_geometry_shape_value_spec> a obo:OBI_0001933 ;
+    obo:IAO_0000136 <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd2> ;
+    pmdco:PMD_0000006 "E6x20x60"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd2_material_material_identifier_value> a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "S355"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd2_material_rolling_direction> a obo:BFO_0000019 ;
+    obo:OBI_0001938 <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd2_material_rolling_direction_value_spec> .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd2_material_rolling_direction_value_spec> a obo:OBI_0001933 ;
+    obo:IAO_0000136 <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd2_material> ;
+    pmdco:PMD_0000006 "diagonal to rolling direction"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd2_role> a pmdco:PMD_0000975 .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd2_testpiece_identifier_value> a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "Zd2"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd3_afterTest_1> a obo:BFO_0000030 ;
+    obo:BFO_0000196 <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd3_afterTest_1_role> ;
+    obo:RO_0000086 abox:pmdao-tto-tt-S355-10_diameter_after_fracture_du1,
+        abox:pmdao-tto-tt-S355-10_diameter_after_fracture_du2,
+        abox:pmdao-tto-tt-S355-10_final_gauge_length_after_fracture_Lu,
+        abox:pmdao-tto-tt-S355-10_minimum_cross_section_area_after_fracture_Su,
+        abox:pmdao-tto-tt-S355-10_thickness_after_fracture_au,
+        abox:pmdao-tto-tt-S355-10_width_after_fracture_bu .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd3_afterTest_1_role> a tto:TTO_0000006 .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd3_afterTest_2> a obo:BFO_0000030 ;
+    obo:BFO_0000196 <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd3_afterTest_2_role> .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd3_afterTest_2_role> a tto:TTO_0000006 .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd3_geometry_shape> a pmdco:PMD_0050156 ;
+    obo:OBI_0001938 <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd3_geometry_shape_value_spec> .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd3_geometry_shape_value_spec> a obo:OBI_0001933 ;
+    obo:IAO_0000136 <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd3> ;
+    pmdco:PMD_0000006 "E6x20x60"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd3_material_material_identifier_value> a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "S355"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd3_material_rolling_direction> a obo:BFO_0000019 ;
+    obo:OBI_0001938 <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd3_material_rolling_direction_value_spec> .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd3_material_rolling_direction_value_spec> a obo:OBI_0001933 ;
+    obo:IAO_0000136 <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd3_material> ;
+    pmdco:PMD_0000006 "diagonal to rolling direction"^^xsd:string .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd3_role> a pmdco:PMD_0000975 .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd3_testpiece_identifier_value> a obo:OBI_0001933 ;
+    pmdco:PMD_0000006 "Zd3"^^xsd:string .
+
+unit:DEG_C a obo:IAO_0000003 .
+
+unit:GigaPa a obo:IAO_0000003 .
+
+unit:SEC a obo:IAO_0000003 .
+
+abox:S355_data_csvw_table a obo:IAO_0000100,
+        csvw:Table ;
+    rdfs:comment "csvw:url relinked to the PMD data host by the PMD demonstrator (materialdigital/pmd-demonstrator, scripts/slice_pmdco3.py); file unchanged from the TTO repository at commit 08a7aec."^^xsd:string ;
+    csvw:headerCount "1"^^xsd:nonNegativeInteger ;
+    csvw:tableSchema abox:S355_data_csvw_schema ;
+    csvw:url "https://data.pmds-mpcdf-2.pyiron.com/S355_data.csv"^^xsd:anyURI .
+
+abox:pmdao-tto-tt-S355-10_caliper_manufacturer a pmdco:PMD_0000879 .
+
+abox:pmdao-tto-tt-S355-10_crosshead_separation a tto:TTO_0000013 .
+
+abox:pmdao-tto-tt-S355-10_force a pmdco:PMD_0020200 .
+
+abox:pmdao-tto-tt-S355-10_load_cell a pmdco:PMD_0000820 ;
+    obo:BFO_0000196 abox:pmdao-tto-tt-S355-10_load_cell_function ;
+    obo:RO_0000086 abox:pmdao-tto-tt-S355-10_load_cell_force_range .
+
+abox:pmdao-tto-tt-S355-10_micrometer_gauge_manufacturer a pmdco:PMD_0000879 .
+
+abox:pmdao-tto-tt-S355-10_percentage_extension a pmdco:PMD_0060011 .
+
+abox:pmdao-tto-tt-S355-10_process_analysis a obo:BFO_0000015 ;
+    rdfs:label "analysis"^^xsd:string ;
+    obo:BFO_0000062 abox:pmdao-tto-tt-S355-10_process_postMeasuring ;
+    obo:BFO_0000132 abox:pmdao-tto-tt-S355-10_process .
+
+abox:pmdao-tto-tt-S355-10_process_testing_interval a obo:BFO_0000202 .
+
+abox:pmdao-tto-tt-S355-10_tensile_test_method a tto:TTO_0000054 .
+
+abox:pmdao-tto-tt-S355-10_tensile_testing_machine_manufacturer a pmdco:PMD_0000879 .
+
+abox:pmdao-tto-tt-S355-9_caliper_manufacturer a pmdco:PMD_0000879 .
+
+abox:pmdao-tto-tt-S355-9_crosshead_separation a tto:TTO_0000013 .
+
+abox:pmdao-tto-tt-S355-9_force a pmdco:PMD_0020200 .
+
+abox:pmdao-tto-tt-S355-9_load_cell a pmdco:PMD_0000820 ;
+    obo:BFO_0000196 abox:pmdao-tto-tt-S355-9_load_cell_function ;
+    obo:RO_0000086 abox:pmdao-tto-tt-S355-9_load_cell_force_range .
+
+abox:pmdao-tto-tt-S355-9_micrometer_gauge_manufacturer a pmdco:PMD_0000879 .
+
+abox:pmdao-tto-tt-S355-9_percentage_extension a pmdco:PMD_0060011 .
+
+abox:pmdao-tto-tt-S355-9_process_analysis a obo:BFO_0000015 ;
+    rdfs:label "analysis"^^xsd:string ;
+    obo:BFO_0000062 abox:pmdao-tto-tt-S355-9_process_postMeasuring ;
+    obo:BFO_0000132 abox:pmdao-tto-tt-S355-9_process .
+
+abox:pmdao-tto-tt-S355-9_process_testing_interval a obo:BFO_0000202 .
+
+abox:pmdao-tto-tt-S355-9_tensile_test_method a tto:TTO_0000054 .
+
+abox:pmdao-tto-tt-S355-9_tensile_testing_machine_manufacturer a pmdco:PMD_0000879 .
+
+abox:pmdao-tto-tt-S355-10_cross_section_area_s1_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_cross_section_area_s1 ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_cross_section_area_s1_svs .
+
+abox:pmdao-tto-tt-S355-10_cross_section_area_s2_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_cross_section_area_s2 ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_cross_section_area_s2_svs .
+
+abox:pmdao-tto-tt-S355-10_cross_section_area_s3_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_cross_section_area_s3 ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_cross_section_area_s3_svs .
+
+abox:pmdao-tto-tt-S355-10_diameter_after_fracture_du1_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_diameter_after_fracture_du1 ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_diameter_after_fracture_du1_svs .
+
+abox:pmdao-tto-tt-S355-10_diameter_after_fracture_du2_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_diameter_after_fracture_du2 ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_diameter_after_fracture_du2_svs .
+
+abox:pmdao-tto-tt-S355-10_elastic_modulus_E_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_elastic_modulus_E ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_elastic_modulus_E_svs .
+
+abox:pmdao-tto-tt-S355-10_environmental_temperature_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_environmental_temperature ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_environmental_temperature_svs .
+
+abox:pmdao-tto-tt-S355-10_extensometer_nominal_gauge_length_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_extensometer_nominal_gauge_length ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_extensometer_nominal_gauge_length_svs .
+
+abox:pmdao-tto-tt-S355-10_final_gauge_length_after_fracture_Lu_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_final_gauge_length_after_fracture_Lu ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_final_gauge_length_after_fracture_Lu_svs .
+
+abox:pmdao-tto-tt-S355-10_force_at_lower_yield_strength_FeL_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_force_at_lower_yield_strength_FeL ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_force_at_lower_yield_strength_FeL_svs .
+
+abox:pmdao-tto-tt-S355-10_force_at_proof_strength_plastic_extension_Fp0_2_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_force_at_proof_strength_plastic_extension_Fp0_2 ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_force_at_proof_strength_plastic_extension_Fp0_2_svs .
+
+abox:pmdao-tto-tt-S355-10_force_at_upper_yield_strength_FeH_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_force_at_upper_yield_strength_FeH ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_force_at_upper_yield_strength_FeH_svs .
+
+abox:pmdao-tto-tt-S355-10_institution a pmdco:PMD_0000879 .
+
+abox:pmdao-tto-tt-S355-10_load_cell_force_range_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_load_cell_force_range ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_load_cell_force_range_svs .
+
+abox:pmdao-tto-tt-S355-10_lower_yield_strength_ReL_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_lower_yield_strength_ReL ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_lower_yield_strength_ReL_svs .
+
+abox:pmdao-tto-tt-S355-10_maximum_force_Fm_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_maximum_force_Fm ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_maximum_force_Fm_svs .
+
+abox:pmdao-tto-tt-S355-10_micrometer_gauge a pmdco:PMD_0000854 ;
+    obo:BFO_0000196 abox:pmdao-tto-tt-S355-10_micrometer_gauge_function .
+
+abox:pmdao-tto-tt-S355-10_minimum_cross_section_area_after_fracture_Su_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_minimum_cross_section_area_after_fracture_Su ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_minimum_cross_section_area_after_fracture_Su_svs .
+
+abox:pmdao-tto-tt-S355-10_original_cross_section_area_S0_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_original_cross_section_area_S0 ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_original_cross_section_area_S0_svs .
+
+abox:pmdao-tto-tt-S355-10_original_gauge_length_L0_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_original_gauge_length_L0 ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_original_gauge_length_L0_svs .
+
+abox:pmdao-tto-tt-S355-10_original_thickness_a1_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_original_thickness_a1 ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_original_thickness_a1_svs .
+
+abox:pmdao-tto-tt-S355-10_original_thickness_a2_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_original_thickness_a2 ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_original_thickness_a2_svs .
+
+abox:pmdao-tto-tt-S355-10_original_thickness_a3_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_original_thickness_a3 ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_original_thickness_a3_svs .
+
+abox:pmdao-tto-tt-S355-10_original_width_b1_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_original_width_b1 ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_original_width_b1_svs .
+
+abox:pmdao-tto-tt-S355-10_original_width_b2_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_original_width_b2 ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_original_width_b2_svs .
+
+abox:pmdao-tto-tt-S355-10_original_width_b3_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_original_width_b3 ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_original_width_b3_svs .
+
+abox:pmdao-tto-tt-S355-10_percentage_elongation_after_fracture_A_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_percentage_elongation_after_fracture_A ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_percentage_elongation_after_fracture_A_svs .
+
+abox:pmdao-tto-tt-S355-10_percentage_reduction_of_area_Z_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_percentage_reduction_of_area_Z ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_percentage_reduction_of_area_Z_svs .
+
+abox:pmdao-tto-tt-S355-10_process_mounting a obo:BFO_0000015 ;
+    rdfs:label "mounting"^^xsd:string ;
+    obo:BFO_0000062 abox:pmdao-tto-tt-S355-10_process_preMeasuring ;
+    obo:BFO_0000063 abox:pmdao-tto-tt-S355-10_process_testing ;
+    obo:BFO_0000132 abox:pmdao-tto-tt-S355-10_process .
+
+abox:pmdao-tto-tt-S355-10_process_unmounting a obo:BFO_0000015 ;
+    rdfs:label "unmounting"^^xsd:string ;
+    obo:BFO_0000062 abox:pmdao-tto-tt-S355-10_process_testing ;
+    obo:BFO_0000063 abox:pmdao-tto-tt-S355-10_process_postMeasuring ;
+    obo:BFO_0000132 abox:pmdao-tto-tt-S355-10_process .
+
+abox:pmdao-tto-tt-S355-10_proof_strength_Rp0_2_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_proof_strength_Rp0_2 ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_proof_strength_Rp0_2_svs .
+
+abox:pmdao-tto-tt-S355-10_strain_rate_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_strain_rate ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_strain_rate_svs .
+
+abox:pmdao-tto-tt-S355-10_tensile_strength_Rm_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_tensile_strength_Rm ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_tensile_strength_Rm_svs .
+
+abox:pmdao-tto-tt-S355-10_thickness_after_fracture_au_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_thickness_after_fracture_au ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_thickness_after_fracture_au_svs .
+
+abox:pmdao-tto-tt-S355-10_transition_point_testing_rate_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_transition_point_testing_rate ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_transition_point_testing_rate_svs .
+
+abox:pmdao-tto-tt-S355-10_upper_yield_strength_ReH_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_upper_yield_strength_ReH ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_upper_yield_strength_ReH_svs .
+
+abox:pmdao-tto-tt-S355-10_width_after_fracture_bu_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-10_width_after_fracture_bu ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-10_width_after_fracture_bu_svs .
+
+abox:pmdao-tto-tt-S355-9_cross_section_area_s1_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_cross_section_area_s1 ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_cross_section_area_s1_svs .
+
+abox:pmdao-tto-tt-S355-9_cross_section_area_s2_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_cross_section_area_s2 ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_cross_section_area_s2_svs .
+
+abox:pmdao-tto-tt-S355-9_cross_section_area_s3_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_cross_section_area_s3 ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_cross_section_area_s3_svs .
+
+abox:pmdao-tto-tt-S355-9_diameter_after_fracture_du1_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_diameter_after_fracture_du1 ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_diameter_after_fracture_du1_svs .
+
+abox:pmdao-tto-tt-S355-9_diameter_after_fracture_du2_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_diameter_after_fracture_du2 ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_diameter_after_fracture_du2_svs .
+
+abox:pmdao-tto-tt-S355-9_elastic_modulus_E_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_elastic_modulus_E ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_elastic_modulus_E_svs .
+
+abox:pmdao-tto-tt-S355-9_environmental_temperature_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_environmental_temperature ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_environmental_temperature_svs .
+
+abox:pmdao-tto-tt-S355-9_extensometer_nominal_gauge_length_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_extensometer_nominal_gauge_length ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_extensometer_nominal_gauge_length_svs .
+
+abox:pmdao-tto-tt-S355-9_final_gauge_length_after_fracture_Lu_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_final_gauge_length_after_fracture_Lu ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_final_gauge_length_after_fracture_Lu_svs .
+
+abox:pmdao-tto-tt-S355-9_force_at_lower_yield_strength_FeL_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_force_at_lower_yield_strength_FeL ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_force_at_lower_yield_strength_FeL_svs .
+
+abox:pmdao-tto-tt-S355-9_force_at_proof_strength_plastic_extension_Fp0_2_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_force_at_proof_strength_plastic_extension_Fp0_2 ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_force_at_proof_strength_plastic_extension_Fp0_2_svs .
+
+abox:pmdao-tto-tt-S355-9_force_at_upper_yield_strength_FeH_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_force_at_upper_yield_strength_FeH ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_force_at_upper_yield_strength_FeH_svs .
+
+abox:pmdao-tto-tt-S355-9_institution a pmdco:PMD_0000879 .
+
+abox:pmdao-tto-tt-S355-9_load_cell_force_range_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_load_cell_force_range ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_load_cell_force_range_svs .
+
+abox:pmdao-tto-tt-S355-9_lower_yield_strength_ReL_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_lower_yield_strength_ReL ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_lower_yield_strength_ReL_svs .
+
+abox:pmdao-tto-tt-S355-9_maximum_force_Fm_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_maximum_force_Fm ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_maximum_force_Fm_svs .
+
+abox:pmdao-tto-tt-S355-9_micrometer_gauge a pmdco:PMD_0000854 ;
+    obo:BFO_0000196 abox:pmdao-tto-tt-S355-9_micrometer_gauge_function .
+
+abox:pmdao-tto-tt-S355-9_minimum_cross_section_area_after_fracture_Su_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_minimum_cross_section_area_after_fracture_Su ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_minimum_cross_section_area_after_fracture_Su_svs .
+
+abox:pmdao-tto-tt-S355-9_original_cross_section_area_S0_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_original_cross_section_area_S0 ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_original_cross_section_area_S0_svs .
+
+abox:pmdao-tto-tt-S355-9_original_gauge_length_L0_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_original_gauge_length_L0 ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_original_gauge_length_L0_svs .
+
+abox:pmdao-tto-tt-S355-9_original_thickness_a1_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_original_thickness_a1 ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_original_thickness_a1_svs .
+
+abox:pmdao-tto-tt-S355-9_original_thickness_a2_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_original_thickness_a2 ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_original_thickness_a2_svs .
+
+abox:pmdao-tto-tt-S355-9_original_thickness_a3_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_original_thickness_a3 ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_original_thickness_a3_svs .
+
+abox:pmdao-tto-tt-S355-9_original_width_b1_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_original_width_b1 ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_original_width_b1_svs .
+
+abox:pmdao-tto-tt-S355-9_original_width_b2_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_original_width_b2 ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_original_width_b2_svs .
+
+abox:pmdao-tto-tt-S355-9_original_width_b3_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_original_width_b3 ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_original_width_b3_svs .
+
+abox:pmdao-tto-tt-S355-9_percentage_elongation_after_fracture_A_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_percentage_elongation_after_fracture_A ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_percentage_elongation_after_fracture_A_svs .
+
+abox:pmdao-tto-tt-S355-9_percentage_reduction_of_area_Z_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_percentage_reduction_of_area_Z ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_percentage_reduction_of_area_Z_svs .
+
+abox:pmdao-tto-tt-S355-9_process_mounting a obo:BFO_0000015 ;
+    rdfs:label "mounting"^^xsd:string ;
+    obo:BFO_0000062 abox:pmdao-tto-tt-S355-9_process_preMeasuring ;
+    obo:BFO_0000063 abox:pmdao-tto-tt-S355-9_process_testing ;
+    obo:BFO_0000132 abox:pmdao-tto-tt-S355-9_process .
+
+abox:pmdao-tto-tt-S355-9_process_unmounting a obo:BFO_0000015 ;
+    rdfs:label "unmounting"^^xsd:string ;
+    obo:BFO_0000062 abox:pmdao-tto-tt-S355-9_process_testing ;
+    obo:BFO_0000063 abox:pmdao-tto-tt-S355-9_process_postMeasuring ;
+    obo:BFO_0000132 abox:pmdao-tto-tt-S355-9_process .
+
+abox:pmdao-tto-tt-S355-9_proof_strength_Rp0_2_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_proof_strength_Rp0_2 ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_proof_strength_Rp0_2_svs .
+
+abox:pmdao-tto-tt-S355-9_strain_rate_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_strain_rate ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_strain_rate_svs .
+
+abox:pmdao-tto-tt-S355-9_tensile_strength_Rm_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_tensile_strength_Rm ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_tensile_strength_Rm_svs .
+
+abox:pmdao-tto-tt-S355-9_thickness_after_fracture_au_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_thickness_after_fracture_au ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_thickness_after_fracture_au_svs .
+
+abox:pmdao-tto-tt-S355-9_transition_point_testing_rate_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_transition_point_testing_rate ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_transition_point_testing_rate_svs .
+
+abox:pmdao-tto-tt-S355-9_upper_yield_strength_ReH_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_upper_yield_strength_ReH ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_upper_yield_strength_ReH_svs .
+
+abox:pmdao-tto-tt-S355-9_width_after_fracture_bu_smd a obo:IAO_0000109 ;
+    obo:IAO_0000136 abox:pmdao-tto-tt-S355-9_width_after_fracture_bu ;
+    obo:OBI_0001938 abox:pmdao-tto-tt-S355-9_width_after_fracture_bu_svs .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd2> a obo:BFO_0000030 ;
+    obo:BFO_0000196 <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd2_role> ;
+    obo:RO_0000053 abox:pmdao-tto-tt-S355-9_force,
+        abox:pmdao-tto-tt-S355-9_percentage_extension ;
+    obo:RO_0000086 abox:pmdao-tto-tt-S355-9_cross_section_area_s1,
+        abox:pmdao-tto-tt-S355-9_cross_section_area_s2,
+        abox:pmdao-tto-tt-S355-9_cross_section_area_s3,
+        abox:pmdao-tto-tt-S355-9_original_cross_section_area_S0,
+        abox:pmdao-tto-tt-S355-9_original_gauge_length_L0,
+        abox:pmdao-tto-tt-S355-9_original_thickness_a1,
+        abox:pmdao-tto-tt-S355-9_original_thickness_a2,
+        abox:pmdao-tto-tt-S355-9_original_thickness_a3,
+        abox:pmdao-tto-tt-S355-9_original_width_b1,
+        abox:pmdao-tto-tt-S355-9_original_width_b2,
+        abox:pmdao-tto-tt-S355-9_original_width_b3,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd2_geometry_shape> ;
+    pmdco:PMD_0020005 <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd2_material> .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd2_material> a pmdco:PMD_0020096 ;
+    obo:RO_0000086 abox:pmdao-tto-tt-S355-9_elastic_modulus_E,
+        abox:pmdao-tto-tt-S355-9_force_at_lower_yield_strength_FeL,
+        abox:pmdao-tto-tt-S355-9_force_at_proof_strength_plastic_extension_Fp0_2,
+        abox:pmdao-tto-tt-S355-9_force_at_upper_yield_strength_FeH,
+        abox:pmdao-tto-tt-S355-9_lower_yield_strength_ReL,
+        abox:pmdao-tto-tt-S355-9_maximum_force_Fm,
+        abox:pmdao-tto-tt-S355-9_percentage_elongation_after_fracture_A,
+        abox:pmdao-tto-tt-S355-9_percentage_reduction_of_area_Z,
+        abox:pmdao-tto-tt-S355-9_proof_strength_Rp0_2,
+        abox:pmdao-tto-tt-S355-9_tensile_strength_Rm,
+        abox:pmdao-tto-tt-S355-9_upper_yield_strength_ReH,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd2_material_rolling_direction> .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd3> a obo:BFO_0000030 ;
+    obo:BFO_0000196 <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd3_role> ;
+    obo:RO_0000053 abox:pmdao-tto-tt-S355-10_force,
+        abox:pmdao-tto-tt-S355-10_percentage_extension ;
+    obo:RO_0000086 abox:pmdao-tto-tt-S355-10_cross_section_area_s1,
+        abox:pmdao-tto-tt-S355-10_cross_section_area_s2,
+        abox:pmdao-tto-tt-S355-10_cross_section_area_s3,
+        abox:pmdao-tto-tt-S355-10_original_cross_section_area_S0,
+        abox:pmdao-tto-tt-S355-10_original_gauge_length_L0,
+        abox:pmdao-tto-tt-S355-10_original_thickness_a1,
+        abox:pmdao-tto-tt-S355-10_original_thickness_a2,
+        abox:pmdao-tto-tt-S355-10_original_thickness_a3,
+        abox:pmdao-tto-tt-S355-10_original_width_b1,
+        abox:pmdao-tto-tt-S355-10_original_width_b2,
+        abox:pmdao-tto-tt-S355-10_original_width_b3,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd3_geometry_shape> ;
+    pmdco:PMD_0020005 <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd3_material> .
+
+<https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd3_material> a pmdco:PMD_0020096 ;
+    obo:RO_0000086 abox:pmdao-tto-tt-S355-10_elastic_modulus_E,
+        abox:pmdao-tto-tt-S355-10_force_at_lower_yield_strength_FeL,
+        abox:pmdao-tto-tt-S355-10_force_at_proof_strength_plastic_extension_Fp0_2,
+        abox:pmdao-tto-tt-S355-10_force_at_upper_yield_strength_FeH,
+        abox:pmdao-tto-tt-S355-10_lower_yield_strength_ReL,
+        abox:pmdao-tto-tt-S355-10_maximum_force_Fm,
+        abox:pmdao-tto-tt-S355-10_percentage_elongation_after_fracture_A,
+        abox:pmdao-tto-tt-S355-10_percentage_reduction_of_area_Z,
+        abox:pmdao-tto-tt-S355-10_proof_strength_Rp0_2,
+        abox:pmdao-tto-tt-S355-10_tensile_strength_Rm,
+        abox:pmdao-tto-tt-S355-10_upper_yield_strength_ReH,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd3_material_rolling_direction> .
+
+abox:Zd2_csvw_datatype a csvw:Datatype ;
+    csvw:base "decimal"^^xsd:string ;
+    csvw:format abox:Zd2_csvw_numeric_format .
+
+abox:Zd3_csvw_datatype a csvw:Datatype ;
+    csvw:base "decimal"^^xsd:string ;
+    csvw:format abox:Zd3_csvw_numeric_format .
+
+abox:pmdao-tto-tt-S355-10_caliper a pmdco:PMD_0000544 ;
+    obo:BFO_0000196 abox:pmdao-tto-tt-S355-10_caliper_function .
+
+abox:pmdao-tto-tt-S355-10_cross_section_area_s1 a tto:TTO_0000012 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-10_cross_section_area_s1_smd .
+
+abox:pmdao-tto-tt-S355-10_cross_section_area_s2 a tto:TTO_0000012 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-10_cross_section_area_s2_smd .
+
+abox:pmdao-tto-tt-S355-10_cross_section_area_s3 a tto:TTO_0000012 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-10_cross_section_area_s3_smd .
+
+abox:pmdao-tto-tt-S355-10_diameter_after_fracture_du1 a tto:TTO_0000015 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-10_diameter_after_fracture_du1_smd .
+
+abox:pmdao-tto-tt-S355-10_diameter_after_fracture_du2 a tto:TTO_0000015 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-10_diameter_after_fracture_du2_smd .
+
+abox:pmdao-tto-tt-S355-10_elastic_modulus_E a pmdco:PMD_0000618 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-10_elastic_modulus_E_smd .
+
+abox:pmdao-tto-tt-S355-10_environmental_temperature a pmdco:PMD_0000967 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-10_environmental_temperature_smd .
+
+abox:pmdao-tto-tt-S355-10_extensometer_nominal_gauge_length a tto:TTO_0000028 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-10_extensometer_nominal_gauge_length_smd .
+
+abox:pmdao-tto-tt-S355-10_final_gauge_length_after_fracture_Lu a tto:TTO_0000018 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-10_final_gauge_length_after_fracture_Lu_smd .
+
+abox:pmdao-tto-tt-S355-10_force_at_lower_yield_strength_FeL a tto:TTO_0000010 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-10_force_at_lower_yield_strength_FeL_smd .
+
+abox:pmdao-tto-tt-S355-10_force_at_proof_strength_plastic_extension_Fp0_2 a tto:TTO_0000042 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-10_force_at_proof_strength_plastic_extension_Fp0_2_smd .
+
+abox:pmdao-tto-tt-S355-10_force_at_upper_yield_strength_FeH a tto:TTO_0000021 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-10_force_at_upper_yield_strength_FeH_smd .
+
+abox:pmdao-tto-tt-S355-10_load_cell_force_range a tto:TTO_0000023 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-10_load_cell_force_range_smd .
+
+abox:pmdao-tto-tt-S355-10_lower_yield_strength_ReL a tto:TTO_0000022 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-10_lower_yield_strength_ReL_smd .
+
+abox:pmdao-tto-tt-S355-10_maximum_force_Fm a tto:TTO_0000023 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-10_maximum_force_Fm_smd .
+
+abox:pmdao-tto-tt-S355-10_minimum_cross_section_area_after_fracture_Su a tto:TTO_0000024 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-10_minimum_cross_section_area_after_fracture_Su_smd .
+
+abox:pmdao-tto-tt-S355-10_original_cross_section_area_S0 a tto:TTO_0000026 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-10_original_cross_section_area_S0_smd .
+
+abox:pmdao-tto-tt-S355-10_original_gauge_length_L0 a tto:TTO_0000028 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-10_original_gauge_length_L0_smd .
+
+abox:pmdao-tto-tt-S355-10_original_thickness_a1 a tto:TTO_0000029 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-10_original_thickness_a1_smd .
+
+abox:pmdao-tto-tt-S355-10_original_thickness_a2 a tto:TTO_0000029 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-10_original_thickness_a2_smd .
+
+abox:pmdao-tto-tt-S355-10_original_thickness_a3 a tto:TTO_0000029 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-10_original_thickness_a3_smd .
+
+abox:pmdao-tto-tt-S355-10_original_width_b1 a tto:TTO_0000030 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-10_original_width_b1_smd .
+
+abox:pmdao-tto-tt-S355-10_original_width_b2 a tto:TTO_0000030 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-10_original_width_b2_smd .
+
+abox:pmdao-tto-tt-S355-10_original_width_b3 a tto:TTO_0000030 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-10_original_width_b3_smd .
+
+abox:pmdao-tto-tt-S355-10_percentage_elongation_after_fracture_A a tto:TTO_0000033 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-10_percentage_elongation_after_fracture_A_smd .
+
+abox:pmdao-tto-tt-S355-10_percentage_reduction_of_area_Z a tto:TTO_0000038 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-10_percentage_reduction_of_area_Z_smd .
+
+abox:pmdao-tto-tt-S355-10_process_preMeasuring a obo:BFO_0000015 ;
+    rdfs:label "pre-measuring"^^xsd:string ;
+    obo:BFO_0000063 abox:pmdao-tto-tt-S355-10_process_mounting ;
+    obo:BFO_0000132 abox:pmdao-tto-tt-S355-10_process ;
+    obo:RO_0000057 abox:pmdao-tto-tt-S355-10_caliper,
+        abox:pmdao-tto-tt-S355-10_micrometer_gauge .
+
+abox:pmdao-tto-tt-S355-10_proof_strength_Rp0_2 a tto:TTO_0000047 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-10_proof_strength_Rp0_2_smd .
+
+abox:pmdao-tto-tt-S355-10_strain_rate a tto:TTO_0000051 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-10_strain_rate_smd .
+
+abox:pmdao-tto-tt-S355-10_tensile_strength_Rm a tto:TTO_0000053 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-10_tensile_strength_Rm_smd .
+
+abox:pmdao-tto-tt-S355-10_thickness_after_fracture_au a tto:TTO_0000056 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-10_thickness_after_fracture_au_smd .
+
+abox:pmdao-tto-tt-S355-10_transition_point_testing_rate a tto:TTO_0000058 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-10_transition_point_testing_rate_smd .
+
+abox:pmdao-tto-tt-S355-10_upper_yield_strength_ReH a tto:TTO_0000059 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-10_upper_yield_strength_ReH_smd .
+
+abox:pmdao-tto-tt-S355-10_width_after_fracture_bu a tto:TTO_0000060 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-10_width_after_fracture_bu_smd .
+
+abox:pmdao-tto-tt-S355-9_caliper a pmdco:PMD_0000544 ;
+    obo:BFO_0000196 abox:pmdao-tto-tt-S355-9_caliper_function .
+
+abox:pmdao-tto-tt-S355-9_cross_section_area_s1 a tto:TTO_0000012 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-9_cross_section_area_s1_smd .
+
+abox:pmdao-tto-tt-S355-9_cross_section_area_s2 a tto:TTO_0000012 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-9_cross_section_area_s2_smd .
+
+abox:pmdao-tto-tt-S355-9_cross_section_area_s3 a tto:TTO_0000012 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-9_cross_section_area_s3_smd .
+
+abox:pmdao-tto-tt-S355-9_diameter_after_fracture_du1 a tto:TTO_0000015 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-9_diameter_after_fracture_du1_smd .
+
+abox:pmdao-tto-tt-S355-9_diameter_after_fracture_du2 a tto:TTO_0000015 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-9_diameter_after_fracture_du2_smd .
+
+abox:pmdao-tto-tt-S355-9_elastic_modulus_E a pmdco:PMD_0000618 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-9_elastic_modulus_E_smd .
+
+abox:pmdao-tto-tt-S355-9_environmental_temperature a pmdco:PMD_0000967 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-9_environmental_temperature_smd .
+
+abox:pmdao-tto-tt-S355-9_extensometer_nominal_gauge_length a tto:TTO_0000028 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-9_extensometer_nominal_gauge_length_smd .
+
+abox:pmdao-tto-tt-S355-9_final_gauge_length_after_fracture_Lu a tto:TTO_0000018 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-9_final_gauge_length_after_fracture_Lu_smd .
+
+abox:pmdao-tto-tt-S355-9_force_at_lower_yield_strength_FeL a tto:TTO_0000010 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-9_force_at_lower_yield_strength_FeL_smd .
+
+abox:pmdao-tto-tt-S355-9_force_at_proof_strength_plastic_extension_Fp0_2 a tto:TTO_0000042 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-9_force_at_proof_strength_plastic_extension_Fp0_2_smd .
+
+abox:pmdao-tto-tt-S355-9_force_at_upper_yield_strength_FeH a tto:TTO_0000021 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-9_force_at_upper_yield_strength_FeH_smd .
+
+abox:pmdao-tto-tt-S355-9_load_cell_force_range a tto:TTO_0000023 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-9_load_cell_force_range_smd .
+
+abox:pmdao-tto-tt-S355-9_lower_yield_strength_ReL a tto:TTO_0000022 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-9_lower_yield_strength_ReL_smd .
+
+abox:pmdao-tto-tt-S355-9_maximum_force_Fm a tto:TTO_0000023 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-9_maximum_force_Fm_smd .
+
+abox:pmdao-tto-tt-S355-9_minimum_cross_section_area_after_fracture_Su a tto:TTO_0000024 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-9_minimum_cross_section_area_after_fracture_Su_smd .
+
+abox:pmdao-tto-tt-S355-9_original_cross_section_area_S0 a tto:TTO_0000026 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-9_original_cross_section_area_S0_smd .
+
+abox:pmdao-tto-tt-S355-9_original_gauge_length_L0 a tto:TTO_0000028 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-9_original_gauge_length_L0_smd .
+
+abox:pmdao-tto-tt-S355-9_original_thickness_a1 a tto:TTO_0000029 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-9_original_thickness_a1_smd .
+
+abox:pmdao-tto-tt-S355-9_original_thickness_a2 a tto:TTO_0000029 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-9_original_thickness_a2_smd .
+
+abox:pmdao-tto-tt-S355-9_original_thickness_a3 a tto:TTO_0000029 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-9_original_thickness_a3_smd .
+
+abox:pmdao-tto-tt-S355-9_original_width_b1 a tto:TTO_0000030 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-9_original_width_b1_smd .
+
+abox:pmdao-tto-tt-S355-9_original_width_b2 a tto:TTO_0000030 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-9_original_width_b2_smd .
+
+abox:pmdao-tto-tt-S355-9_original_width_b3 a tto:TTO_0000030 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-9_original_width_b3_smd .
+
+abox:pmdao-tto-tt-S355-9_percentage_elongation_after_fracture_A a tto:TTO_0000033 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-9_percentage_elongation_after_fracture_A_smd .
+
+abox:pmdao-tto-tt-S355-9_percentage_reduction_of_area_Z a tto:TTO_0000038 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-9_percentage_reduction_of_area_Z_smd .
+
+abox:pmdao-tto-tt-S355-9_process_preMeasuring a obo:BFO_0000015 ;
+    rdfs:label "pre-measuring"^^xsd:string ;
+    obo:BFO_0000063 abox:pmdao-tto-tt-S355-9_process_mounting ;
+    obo:BFO_0000132 abox:pmdao-tto-tt-S355-9_process ;
+    obo:RO_0000057 abox:pmdao-tto-tt-S355-9_caliper,
+        abox:pmdao-tto-tt-S355-9_micrometer_gauge .
+
+abox:pmdao-tto-tt-S355-9_proof_strength_Rp0_2 a tto:TTO_0000047 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-9_proof_strength_Rp0_2_smd .
+
+abox:pmdao-tto-tt-S355-9_strain_rate a tto:TTO_0000051 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-9_strain_rate_smd .
+
+abox:pmdao-tto-tt-S355-9_tensile_strength_Rm a tto:TTO_0000053 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-9_tensile_strength_Rm_smd .
+
+abox:pmdao-tto-tt-S355-9_thickness_after_fracture_au a tto:TTO_0000056 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-9_thickness_after_fracture_au_smd .
+
+abox:pmdao-tto-tt-S355-9_transition_point_testing_rate a tto:TTO_0000058 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-9_transition_point_testing_rate_smd .
+
+abox:pmdao-tto-tt-S355-9_upper_yield_strength_ReH a tto:TTO_0000059 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-9_upper_yield_strength_ReH_smd .
+
+abox:pmdao-tto-tt-S355-9_width_after_fracture_bu a tto:TTO_0000060 ;
+    obo:IAO_0000417 abox:pmdao-tto-tt-S355-9_width_after_fracture_bu_smd .
+
+abox:pmdao-tto-tt-S355-10_extensometer a pmdco:PMD_0000636 ;
+    obo:BFO_0000196 abox:pmdao-tto-tt-S355-10_extensometer_function ;
+    obo:RO_0000086 abox:pmdao-tto-tt-S355-10_extensometer_nominal_gauge_length .
+
+abox:pmdao-tto-tt-S355-10_process_postMeasuring a obo:BFO_0000015 ;
+    rdfs:label "post-measuring"^^xsd:string ;
+    obo:BFO_0000062 abox:pmdao-tto-tt-S355-10_process_unmounting ;
+    obo:BFO_0000063 abox:pmdao-tto-tt-S355-10_process_analysis ;
+    obo:BFO_0000132 abox:pmdao-tto-tt-S355-10_process ;
+    obo:RO_0000057 abox:pmdao-tto-tt-S355-10_caliper,
+        abox:pmdao-tto-tt-S355-10_micrometer_gauge .
+
+abox:pmdao-tto-tt-S355-9_extensometer a pmdco:PMD_0000636 ;
+    obo:BFO_0000196 abox:pmdao-tto-tt-S355-9_extensometer_function ;
+    obo:RO_0000086 abox:pmdao-tto-tt-S355-9_extensometer_nominal_gauge_length .
+
+abox:pmdao-tto-tt-S355-9_process_postMeasuring a obo:BFO_0000015 ;
+    rdfs:label "post-measuring"^^xsd:string ;
+    obo:BFO_0000062 abox:pmdao-tto-tt-S355-9_process_unmounting ;
+    obo:BFO_0000063 abox:pmdao-tto-tt-S355-9_process_analysis ;
+    obo:BFO_0000132 abox:pmdao-tto-tt-S355-9_process ;
+    obo:RO_0000057 abox:pmdao-tto-tt-S355-9_caliper,
+        abox:pmdao-tto-tt-S355-9_micrometer_gauge .
+
+abox:pmdao-tto-tt-S355-10_process_testing a obo:BFO_0000015 ;
+    rdfs:label "testing"^^xsd:string ;
+    obo:BFO_0000062 abox:pmdao-tto-tt-S355-10_process_mounting ;
+    obo:BFO_0000063 abox:pmdao-tto-tt-S355-10_process_unmounting ;
+    obo:BFO_0000132 abox:pmdao-tto-tt-S355-10_process ;
+    obo:BFO_0000199 abox:pmdao-tto-tt-S355-10_process_testing_interval ;
+    obo:RO_0000057 abox:pmdao-tto-tt-S355-10_extensometer,
+        abox:pmdao-tto-tt-S355-10_load_cell,
+        abox:pmdao-tto-tt-S355-10_tensile_testing_machine .
+
+abox:pmdao-tto-tt-S355-10_tensile_testing_machine a pmdco:PMD_0000973 ;
+    obo:BFO_0000196 abox:pmdao-tto-tt-S355-10_tensile_testing_machine_function ;
+    obo:RO_0000086 abox:pmdao-tto-tt-S355-10_crosshead_separation .
+
+abox:pmdao-tto-tt-S355-9_process_testing a obo:BFO_0000015 ;
+    rdfs:label "testing"^^xsd:string ;
+    obo:BFO_0000062 abox:pmdao-tto-tt-S355-9_process_mounting ;
+    obo:BFO_0000063 abox:pmdao-tto-tt-S355-9_process_unmounting ;
+    obo:BFO_0000132 abox:pmdao-tto-tt-S355-9_process ;
+    obo:BFO_0000199 abox:pmdao-tto-tt-S355-9_process_testing_interval ;
+    obo:RO_0000057 abox:pmdao-tto-tt-S355-9_extensometer,
+        abox:pmdao-tto-tt-S355-9_load_cell,
+        abox:pmdao-tto-tt-S355-9_tensile_testing_machine .
+
+abox:pmdao-tto-tt-S355-9_tensile_testing_machine a pmdco:PMD_0000973 ;
+    obo:BFO_0000196 abox:pmdao-tto-tt-S355-9_tensile_testing_machine_function ;
+    obo:RO_0000086 abox:pmdao-tto-tt-S355-9_crosshead_separation .
+
+unit:MegaPa a obo:IAO_0000003 .
+
+unit:PERCENT a obo:IAO_0000003 .
+
+unit:MilliM2 a obo:IAO_0000003 .
+
+unit:KiloN a obo:IAO_0000003 .
+
+abox:pmdao-tto-tt-S355-10_process a pmdco:PMD_0000974 ;
+    obo:BFO_0000055 abox:pmdao-tto-tt-S355-10_tensile_test_method ;
+    obo:BFO_0000108 abox:pmdao-tto-tt-S355-10_date ;
+    obo:BFO_0000117 abox:pmdao-tto-tt-S355-10_process_analysis,
+        abox:pmdao-tto-tt-S355-10_process_mounting,
+        abox:pmdao-tto-tt-S355-10_process_postMeasuring,
+        abox:pmdao-tto-tt-S355-10_process_preMeasuring,
+        abox:pmdao-tto-tt-S355-10_process_testing,
+        abox:pmdao-tto-tt-S355-10_process_unmounting ;
+    obo:OBI_0000293 <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd3> ;
+    obo:OBI_0000299 abox:S355_data_csvw_table,
+        abox:Zd3_csvw_table,
+        abox:pmdao-tto-tt-S355-10_cross_section_area_s1_smd,
+        abox:pmdao-tto-tt-S355-10_cross_section_area_s2_smd,
+        abox:pmdao-tto-tt-S355-10_cross_section_area_s3_smd,
+        abox:pmdao-tto-tt-S355-10_diameter_after_fracture_du1_smd,
+        abox:pmdao-tto-tt-S355-10_diameter_after_fracture_du2_smd,
+        abox:pmdao-tto-tt-S355-10_elastic_modulus_E_smd,
+        abox:pmdao-tto-tt-S355-10_environmental_temperature_smd,
+        abox:pmdao-tto-tt-S355-10_extensometer_nominal_gauge_length_smd,
+        abox:pmdao-tto-tt-S355-10_final_gauge_length_after_fracture_Lu_smd,
+        abox:pmdao-tto-tt-S355-10_force_at_lower_yield_strength_FeL_smd,
+        abox:pmdao-tto-tt-S355-10_force_at_proof_strength_plastic_extension_Fp0_2_smd,
+        abox:pmdao-tto-tt-S355-10_force_at_upper_yield_strength_FeH_smd,
+        abox:pmdao-tto-tt-S355-10_load_cell_force_range_smd,
+        abox:pmdao-tto-tt-S355-10_lower_yield_strength_ReL_smd,
+        abox:pmdao-tto-tt-S355-10_maximum_force_Fm_smd,
+        abox:pmdao-tto-tt-S355-10_minimum_cross_section_area_after_fracture_Su_smd,
+        abox:pmdao-tto-tt-S355-10_original_cross_section_area_S0_smd,
+        abox:pmdao-tto-tt-S355-10_original_gauge_length_L0_smd,
+        abox:pmdao-tto-tt-S355-10_original_thickness_a1_smd,
+        abox:pmdao-tto-tt-S355-10_original_thickness_a2_smd,
+        abox:pmdao-tto-tt-S355-10_original_thickness_a3_smd,
+        abox:pmdao-tto-tt-S355-10_original_width_b1_smd,
+        abox:pmdao-tto-tt-S355-10_original_width_b2_smd,
+        abox:pmdao-tto-tt-S355-10_original_width_b3_smd,
+        abox:pmdao-tto-tt-S355-10_percentage_elongation_after_fracture_A_smd,
+        abox:pmdao-tto-tt-S355-10_percentage_reduction_of_area_Z_smd,
+        abox:pmdao-tto-tt-S355-10_proof_strength_Rp0_2_smd,
+        abox:pmdao-tto-tt-S355-10_result,
+        abox:pmdao-tto-tt-S355-10_strain_rate_smd,
+        abox:pmdao-tto-tt-S355-10_tensile_strength_Rm_smd,
+        abox:pmdao-tto-tt-S355-10_thickness_after_fracture_au_smd,
+        abox:pmdao-tto-tt-S355-10_transition_point_testing_rate_smd,
+        abox:pmdao-tto-tt-S355-10_upper_yield_strength_ReH_smd,
+        abox:pmdao-tto-tt-S355-10_width_after_fracture_bu_smd,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd3_afterTest_1>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd3_afterTest_2> ;
+    obo:RO_0000057 abox:pmdao-tto-tt-S355-10_caliper,
+        abox:pmdao-tto-tt-S355-10_caliper_manufacturer,
+        abox:pmdao-tto-tt-S355-10_extensometer,
+        abox:pmdao-tto-tt-S355-10_institution,
+        abox:pmdao-tto-tt-S355-10_load_cell,
+        abox:pmdao-tto-tt-S355-10_micrometer_gauge,
+        abox:pmdao-tto-tt-S355-10_micrometer_gauge_manufacturer,
+        abox:pmdao-tto-tt-S355-10_operator,
+        abox:pmdao-tto-tt-S355-10_tensile_testing_machine,
+        abox:pmdao-tto-tt-S355-10_tensile_testing_machine_manufacturer ;
+    pmdco:PMD_0000009 abox:pmdao-tto-tt-S355-10_environmental_temperature,
+        abox:pmdao-tto-tt-S355-10_strain_rate,
+        abox:pmdao-tto-tt-S355-10_transition_point_testing_rate .
+
+abox:pmdao-tto-tt-S355-9_process a pmdco:PMD_0000974 ;
+    obo:BFO_0000055 abox:pmdao-tto-tt-S355-9_tensile_test_method ;
+    obo:BFO_0000108 abox:pmdao-tto-tt-S355-9_date ;
+    obo:BFO_0000117 abox:pmdao-tto-tt-S355-9_process_analysis,
+        abox:pmdao-tto-tt-S355-9_process_mounting,
+        abox:pmdao-tto-tt-S355-9_process_postMeasuring,
+        abox:pmdao-tto-tt-S355-9_process_preMeasuring,
+        abox:pmdao-tto-tt-S355-9_process_testing,
+        abox:pmdao-tto-tt-S355-9_process_unmounting ;
+    obo:OBI_0000293 <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd2> ;
+    obo:OBI_0000299 abox:S355_data_csvw_table,
+        abox:Zd2_csvw_table,
+        abox:pmdao-tto-tt-S355-9_cross_section_area_s1_smd,
+        abox:pmdao-tto-tt-S355-9_cross_section_area_s2_smd,
+        abox:pmdao-tto-tt-S355-9_cross_section_area_s3_smd,
+        abox:pmdao-tto-tt-S355-9_diameter_after_fracture_du1_smd,
+        abox:pmdao-tto-tt-S355-9_diameter_after_fracture_du2_smd,
+        abox:pmdao-tto-tt-S355-9_elastic_modulus_E_smd,
+        abox:pmdao-tto-tt-S355-9_environmental_temperature_smd,
+        abox:pmdao-tto-tt-S355-9_extensometer_nominal_gauge_length_smd,
+        abox:pmdao-tto-tt-S355-9_final_gauge_length_after_fracture_Lu_smd,
+        abox:pmdao-tto-tt-S355-9_force_at_lower_yield_strength_FeL_smd,
+        abox:pmdao-tto-tt-S355-9_force_at_proof_strength_plastic_extension_Fp0_2_smd,
+        abox:pmdao-tto-tt-S355-9_force_at_upper_yield_strength_FeH_smd,
+        abox:pmdao-tto-tt-S355-9_load_cell_force_range_smd,
+        abox:pmdao-tto-tt-S355-9_lower_yield_strength_ReL_smd,
+        abox:pmdao-tto-tt-S355-9_maximum_force_Fm_smd,
+        abox:pmdao-tto-tt-S355-9_minimum_cross_section_area_after_fracture_Su_smd,
+        abox:pmdao-tto-tt-S355-9_original_cross_section_area_S0_smd,
+        abox:pmdao-tto-tt-S355-9_original_gauge_length_L0_smd,
+        abox:pmdao-tto-tt-S355-9_original_thickness_a1_smd,
+        abox:pmdao-tto-tt-S355-9_original_thickness_a2_smd,
+        abox:pmdao-tto-tt-S355-9_original_thickness_a3_smd,
+        abox:pmdao-tto-tt-S355-9_original_width_b1_smd,
+        abox:pmdao-tto-tt-S355-9_original_width_b2_smd,
+        abox:pmdao-tto-tt-S355-9_original_width_b3_smd,
+        abox:pmdao-tto-tt-S355-9_percentage_elongation_after_fracture_A_smd,
+        abox:pmdao-tto-tt-S355-9_percentage_reduction_of_area_Z_smd,
+        abox:pmdao-tto-tt-S355-9_proof_strength_Rp0_2_smd,
+        abox:pmdao-tto-tt-S355-9_result,
+        abox:pmdao-tto-tt-S355-9_strain_rate_smd,
+        abox:pmdao-tto-tt-S355-9_tensile_strength_Rm_smd,
+        abox:pmdao-tto-tt-S355-9_thickness_after_fracture_au_smd,
+        abox:pmdao-tto-tt-S355-9_transition_point_testing_rate_smd,
+        abox:pmdao-tto-tt-S355-9_upper_yield_strength_ReH_smd,
+        abox:pmdao-tto-tt-S355-9_width_after_fracture_bu_smd,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd2_afterTest_1>,
+        <https://w3id.org/pmd/demodata/tensiletest_S355/testpiece/Zd2_afterTest_2> ;
+    obo:RO_0000057 abox:pmdao-tto-tt-S355-9_caliper,
+        abox:pmdao-tto-tt-S355-9_caliper_manufacturer,
+        abox:pmdao-tto-tt-S355-9_extensometer,
+        abox:pmdao-tto-tt-S355-9_institution,
+        abox:pmdao-tto-tt-S355-9_load_cell,
+        abox:pmdao-tto-tt-S355-9_micrometer_gauge,
+        abox:pmdao-tto-tt-S355-9_micrometer_gauge_manufacturer,
+        abox:pmdao-tto-tt-S355-9_operator,
+        abox:pmdao-tto-tt-S355-9_tensile_testing_machine,
+        abox:pmdao-tto-tt-S355-9_tensile_testing_machine_manufacturer ;
+    pmdco:PMD_0000009 abox:pmdao-tto-tt-S355-9_environmental_temperature,
+        abox:pmdao-tto-tt-S355-9_strain_rate,
+        abox:pmdao-tto-tt-S355-9_transition_point_testing_rate .
+
+unit:MilliM a obo:IAO_0000003 .
+
