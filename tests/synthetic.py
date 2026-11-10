@@ -1,6 +1,6 @@
 """Synthetic tensile curves with known truth, for the tests and the method notebook.
 
-The generator is written from the method specification, not from the
+The generator is written from the method's definitions, not from the
 implementation. Each curve is built from a noise-free engineering stress
 ``s`` (MPa) and a generator plastic strain ``p`` per sample. The channels in
 contract units follow from them:
@@ -95,7 +95,7 @@ class Segment:
 
 @dataclasses.dataclass(frozen=True)
 class Truth:
-    """Expected values derived from the specification (NaN: undefined/unchecked)."""
+    """Expected values derived from the construction and the method's definitions (NaN: undefined or unchecked)."""
 
     yield_type: str
     k_ext: int
@@ -712,6 +712,8 @@ def spec_reh(curve: SyntheticCurve) -> tuple[float, int]:
     point only if the plastic strain (strain minus stress over the provisional
     line) grows by at least 0.05 % after it before the stress exceeds it;
     otherwise ReH is NaN (continuous yielding). Raises if there is no j*.
+    The condition on the plastic strain at the peak (at most 0.5 %) is not
+    evaluated; the reference curve's peaks lie far below it.
     """
     s = curve.force_n / curve.s0_mm2
     e = curve.strain

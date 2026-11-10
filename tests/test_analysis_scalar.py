@@ -1,4 +1,4 @@
-"""Specification-based tests of the analysis functions that do not need a whole curve.
+"""Tests of the analysis functions that do not need a whole curve, against analytic values.
 
 The least-squares fit of the elastic line, s0_scatter, A and Z,
 compare_with_reported, summarize_by_group, check_time_order, and the module

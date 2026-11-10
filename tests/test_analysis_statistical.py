@@ -156,8 +156,11 @@ def test_noisy_tolerance_is_met_in_99_percent_of_seeds(check):
 
 
 @functools.lru_cache(maxsize=None)
-def m8_agreement() -> dict:
-    """Implementation ReH versus the independent upper yield point evaluation, (a) sigma=0.5."""
+def reh_agreement() -> dict:
+    """Implementation ReH versus the independent upper yield point evaluation, (a) sigma=0.5.
+
+    Both may find no upper yield point (continuous yielding, ReH NaN); that counts as agreement.
+    """
     base = base_curve("a")
     first = SEED_BASE[("a", 0.5)]
     results, _ = runs("a", 0.5)
@@ -172,7 +175,7 @@ def m8_agreement() -> dict:
 
 def test_reh_equals_the_independent_evaluation_in_every_seed():
     # Separates the accuracy of ReH on noisy curves from the correctness of the implementation.
-    assert m8_agreement()["equal"] == SEEDS
+    assert reh_agreement()["equal"] == SEEDS
 
 
 # ---------------------------------------------------------------------------
@@ -223,7 +226,7 @@ def _row(o: dict) -> str:
 
 def test_summary_table(capsys):
     header = (
-        "| check | seeds | pass rate | 95 % CI (Clopper-Pearson) | rate on first spec seeds "
+        "| check | seeds | pass rate | 95 % CI (Clopper-Pearson) | rate on the first seeds "
         "| error interval | mean error | error range | NaN | verdict |\n"
         "|---|---|---|---|---|---|---|---|---|---|"
     )
@@ -243,9 +246,9 @@ def test_summary_table(capsys):
                 f"- {key[0]} sigma={key[1]:g}: {1000 * timing[key]:.2f} ms per analyse_curve call; "
                 f"expected yield type in {classification[key]}/{SEEDS} seeds"
             )
-        m8 = m8_agreement()
+        agreement = reh_agreement()
         print(
             f"- ReH detail (a, sigma=0.5): implementation ReH equals the independent upper yield point "
-            f"evaluation in {m8['equal']}/{SEEDS} seeds; ReH < true in {m8['below']}, "
-            f"ReH > true + 3 sd in {m8['above']}"
+            f"evaluation in {agreement['equal']}/{SEEDS} seeds; ReH < true in {agreement['below']}, "
+            f"ReH > true + 3 sd in {agreement['above']}"
         )

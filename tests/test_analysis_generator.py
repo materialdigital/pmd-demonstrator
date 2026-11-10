@@ -1,7 +1,7 @@
 """Self-checks of the synthetic generator against its declared construction.
 
 These tests do not call the analysis; they make sure the generated curves and
-their declared truths match the specification before any analysis test relies
+their declared truths match their construction before any analysis test relies
 on them.
 """
 

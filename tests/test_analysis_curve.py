@@ -1,8 +1,9 @@
-"""Specification-based tests of ``analyse_curve``.
+"""Tests of ``analyse_curve`` against expected values declared independently of the code.
 
 Every expected value comes from the synthetic generator's declared truth
-(``tests/synthetic.py``) or from the specification text, never from the
-implementation's output. Tolerances are those of the generator's specification:
+(``tests/synthetic.py``) or from the method's definitions (the node
+docstrings and notebook 02), never from the implementation's output.
+Tolerances, declared in advance:
 
 - noise-free: E +-0.1 % (or the analytic slope), ReH the exact sample value,
   ReL +-0.5 MPa, Rp0.2 +-0.5 MPa, Rm/Fm exact, Ag +-0.05 percentage points
@@ -298,7 +299,7 @@ def test_noisy_reference_a_within_the_noisy_tolerances(seed):
 @pytest.mark.parametrize("seed", NOISY_SEEDS)
 def test_noisy_reh_is_the_raw_sample_value(seed):
     # Upper yield point on raw samples: ReH = s(i_p), i_p = argmax s[0..j*], evaluated
-    # independently from the spec text on the same noisy samples.
+    # independently from the method's definitions on the same noisy samples.
     c = sy.noisy(curve("a"), seed)
     reh, _ = sy.spec_reh(c)
     assert run(c).reh_mpa == pytest.approx(reh, rel=EXACT)
@@ -486,7 +487,7 @@ def test_linearity_diagnostic_matches_the_analytic_slopes():
     e1 = _analytic_slope(c, 0.05, 0.25, 400.0)
     e2 = _analytic_slope(c, 0.25, 0.50, 400.0)
     diff = abs(e1 - e2)
-    # The spec does not fix the denominator of the "relative difference";
+    # The method does not fix the denominator of the "relative difference";
     # any of E1, E2 or an E between them gives a value in this interval.
     assert diff / max(e1, e2) * (1 - 1e-9) <= abs(r.sensitivity.linearity_rel_diff)
     assert abs(r.sensitivity.linearity_rel_diff) <= diff / min(e1, e2) * (1 + 1e-9)
@@ -791,12 +792,12 @@ def test_terminal_drop_does_not_change_a_curve_that_returns_to_reh():
 
 
 # The truncation is only below 0.5 * the highest force, so a gradual drop keeps samples
-# above it and ReL and Fm change. The human accepted this limit, visibly flagged.
+# above it and ReL and Fm change. An accepted limit of the method, flagged with fm:no_return_to_reh.
 @pytest.mark.xfail(strict=True, reason="known limit of the method")
 @pytest.mark.parametrize(
     "first_mpa, n",
     [(388.5, 60), (350.0, 3)],
-    ids=["linear-drop-of-the-r8-1-repro", "one-sample-below-the-plateau"],
+    ids=["linear-drop-to-the-plateau", "one-sample-below-the-plateau"],
 )
 def test_gradual_terminal_drop_leaves_rel_and_fm_unchanged(first_mpa, n):
     c = sy.discontinuous(rm=395.0, ag_p=0.06, p_end=0.12, serration_phase=0.5)
@@ -933,7 +934,7 @@ def test_rp02_not_reached_when_the_first_window_sample_exceeds_the_offset():
 
 
 def test_rp02_extensometer_invalid_is_not_also_not_reached():
-    # The removal case of test_m2_rp02_beyond_k_ext_is_nan_and_flagged.
+    # The removal case of test_rp02_beyond_k_ext_is_nan_and_flagged.
     c = sy.extensometer_end(_long_gauge(curve("a")), "nan", at_plastic_strain=0.0015)
     assert "rp02:not_reached" not in run(c).flags
 
