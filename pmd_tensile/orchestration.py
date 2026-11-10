@@ -394,11 +394,11 @@ def analyse_curve(
     yield_type, reh_mpa, rel_mpa, upper_yield_index, end_of_yielding_index, work_hardening, yielding = yield_points(
         force_n, strain, s0_mm2, k_ext, highest_force_n, e0_gpa, intercept0_mpa, noise_mpa, rate_switch_strain, params
     )
-    e_gpa, strain_origin, reference_force_n, elastic = elastic_line(
+    e_gpa, strain_origin, reference_force_n, window_lo_n, elastic = elastic_line(
         force_n, strain, s0_mm2, k_ext, upper_yield_index, highest_force_n, e0_gpa, intercept0_mpa, params
     )
     rp02_mpa, proof = proof_strength(
-        force_n, strain, s0_mm2, k_ext, e_gpa, strain_origin, reference_force_n, upper_yield_index,
+        force_n, strain, s0_mm2, k_ext, e_gpa, strain_origin, window_lo_n, upper_yield_index,
         end_of_yielding_index, rate_switch_strain, params,
     )
     fm_n, rm_mpa, max_force_index, maximum_flags = maximum_force(

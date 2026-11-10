@@ -256,6 +256,7 @@ EXPECTED_OUTPUT_UNITS = {
     ("elastic_line", "e_gpa"): ("GigaPA", "ModulusOfElasticity"),
     ("elastic_line", "strain_origin"): ("UNITLESS", "Strain"),
     ("elastic_line", "reference_force_n"): ("N", "Force"),
+    ("elastic_line", "window_lo_n"): ("N", "Force"),
     ("proof_strength", "rp02_mpa"): ("MegaPA", "Stress"),
     ("maximum_force", "fm_n"): ("N", "Force"),
     ("maximum_force", "rm_mpa"): ("MegaPA", "Stress"),

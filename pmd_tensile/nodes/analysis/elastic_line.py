@@ -209,7 +209,7 @@ def elastic_line(
     e0_gpa: ModulusGPa,
     intercept0_mpa: StressMPa,
     params: AnalysisParameters | None = None,
-) -> tuple[ModulusGPa, StrainRatio, ForceN, ElasticLineDiagnostics]:
+) -> tuple[ModulusGPa, StrainRatio, ForceN, ForceN, ElasticLineDiagnostics]:
     """E, the slope of the elastic line, and the strain origin.
 
     E and b are the least-squares line sigma = E*e + b through the samples with
@@ -226,8 +226,9 @@ def elastic_line(
     provisional line E0 (GPa), b0 (MPa), ``params``.
     Outputs: ``e_gpa`` (GPa), ``strain_origin`` (e0, ratio), ``reference_force_n``
     (the reference of the window, N; the force sample itself for discontinuous
-    yielding, so that the first loading branch ends exactly there),
-    ``diagnostics``.
+    yielding, so that the first loading branch ends exactly there), ``window_lo_n``
+    (the lower bound of the window as a force, N, where the proof-strength search
+    starts), ``diagnostics``.
     Flags: ``e:insufficient_elastic_points`` (fewer than ``min_elastic_points``
     samples in the window), ``e:e_window_not_converged``.
     """
@@ -252,7 +253,7 @@ def elastic_line(
         flags.append("e:e_window_not_converged")
     e_gpa = ols.slope / s0 / 1000.0
     strain_origin = -ols.intercept / ols.slope if math.isfinite(ols.slope) else NAN
-    reference_force_n = reference
+    reference_force_n, window_lo_n = reference, lo
     reached = _first(np.isfinite(force) & (force >= reference))
     diagnostics = ElasticLineDiagnostics(
         window_mpa=(lo / s0, hi / s0),
@@ -266,7 +267,7 @@ def elastic_line(
         residual_scatter_mpa=ols.residual_noise / s0,
         flags=tuple(flags),
     )
-    return e_gpa, strain_origin, reference_force_n, diagnostics
+    return e_gpa, strain_origin, reference_force_n, window_lo_n, diagnostics
 
 
 @fr.atomic
@@ -277,7 +278,7 @@ def proof_strength(
     k_ext: int,
     e_gpa: ModulusGPa,
     strain_origin: StrainRatio,
-    reference_force_n: ForceN,
+    window_lo_n: ForceN,
     upper_yield_index: int,
     end_of_yielding_index: int,
     rate_switch_strain: OptionalStrainRatio = None,
@@ -286,13 +287,13 @@ def proof_strength(
     """Proof strength Rp0.2: the stress at a plastic strain of ``offset_plastic_strain`` (0.2 %).
 
     The plastic strain is e_p = e - e0 - sigma/E. Searching the samples with valid
-    strain from the first one at or above the lower bound ``f_lo`` of the elastic window
+    strain from the first one at or above the lower bound of the elastic window
     (so that a curved start below the window cannot cross), Rp0.2 is the stress at
     the first crossing of e_p = 0.2 %, interpolated linearly between the two
     samples around it.
 
     Inputs: force (N), strain (ratio), S0 (mm²), ``k_ext``, E (GPa), e0 (ratio), the
-    reference force of the elastic window (N), the sample indices of the upper yield
+    lower bound of the elastic window (N), the sample indices of the upper yield
     point and of the end of yielding (-1 for continuous yielding),
     ``rate_switch_strain`` (ratio, optional), ``params``.
     Outputs: ``rp02_mpa`` (MPa), ``diagnostics``.
@@ -309,11 +310,11 @@ def proof_strength(
     valid = _strain_valid(force, eps, k_ext)
     slope = e_gpa * 1000.0 * s0
     crossing, index, status = _proof_crossing(
-        force, eps, valid, slope, -strain_origin * slope, p.f_lo * reference_force_n, p.offset_plastic_strain
+        force, eps, valid, slope, -strain_origin * slope, window_lo_n, p.offset_plastic_strain
     )
     flags = []
     # Without a window, continuous yielding found no first crossing of the provisional line.
-    no_reference = status == _CROSSING_UNDEFINED and not math.isfinite(reference_force_n)
+    no_reference = status == _CROSSING_UNDEFINED and not math.isfinite(window_lo_n)
     if status == _CROSSING_BELOW_OFFSET or no_reference:
         flags.append("rp02:extensometer_invalid" if k_ext < len(force) else "rp02:not_reached")
     elif status == _CROSSING_ALREADY_BEYOND:
