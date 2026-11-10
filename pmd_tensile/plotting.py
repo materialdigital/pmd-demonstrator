@@ -886,6 +886,9 @@ def yield_step_figure(
             span = span[valid[span]]
             ax_d.plot(100 * strain[span], np.full(len(span), view.reh_mpa - yielding.drop_threshold_mpa),
                       color=view.color, linewidth=0.9, dashes=(2, 2), alpha=0.9)
+        first = yielding.first_drop_index
+        if 0 <= first < len(stress) and valid[first]:
+            ax_d.plot(100 * strain[first], stress[first], "x", color=view.color, markersize=8, markeredgewidth=1.5)
         labels[view.specimen_id] = specimen_label(
             view.specimen_id,
             view.orientation,
@@ -927,8 +930,9 @@ def yield_step_figure(
         Line2D([], [], color="0.4", dashes=(2, 2)),
         Line2D([], [], marker=PROPERTY_MARKERS["ReH"], color="0.6", markeredgecolor="k", linestyle="none"),
         Line2D([], [], marker=PROPERTY_MARKERS["ReL"], color="0.6", markeredgecolor="k", linestyle="none"),
+        Line2D([], [], marker="x", color="0.4", markersize=8, markeredgewidth=1.5, linestyle="none"),
     ]
-    ax_d.legend(handles, ["ReH − d (a drop below it marks yielding)", "ReH", "ReL"],
+    ax_d.legend(handles, ["ReH − d (a drop below it marks yielding)", "ReH", "ReL", "first sample whose drop qualified"],
                 loc="lower right", fontsize=9)
     _note(ax_d, f"zoom: stress {y_lo:g}–{y_hi:g} MPa, up to the extensometer end"
           + (f"\n{_missing_note(views, ['ReH', 'ReL'])}" if _missing_note(views, ["ReH", "ReL"]) else ""),
