@@ -51,8 +51,8 @@ class YieldDiagnostics:
 
     ``drop_threshold_mpa`` is the drop d required at ReH; ``largest_valid_drop_mpa``
     the largest drop below the running maximum where the drop is searched and
-    the strain is valid; ``first_drop_index`` the first sample whose drop
-    qualified. The plateau quantities describe the lower yield strength.
+    the strain is valid, ``largest_valid_drop_index`` the sample where it occurs;
+    ``first_drop_index`` the first sample whose drop qualified. The plateau quantities describe the lower yield strength.
     """
 
     rel_index: int
@@ -61,6 +61,7 @@ class YieldDiagnostics:
     plateau_extent: float
     drop_threshold_mpa: float
     largest_valid_drop_mpa: float
+    largest_valid_drop_index: int
     first_drop_index: int
     reh_sample_increment_mpa: float
     flags: tuple[str, ...] = ()
@@ -217,39 +218,44 @@ def _yield_result(force_n, strain, s0_mm2, k_ext, highest_force_n, e0_gpa, inter
     finite_idx = np.flatnonzero(np.isfinite(force))
     forces = force[finite_idx]
 
-    def continuous(*flags: str, first_drop: int = -1, largest: float = NAN):
+    def continuous(*flags: str, first_drop: int = -1):
         diagnostics = YieldDiagnostics(
             rel_index=-1, rel_incl_transient_mpa=NAN, plateau_level_mpa=NAN, plateau_extent=NAN,
-            drop_threshold_mpa=NAN, largest_valid_drop_mpa=largest, first_drop_index=first_drop,
+            drop_threshold_mpa=NAN, largest_valid_drop_mpa=largest, largest_valid_drop_index=largest_index,
+            first_drop_index=first_drop,
             reh_sample_increment_mpa=NAN, flags=_unique((*flags, *_NO_UPPER_YIELD)),
         )
         return CONTINUOUS, NAN, NAN, -1, -1, False, diagnostics
 
+    largest, largest_index = NAN, -1
     if len(forces) < 2 or not math.isfinite(highest_force_n):
         return continuous()
     first, running = _first_qualifying_drop(forces, highest_force_n, noise, p)
     searched = (forces > SEARCH_FRACTION_OF_HIGHEST_FORCE * highest_force_n) & valid[finite_idx]
-    largest = float((running - forces)[searched].max()) / s0 if np.any(searched) else NAN
+    if np.any(searched):
+        drops = np.where(searched, running - forces, -np.inf)
+        at = int(np.argmax(drops))  # the first sample with the largest drop
+        largest, largest_index = float(drops[at]) / s0, int(finite_idx[at])
     if first < 0:
-        return continuous(largest=largest)
+        return continuous()
     first_drop = int(finite_idx[first])
     peak = int(np.argmax(forces[: first + 1]))
     i_p = int(finite_idx[peak])
     if not (math.isfinite(slope) and slope > 0 and math.isfinite(intercept)):
-        return continuous("reh:insufficient_elastic_points", first_drop=first_drop, largest=largest)
+        return continuous("reh:insufficient_elastic_points", first_drop=first_drop)
     if not valid[i_p]:
-        return continuous(_no_valid_peak_cause(valid[first_drop]), first_drop=first_drop, largest=largest)
+        return continuous(_no_valid_peak_cause(valid[first_drop]), first_drop=first_drop)
     plastic = eps - (force - intercept) / slope
     if plastic[i_p] > p.peak_max_plastic_strain:
-        return continuous(first_drop=first_drop, largest=largest)
+        return continuous(first_drop=first_drop)
     exceeded = _first(forces[peak + 1 :] > forces[peak])
     stop = len(force) if exceeded < 0 else int(finite_idx[peak + 1 + exceeded])
     flow = np.arange(i_p + 1, stop)
     flow = flow[valid[flow]]
     if len(flow) == 0:
-        return continuous(_no_valid_peak_cause(valid[first_drop]), first_drop=first_drop, largest=largest)
+        return continuous(_no_valid_peak_cause(valid[first_drop]), first_drop=first_drop)
     if plastic[flow].max() - plastic[i_p] < p.min_flow_plastic_strain:
-        return continuous(first_drop=first_drop, largest=largest)
+        return continuous(first_drop=first_drop)
 
     reh = float(forces[peak])
     threshold = max(p.drop_rel * reh, p.drop_noise_factor * noise)
@@ -280,6 +286,7 @@ def _yield_result(force_n, strain, s0_mm2, k_ext, highest_force_n, e0_gpa, inter
         plateau_extent=lower.extent,
         drop_threshold_mpa=threshold / s0,
         largest_valid_drop_mpa=largest,
+        largest_valid_drop_index=largest_index,
         first_drop_index=first_drop,
         reh_sample_increment_mpa=float(forces[peak] - forces[peak - 1]) / s0 if peak > 0 else NAN,
         flags=_unique(flags),

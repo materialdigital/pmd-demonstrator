@@ -392,7 +392,7 @@ IDENTICAL_FIELDS = (
     "yield_type", "k_ext", "upper_yield_index", "end_of_yielding_index", "work_hardening", "max_force_index",
     "maximum_flags", "flags", "dropped.force", "dropped.strain", "dropped.crosshead", "extensometer.n_windows",
     "extensometer.flags", "provisional.n", "provisional.branch_end_index", "yielding.rel_index",
-    "yielding.first_drop_index", "yielding.flags", "elastic.n", "elastic.branch_end_index", "elastic.iterations", "elastic.flags", "proof.index",
+    "yielding.first_drop_index", "yielding.largest_valid_drop_index", "yielding.flags", "elastic.n", "elastic.branch_end_index", "elastic.iterations", "elastic.flags", "proof.index",
     "proof.flags", "elongation.band", "elongation.flags", "sensitivity.flags",
 )
 
@@ -1125,3 +1125,13 @@ def test_ag_window_ranges_need_agt():
                                          r.strain_origin, math.nan, r.fm_n)
     for value in (*diagnostics.ag_range_percent, *diagnostics.agt_range_percent):
         assert_nan(value)
+
+
+def test_largest_valid_drop_lies_at_its_sample():
+    # The diagnostics give the largest drop below the running maximum where the drop is
+    # searched and the strain is valid, and the sample where it occurs.
+    a, r = curve("a"), result("a")
+    stress = a.force_n / a.s0_mm2
+    at = r.yielding.largest_valid_drop_index
+    assert 0 <= at < r.k_ext
+    assert np.maximum.accumulate(stress)[at] - stress[at] == pytest.approx(r.yielding.largest_valid_drop_mpa, rel=1e-9)

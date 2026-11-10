@@ -836,8 +836,8 @@ def yield_step_figure(
       level s_n of the second differences is given in the legend;
     - (d) the yield search up to the extensometer end: the stress, ReH − d
       over the yield range (a drop below it marks yielding) and ReH, ReL
-      (``yield_points``); the legend gives the largest drop with valid strain
-      and d.
+      (``yield_points``), with markers at the first sample whose drop qualified
+      and at the largest drop with valid strain; the legend gives that drop and d.
 
     ``analyses`` maps specimen IDs to their :class:`SpecimenAnalysis`;
     ``params`` are the parameters the nodes ran with (default: the method
@@ -889,6 +889,11 @@ def yield_step_figure(
         first = yielding.first_drop_index
         if 0 <= first < len(stress) and valid[first]:
             ax_d.plot(100 * strain[first], stress[first], "x", color=view.color, markersize=8, markeredgewidth=1.5)
+        deepest = yielding.largest_valid_drop_index
+        if 0 <= deepest < len(stress):
+            # Drawn above the ReH/ReL markers: the largest drop is often at the ReL sample.
+            ax_d.plot(100 * strain[deepest], stress[deepest] - 1.0, "^", markerfacecolor="none", markeredgecolor=view.color,
+                      markersize=8, markeredgewidth=1.4, zorder=6)
         labels[view.specimen_id] = specimen_label(
             view.specimen_id,
             view.orientation,
@@ -931,12 +936,14 @@ def yield_step_figure(
         Line2D([], [], marker=PROPERTY_MARKERS["ReH"], color="0.6", markeredgecolor="k", linestyle="none"),
         Line2D([], [], marker=PROPERTY_MARKERS["ReL"], color="0.6", markeredgecolor="k", linestyle="none"),
         Line2D([], [], marker="x", color="0.4", markersize=8, markeredgewidth=1.5, linestyle="none"),
+        Line2D([], [], marker="^", markerfacecolor="none", markeredgecolor="0.4", markersize=8, markeredgewidth=1.4,
+               linestyle="none"),
     ]
-    ax_d.legend(handles, ["ReH − d (a drop below it marks yielding)", "ReH", "ReL", "first sample whose drop qualified"],
+    ax_d.legend(handles, ["ReH − d (a drop below it marks yielding)", "ReH", "ReL", "first sample whose drop qualified", "largest drop with valid strain (below its sample)"],
                 loc="lower right", fontsize=9)
     _note(ax_d, f"zoom: stress {y_lo:g}–{y_hi:g} MPa, up to the extensometer end"
           + (f"\n{_missing_note(views, ['ReH', 'ReL'])}" if _missing_note(views, ["ReH", "ReL"]) else ""),
-          loc=(0.98, 0.2, "right", "bottom"))
+          loc=(0.98, 0.32, "right", "bottom"))
 
     _shared_legend(fig, views, labels, retrieved, lines=True)
     return fig
