@@ -16,13 +16,13 @@ This repository collects technical demonstrators for the Platform MaterialDigita
 | [`04-tensile-workflow-knowledge-graph.ipynb`](notebooks/04-tensile-workflow-knowledge-graph.ipynb) | ontologists, workflow developers | what `semantikon` records about a recipe and a run (called directly), unit annotations, validation, the example queries printed, and one query across run graph and data graph |
 | [`05-tensile-analysis-overview.ipynb`](notebooks/05-tensile-analysis-overview.ipynb) | all; entry point for MSE domain experts | the analysis of all ten specimens from PMDco 2 and PMDco 3 with identical results, the comparison with the lab values in steps of the lab's rounding, and two overview figures |
 
-Reading paths through the tensile series, each ending with the publication of the results (notebook 06):
+Reading paths through the tensile series, each ending with the publication of the results (notebook 06); readers new to Ontodocker and the Dataportal may start with `demonstrator.ipynb`:
 
 - MSE domain experts: 05 → 02 → 01 → 06
 - Ontologists and RDF experts: 01 → 04 → 05 → 06
 - Workflow developers: 03 → 04 → 02 → 05 → 06
 
-The tensile-test properties (E, ReH, ReL, Rp0.2, Fm, Rm, Ag, Agt, A, Z, with flags and uncertainty components) are defined by the method of notebook 02, inspired by ISO 6892-1 and not ISO-conformant. The comparison with the lab-reported values is a consistency check, not a validation.
+The tensile-test properties (E, ReH, ReL, Rp0.2, Fm, Rm, Ag, Agt, A, Z, with flags and uncertainty components) are defined by the method of notebook 02, inspired by ISO 6892-1; notebook 02 also lists the limitations of the method and of the data.
 
 ## Setup
 
@@ -39,7 +39,7 @@ jupyter lab
 
 `conda` works in place of `mamba`. An update without `--prune` keeps packages installed locally in addition, such as `pytest` or `papermill`. With mamba 2.3.3, `mamba env update --dry-run` still runs the pip step of the file, so it is not free of side effects.
 
-Select the kernel "Python 3.12 (pmd-demonstrator)". For `demonstrator.ipynb`, keep the kernel's working directory in the `notebooks` directory; the notebook checks that location and derives its data and download paths from the parent directory. The tensile notebooks import `pmd_tensile` like any installed package and do not depend on the working directory.
+Select the kernel "Python 3.12 (pmd-demonstrator)". For `demonstrator.ipynb`, keep the kernel's working directory in the `notebooks` directory; the notebook checks that location and derives its data and download paths from the parent directory. The tensile notebooks import `pmd_tensile` like any installed package and find the repository's files through it, so they do not depend on the working directory.
 
 The environment installs `praeco` 0.2.0 from conda-forge, which brings the required pandas, RDFLib, Pydantic, Requests and SPARQLWrapper versions. For the tensile series it pins the workflow stack (`pyiron_workflow` 0.20.3, `semantikon` 1.4.4, `flowrep` 0.6.7) and adds NumPy, SciPy, Matplotlib, Pint and python-graphviz. Notebook 03 draws workflows with Graphviz's `dot`, which is on `PATH` in the activated environment; when running notebooks with papermill without activating the environment, put the environment's `bin` directory first on `PATH`. `pip` and `git` stay in the environment, e.g. for the editable install below.
 
