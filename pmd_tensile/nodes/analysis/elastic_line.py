@@ -2,7 +2,8 @@
 
 The nodes take and return stresses in MPa, E in GPa and strains as ratios; inside,
 the decisions are made on the force array (slope dF/de = E * S0), so that every
-threshold is relative to a force and a change of S0 cannot change a decision.
+threshold is relative to a force and a change of S0 changes no decision, up to
+the last bit of floating-point rounding.
 """
 
 from __future__ import annotations
@@ -231,6 +232,8 @@ def elastic_line(
     starts), ``diagnostics``.
     Flags: ``e:insufficient_elastic_points`` (fewer than ``min_elastic_points``
     samples in the window), ``e:e_window_not_converged``.
+    Limits: E is not a material modulus; on a curved elastic part it depends on
+    the window (see :func:`window_sensitivity`).
     """
     p = _params(params)
     s0 = _check_s0(s0_mm2)
@@ -303,6 +306,10 @@ def proof_strength(
     ``rp02:no_elastic_modulus``, ``rp02:in_yield_plateau`` (the crossing lies in
     the yield range of discontinuous yielding, where Rp0.2 is not a meaningful
     property), ``rp02:near_rate_switch``.
+    Limits: linear interpolation between two samples; if the provisional line
+    itself is undefined (fewer than three samples in its window), the window is
+    undefined too and the flag is ``rp02:not_reached`` or
+    ``rp02:extensometer_invalid`` rather than ``rp02:no_elastic_modulus``.
     """
     p = _params(params)
     s0 = _check_s0(s0_mm2)
@@ -356,9 +363,12 @@ def window_sensitivity(
     the elastic window (N), E (GPa), e0 (ratio), Agt (%), Fm (N), ``params``.
     Outputs: ``e_min_gpa``, ``e_max_gpa`` (GPa), ``rp02_min_mpa``,
     ``rp02_max_mpa`` (MPa), ``diagnostics``.
-    Flags: ``e:window_sensitive`` (the range of E exceeds ``e_window_range_max``
-    of E, 5 % by default: the loading curve is not straight across the grid),
+    Flags: ``e:window_sensitive`` (E changes by more than ``e_window_range_max``,
+    5 % by default, of E across the declared grid),
     ``window:insufficient_elastic_points`` (a window has too few samples).
+    Limits: the ranges describe a sensitivity, not an uncertainty; on very noisy
+    curves the slopes of short windows scatter, which can also raise the flag; the
+    Ag and Agt ranges need Agt and are undefined when E is undefined.
     """
     p = _params(params)
     s0 = _check_s0(s0_mm2)

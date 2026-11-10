@@ -1,8 +1,9 @@
 """Yield type, upper and lower yield strength (ontology-agnostic analysis nodes).
 
-All decisions are made on the force array; S0 only converts the results into
-stresses, so every threshold is relative and a change of S0 cannot change a
-decision through rounding.
+All decisions are made on the force array, and every threshold is relative;
+S0 converts the results into stresses, and the values passed between the nodes
+(in MPa and GPa) back into forces. A change of S0 therefore changes no decision,
+up to the last bit of floating-point rounding.
 """
 
 from __future__ import annotations
@@ -327,11 +328,14 @@ def yield_points(
     ``rate_switch_strain`` (ratio, optional), ``params``.
     Outputs: ``yield_type`` (``continuous`` or ``discontinuous``), ``reh_mpa``,
     ``rel_mpa`` (MPa), ``upper_yield_index`` and ``end_of_yielding_index`` (sample
-    indices, -1 for continuous yielding), ``work_hardening`` (whether the stress
-    rises again after yielding), ``diagnostics``.
+    indices, -1 for continuous yielding; without work hardening the end of
+    yielding is the end of the analysed remainder), ``work_hardening`` (whether the
+    stress rises again after yielding), ``diagnostics``. s_F = s_n * S0 is the noise
+    level as a force.
     Flags: ``reh:no_upper_yield`` and ``rel:no_upper_yield`` (continuous yielding),
     ``reh:no_drop_in_valid_strain`` (no drop while the extensometer measured),
-    ``reh:extensometer_invalid``, ``reh:insufficient_elastic_points`` (no
+    ``reh:extensometer_invalid`` (a drop within the valid strain whose peak has no
+    valid strain), ``reh:insufficient_elastic_points`` (no
     provisional line), ``rel:single_minimum``, ``rel:extensometer_invalid``,
     ``fm:no_return_to_reh``, ``rel:no_work_hardening``, ``reh:near_rate_switch``,
     ``rel:near_rate_switch``.
@@ -339,7 +343,9 @@ def yield_points(
     upper peak can be taken for discontinuous yielding; ReL on a smoothly rising
     plateau is not the plateau start; every result of the branch without return to
     ReH is flagged ``fm:no_return_to_reh`` because a gradual decline after the
-    plateau corrupts it.
+    plateau corrupts it; if the first qualifying drop lies beyond the valid strain
+    but the peak and some samples after it have valid strain, the yielding may be
+    taken as discontinuous on that drop, or as continuous without a cause flag.
     """
     yield_type, reh_mpa, rel_mpa, upper_yield_index, end_of_yielding_index, work_hardening, diagnostics = _yield_result(
         force_n, strain, s0_mm2, k_ext, highest_force_n, e0_gpa, intercept0_mpa, noise_mpa, rate_switch_strain, params

@@ -53,6 +53,7 @@ def maximum_force(
     -1 if undefined), ``flags``:
     ``fm:no_work_hardening`` (discontinuous yielding without work
     hardening: Fm and Rm are undefined).
+    Limits: the force channel only, as recorded (no correction for the machine).
     """
     s0 = _check_s0(s0_mm2)
     force = np.asarray(force_n, dtype=float)
@@ -92,7 +93,8 @@ def elongation_at_maximum_force(
     Near the maximum the force is flat and noisy, so the strain at Fm is taken as
     the mid-point of the near-maximum band: the contiguous samples around the
     maximum with F >= Fm (1 - delta), delta = max(``band_rel_min``,
-    ``band_noise_factor`` * s_F/Fm). Agt = (e_mid - e0) * 100 %, Ag = Agt - Rm/E * 100 %.
+    ``band_noise_factor`` * s_F/Fm) with s_F = s_n * S0, the noise level as a force.
+    Agt = (e_mid - e0) * 100 %, Ag = Agt - Rm/E * 100 %.
 
     Inputs: force (N), strain (ratio), S0 (mm²), ``k_ext``, E (GPa), e0 (ratio),
     Fm (N), the sample index of Fm, the noise level s_n (MPa), ``params``.

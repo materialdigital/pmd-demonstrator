@@ -31,6 +31,8 @@ def s0_scatter(s0_mm2: AreaMM2, measurements_mm2: Sequence[float]) -> tuple[Rela
     Inputs: S0 (mm²), the individual cross-section measurements (mm²).
     Outputs: ``s0_u_rel`` (ratio), ``s0_dof``, ``flags``: ``s0:no_s0_spread``
     (fewer than two finite measurements; then ``s0_u_rel`` is undefined).
+    Limits: the scatter of the measurements only; the uncertainty of the
+    measuring instrument is not included.
     """
     values = np.asarray([m for m in measurements_mm2 if _is_number(m)], dtype=float)
     if len(values) < 2 or not _is_number(s0_mm2) or s0_mm2 <= 0:

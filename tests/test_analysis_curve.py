@@ -27,7 +27,7 @@ import pytest
 import synthetic as sy
 
 from pmd_tensile.curve_math import _second_difference_noise
-from pmd_tensile.nodes.analysis.elastic_line import provisional_elastic_line
+from pmd_tensile.nodes.analysis.elastic_line import proof_strength, provisional_elastic_line, window_sensitivity
 from pmd_tensile.nodes.analysis.yielding import yield_points
 from pmd_tensile.orchestration import SpecimenAnalysis, analyse_curve
 from pmd_tensile.parameters import AnalysisParameters
@@ -1103,3 +1103,25 @@ def test_no_drop_in_valid_strain_when_the_only_large_drop_is_after_the_extensome
     yield_type, *_, diagnostics = yield_points(force, strain, a.s0_mm2, k_ext, highest, e0, b0, 10.0)
     assert yield_type == "continuous"
     assert set(diagnostics.flags) == {"reh:no_drop_in_valid_strain", "reh:no_upper_yield", "rel:no_upper_yield"}
+
+
+def test_rp02_without_a_window_is_flagged_as_not_reached():
+    # Without an elastic window (undefined E and window bound) the proof strength cannot
+    # tell an undefined provisional line from a crossing that was never reached; it
+    # reports not_reached (stated in the node's limits).
+    a = curve("a")
+    n = len(a.force_n)
+    rp02, diagnostics = proof_strength(a.force_n, a.strain, a.s0_mm2, n, math.nan, math.nan, math.nan, -1, -1)
+    assert_nan(rp02)
+    assert diagnostics.flags == ("rp02:not_reached",)
+    rp02, diagnostics = proof_strength(a.force_n, a.strain, a.s0_mm2, n // 2, math.nan, math.nan, math.nan, -1, -1)
+    assert_nan(rp02)
+    assert diagnostics.flags == ("rp02:extensometer_invalid",)
+
+
+def test_ag_window_ranges_need_agt():
+    a, r = curve("a"), result("a")
+    *_, diagnostics = window_sensitivity(a.force_n, a.strain, a.s0_mm2, r.k_ext, r.reference_force_n, r.e_gpa,
+                                         r.strain_origin, math.nan, r.fm_n)
+    for value in (*diagnostics.ag_range_percent, *diagnostics.agt_range_percent):
+        assert_nan(value)

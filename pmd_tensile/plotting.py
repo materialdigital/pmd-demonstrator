@@ -182,7 +182,7 @@ NAN = float("nan")
 
 @dataclasses.dataclass(frozen=True)
 class _View:
-    """What the panels need of one specimen, from a CurveAnalysis or from node outputs.
+    """What the panels need of one specimen, from its :class:`SpecimenAnalysis`.
 
     Stresses in MPa, strains as ratios, E in GPa; NaN or -1 where unknown.
     """
@@ -632,7 +632,7 @@ def curves_overview_figure(
 def _tolerance_text(quantity: str) -> str:
     for key, _, _, kind, _, _, text in COMPARISON_RULES:
         if key == quantity:
-            return text if kind == "relative" else "±0.5 pp, rounding"
+            return text if kind == "relative" else "±0.5 pp"
     raise KeyError(quantity)
 
 
@@ -951,7 +951,7 @@ def elastic_step_figure(
 ):
     """Elastic line, Rp0.2 and window sensitivity, 2x2.
 
-    - (a) the method on ``method_specimen`` (``final_elastic_fit``,
+    - (a) the method on ``method_specimen`` (``elastic_line``,
       ``proof_strength``), with an inset;
     - (b) residuals of the final E fit in its window (is the segment straight?);
     - (c) E for each window of the sensitivity grid, with the lab E;

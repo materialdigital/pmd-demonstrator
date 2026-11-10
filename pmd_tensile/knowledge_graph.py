@@ -82,8 +82,8 @@ The queries:
     contract adapters, or flowrep plumbing. A step that has steps of its own
     (the per-specimen and exploration workflows) is a "workflow composition".
 (b) ``analysis_output_units``: the units and QUDT quantity kinds carried by
-    the outputs of the analysis functions (module
-    ``pmd_tensile.analysis``).
+    the outputs of the analysis nodes (modules
+    ``pmd_tensile.nodes.analysis.*``).
 (c) ``run_inputs``: the inputs of the top-level workflow and their values,
     e.g. the profile ID, source and analysis parameters a run used. Works on
     run graphs. For a batch run, ``parameters`` holds all field values

@@ -50,14 +50,17 @@ def compare_with_reported(
     For each of Fm, Rm, ReH, Rp0.2, E, A and Z the table gives the deviation
     computed - reported, the deviation in steps of the lab's resolution, the
     allowed deviation of the comparison rule and the deviation in units of it.
-    The rule is relative for Fm, Rm, ReH, Rp0.2 and E; for A and Z the computed
-    value must round to the lab's integer value (|deviation| <= 0.5 pp, ties within).
+    The rule is relative for Fm, Rm, ReH, Rp0.2 and E; for A and Z the deviation
+    may be at most 0.5 percentage points (for an integer lab value: the computed
+    value rounds to it, ties within).
 
     Inputs: the computed Fm (N), Rm, ReH, Rp0.2 (MPa), E (GPa), A, Z (%), and the
     lab-reported values.
     Output: ``comparison``, one row per quantity with the columns
     :data:`COMPARISON_COLUMNS`; ``outcome`` is ``within``, ``outside`` or
     ``not_comparable`` (either value missing).
+    Limits: the tolerances are fixed by the method, not derived from an
+    uncertainty; ReL is not compared (no lab value).
     """
     computed = {"fm_n": fm_n, "rm_mpa": rm_mpa, "reh_mpa": reh_mpa, "rp02_mpa": rp02_mpa, "e_gpa": e_gpa,
                 "a_percent": a_percent, "z_percent": z_percent}
