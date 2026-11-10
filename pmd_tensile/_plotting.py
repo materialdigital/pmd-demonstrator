@@ -1,6 +1,6 @@
 """Figures for the tensile notebooks, in the style of the mesh demonstrator (private helpers).
 
-The style follows ``pmd_mesh-demonstrator/notebooks/04-stress_strain_analysis.ipynb``
+The style follows ``archive/mesh-demonstrator/notebooks/04-stress_strain_analysis.ipynb``
 (decision D12): large multi-panel figures, one shared legend on top in three
 columns with per-specimen values in the labels, one colour per specimen
 (tab10), one line style and marker per orientation, and a "data retrieved"

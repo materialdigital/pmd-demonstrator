@@ -1,5 +1,7 @@
 # PMD Mesh Demonstrator
 
+> **Status: archived, not maintained.** The notebooks and code were last changed in December 2025. They need access to the PMD Mesh and are known not to run as saved with the current services and package versions. The maintained demonstrator is at the [repository root](../../README.md).
+
 This demonstrator shows how semantically described materials data can be
 distributed, discovered, queried, and analyzed across services connected through
 the PMD Mesh.
