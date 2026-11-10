@@ -1,17 +1,15 @@
 """Exploration nodes (ontology-aware): conformance check and specimen listing.
 
 Inputs are JSON-able: a profile ID (see ``pmd_tensile.profiles``) and a
-source dict (see ``pmd_tensile._sources``). The plain functions behind the
-nodes (``conformance_results``, ``is_conformant``, ``specimen_table``) and
-:class:`ConformanceError` are defined in ``pmd_tensile._exploration``; this
-module holds only nodes, so that sim_atlas catalogues nothing else.
+source dict (see ``pmd_tensile.sources``). The queries behind the nodes
+(``conformance_results``, ``specimen_table``) are in ``pmd_tensile.profiles``.
 """
 
 from __future__ import annotations
 
 import flowrep as fr
 
-from pmd_tensile._exploration import ConformanceError, conformance_results, specimen_table
+from pmd_tensile.profiles import ConformanceError, conformance_results, specimen_table
 
 
 @fr.atomic

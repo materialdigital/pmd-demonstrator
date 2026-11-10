@@ -17,7 +17,7 @@ from pathlib import Path
 import pytest
 
 import pmd_tensile
-from pmd_tensile import _profile_registry, profiles
+from pmd_tensile import profiles
 
 PACKAGE_PARENT = Path(pmd_tensile.__path__[0]).parent
 
@@ -74,5 +74,5 @@ def test_a_different_object_under_a_registered_id_is_refused():
     copy = dataclasses.replace(profile)
     assert copy is not profile
     with pytest.raises(ValueError, match="'pmdco2-tto' is already registered"):
-        _profile_registry.register_profile(copy)
+        profiles.register_profile(copy)
     assert profiles.get_profile("pmdco2-tto") is profile

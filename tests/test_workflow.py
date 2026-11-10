@@ -29,16 +29,16 @@ from workflow_helpers import (
     stub_fetch,
 )
 
-from pmd_tensile import _acquisition, _orchestration, exploration, workflows
-from pmd_tensile import _sources as sources
-from pmd_tensile._analysis import analyse_curve
-from pmd_tensile._parameters import parameter_values
-from pmd_tensile.analysis import (
-    CurveAnalysis,
+from pmd_tensile import orchestration, sources
+from pmd_tensile.nodes import acquisition, exploration, workflows
+from pmd_tensile.nodes.analysis.geometry import (
     elongation_after_fracture,
     reduction_of_area,
     s0_scatter,
 )
+from pmd_tensile.nodes.workflows import CurveAnalysis
+from pmd_tensile.orchestration import analyse_curve
+from pmd_tensile.parameters import parameter_values
 from pmd_tensile.profiles import pmdco3_tto
 
 SPECIMENS = ("Zx1", "Zy1", "Zd2")  # one per orientation
@@ -66,7 +66,7 @@ def differing_fields(a: CurveAnalysis, b: CurveAnalysis) -> list[str]:
 
 def reference_analysis(profile_id: str, source: dict, specimen_id: str, data: bytes):
     """``analyse_curve`` and the metadata results on the parsed arrays, outside any workflow."""
-    record = _acquisition.build_specimen_record(profile_id, source, specimen_id)
+    record = acquisition.get_specimen_record(profile_id, source, specimen_id)
     curve = sources.parse_curve_csv(data, record.curve_columns, source_url=record.curve_url)
     a = elongation_after_fracture(record.l0_mm, record.lu_mm)
     z = reduction_of_area(record.s0_mm2, record.su_mm2)
@@ -134,7 +134,7 @@ def pmdco2_run(pmdco2_curves):
 
 
 def test_exploration_lists_the_ten_specimens():
-    run = _orchestration.build_exploration_workflow().run(profile_id=PMDCO2, source=PMDCO2_SOURCE)
+    run = orchestration.build_exploration_workflow().run(profile_id=PMDCO2, source=PMDCO2_SOURCE)
     assert run.outputs.checked_profile_id == PMDCO2
     ids = run.outputs.specimen_ids
     assert len(ids) == 10
@@ -144,7 +144,7 @@ def test_exploration_lists_the_ten_specimens():
 
 def test_exploration_fails_early_on_a_profile_mismatch():
     with pytest.raises(exploration.ConformanceError, match=PMDCO3):
-        _orchestration.build_exploration_workflow().run(profile_id=PMDCO3, source=PMDCO2_SOURCE)
+        orchestration.build_exploration_workflow().run(profile_id=PMDCO3, source=PMDCO2_SOURCE)
 
 
 # ---------------------------------------------------------------------------
@@ -163,7 +163,7 @@ def test_batch_runs_end_to_end(pmdco2_run, pmdco2_curves):
     assert table["orientation"].nunique() == 3
     for sid in SPECIMENS:
         row = table.set_index("specimen_id").loc[sid]
-        record = _acquisition.build_specimen_record(PMDCO2, PMDCO2_SOURCE, sid)
+        record = acquisition.get_specimen_record(PMDCO2, PMDCO2_SOURCE, sid)
         assert row["curve_sha256"] == hashlib.sha256(pmdco2_curves[sid]).hexdigest()
         assert isinstance(row["curve_sha256"], str) and isinstance(row["curve_url"], str)
         assert row["curve_url"] == record.curve_url
@@ -238,14 +238,14 @@ def test_specimen_curves_of_a_batch_run_built_by_hand(pmdco2_curves):
     fetch = stub_fetch(pmdco2_curves)
     with pytest.MonkeyPatch.context() as mp:
         mp.setattr(sources, "fetch_bytes", fetch)
-        batch = _orchestration.build_batch_workflow(ids)
-        run = batch.run(**_orchestration.batch_inputs(PMDCO2, PMDCO2_SOURCE, ids))
-    curves, analyses = _orchestration.specimen_curves(run, ids)
+        batch = orchestration.build_batch_workflow(ids)
+        run = batch.run(**orchestration.batch_inputs(PMDCO2, PMDCO2_SOURCE, ids))
+    curves, analyses = orchestration.specimen_curves(run, ids)
     assert list(curves) == list(ids) == list(analyses)
     assert sorted(curve.source_url for curve in curves.values()) == sorted(fetch.fetched)
     assert [curves[sid].sha256 for sid in ids] == [hashlib.sha256(pmdco2_curves[sid]).hexdigest() for sid in ids]
     with pytest.raises(RuntimeError, match="ran for 'Zd2', expected 'Zx1'"):
-        _orchestration.specimen_curves(run, ("Zx1", "Zd2"))  # wrong order is detected
+        orchestration.specimen_curves(run, ("Zx1", "Zd2"))  # wrong order is detected
 
 
 def test_per_specimen_workflow_equals_analyse_curve(pmdco2_curves):
@@ -254,7 +254,7 @@ def test_per_specimen_workflow_equals_analyse_curve(pmdco2_curves):
     fetch = stub_fetch(pmdco2_curves)
     with pytest.MonkeyPatch.context() as mp:
         mp.setattr(sources, "fetch_bytes", fetch)
-        run = _orchestration.build_specimen_node().run(
+        run = orchestration.build_specimen_node().run(
             profile_id=PMDCO2, source=PMDCO2_SOURCE, specimen_id=sid, curve_locator=None
         )
     record, curve, expected, _, _, _ = reference_analysis(PMDCO2, PMDCO2_SOURCE, sid, pmdco2_curves[sid])
@@ -285,19 +285,19 @@ def _recipe_types(recipe) -> list[str]:
 
 
 def test_recipes_contain_no_flow_controllers():
-    batch = _orchestration.build_batch_workflow(SPECIMENS)
+    batch = orchestration.build_batch_workflow(SPECIMENS)
     for recipe in (batch.recipe, workflows.exploration_workflow.flowrep_recipe):
         assert set(_recipe_types(recipe)) <= FLAT_RECIPE_TYPES
 
 
 def test_batch_structure_and_inputs():
-    batch = _orchestration.build_batch_workflow(SPECIMENS)
+    batch = orchestration.build_batch_workflow(SPECIMENS)
     specimen_nodes = [label for label in batch.nodes if re.fullmatch(r"specimen_\d+", label)]
     assert specimen_nodes == [f"specimen_{i}" for i in range(len(SPECIMENS))]
     assert {"gather_summaries", "gather_comparisons", "results", "orientation_summary", "comparison"} <= set(
         batch.nodes
     )
-    inputs = _orchestration.batch_inputs(PMDCO2, PMDCO2_SOURCE, SPECIMENS)
+    inputs = orchestration.batch_inputs(PMDCO2, PMDCO2_SOURCE, SPECIMENS)
     assert set(inputs) == set(batch.inputs.keys())
     assert inputs == {
         "profile_id": PMDCO2,
@@ -313,7 +313,7 @@ def test_batch_structure_and_inputs():
 
 def test_builders_reject_bad_specimen_lists(pmdco2_curves):
     with pytest.raises(ValueError, match="at least one"):
-        _orchestration.build_batch_workflow([])
+        orchestration.build_batch_workflow([])
     with pytest.raises(LookupError, match="Zq9"):
         run_with_stubbed_curves(pmdco2_curves, PMDCO2, PMDCO2_SOURCE, specimen_ids=["Zx1", "Zq9"])
 
@@ -322,18 +322,18 @@ def test_repeated_specimen_ids_are_rejected(pmdco2_curves):
     """Curves and analyses are keyed by specimen ID, so a repeated ID would silently merge two branches."""
     message = r"duplicate specimen IDs \['Zx1'\]"
     with pytest.raises(ValueError, match=message):
-        _orchestration.build_batch_workflow(["Zx1", "Zd2", "Zx1"])
+        orchestration.build_batch_workflow(["Zx1", "Zd2", "Zx1"])
     with pytest.raises(ValueError, match=message):
-        _orchestration.batch_inputs(PMDCO2, PMDCO2_SOURCE, ["Zx1", "Zd2", "Zx1"])
+        orchestration.batch_inputs(PMDCO2, PMDCO2_SOURCE, ["Zx1", "Zd2", "Zx1"])
     with pytest.raises(ValueError, match=message):
-        _orchestration.specimen_curves(object(), ("Zx1", "Zx1"))  # checked before the run data is read
+        orchestration.specimen_curves(object(), ("Zx1", "Zx1"))  # checked before the run data is read
     fetch = stub_fetch(pmdco2_curves)
     with pytest.MonkeyPatch.context() as mp:
         mp.setattr(sources, "fetch_bytes", fetch)
         mp.setattr(sources, "select", lambda *args, **kwargs: pytest.fail("graph queried"))
         mp.setattr(sources, "ask", lambda *args, **kwargs: pytest.fail("graph queried"))
         with pytest.raises(ValueError, match=message):
-            _orchestration.run_tensile_analysis(PMDCO2, PMDCO2_SOURCE, specimen_ids=["Zx1", "Zx1"])
+            orchestration.run_tensile_analysis(PMDCO2, PMDCO2_SOURCE, specimen_ids=["Zx1", "Zx1"])
     assert fetch.fetched == []  # rejected before any work
 
 
@@ -355,8 +355,8 @@ def test_pmdco2_and_pmdco3_give_identical_analysis_for_identical_curve_bytes(tmp
     # The fixture, like the original graph, has no curve tables: explicit locator.
     locator = pmdco3_tto.CURVE_LOCATOR.as_dict()
     for sid in PARITY_SPECIMENS:  # the neutral records agree on what the analysis sees
-        r2 = _acquisition.build_specimen_record(PMDCO2, PMDCO2_SOURCE, sid)
-        r3 = _acquisition.build_specimen_record(PMDCO3, pmdco3_source, sid, curve_locator=locator)
+        r2 = acquisition.get_specimen_record(PMDCO2, PMDCO2_SOURCE, sid)
+        r3 = acquisition.get_specimen_record(PMDCO3, pmdco3_source, sid, curve_locator=locator)
         for field in ("s0_mm2", "cross_section_measurements_mm2", "l0_mm", "lu_mm", "su_mm2", "orientation"):
             assert getattr(r2, field) == getattr(r3, field), (sid, field)
         assert r2.rate_switch_strain == pytest.approx(r3.rate_switch_strain, rel=1e-12)

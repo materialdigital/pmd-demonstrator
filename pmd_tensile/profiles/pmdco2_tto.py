@@ -56,7 +56,7 @@ from pmd_tensile.profiles.base import (
     OntologyProfile,
     SelectQuery,
 )
-from pmd_tensile.profiles._units import QUDT_UNIT
+from pmd_tensile.profiles.units import QUDT_UNIT
 
 PROFILE_ID = "pmdco2-tto"
 

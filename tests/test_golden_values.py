@@ -22,7 +22,7 @@ import numpy as np
 import pytest
 import synthetic as sy
 
-from pmd_tensile._analysis import analyse_curve
+from pmd_tensile.orchestration import analyse_curve
 
 FIXTURE = Path(__file__).with_name("golden_curve_values.json")
 REL_TOL = 1e-9

@@ -22,8 +22,7 @@ grid and a linearity window with ``lo >= hi`` are rejected with a
 
 The module is private, so that sim_atlas does not catalogue these plain
 functions or the default instance (an instance has no sim_atlas parser);
-notebooks reach them through :mod:`pmd_tensile.demo`.
-"""
+notebooks reach them through :mod:`pmd_tensile.demo`."""
 
 from __future__ import annotations
 
@@ -32,7 +31,43 @@ import math
 import numbers
 from collections.abc import Mapping, Sequence
 
-from pmd_tensile.analysis import AnalysisParameters
+# ---------------------------------------------------------------------------
+# Parameters and result types
+# ---------------------------------------------------------------------------
+
+
+@dataclasses.dataclass(frozen=True)
+class AnalysisParameters:
+    """Method parameters (method-spec v2 defaults). All thresholds are relative.
+
+    The nodes that use them take ``params`` (``None`` means these defaults).
+    The workflows take them as a JSON-able dictionary instead, converted by the
+    node :func:`pmd_tensile.workflows.analysis_parameters` (decision D4).
+    """
+
+    f_lo: float = 0.10  # M4 window fractions of sigma_ref
+    f_hi: float = 0.40
+    provisional_fraction_of_rm: float = 0.5  # M5 provisional reference = 0.5*Rm
+    min_elastic_points: int = 10  # M4
+    drop_rel: float = 0.005  # M7 d = max(drop_rel*M, k*s_n)
+    drop_noise_factor: float = 5.0
+    peak_max_plastic_strain: float = 0.005  # M7
+    min_flow_plastic_strain: float = 0.0005  # M7 (0.05 %)
+    plateau_min_extent: float = 0.002  # M9 fallback to single_minimum
+    offset_plastic_strain: float = 0.002  # M10
+    ext_window_mm: float = 0.1  # M3
+    ext_ratio_min: float = 0.05
+    ext_jump: float = 1e-3
+    ext_end_fraction_of_a: float = 0.5  # M3 end check
+    band_rel_min: float = 2e-4  # M12
+    band_noise_factor: float = 3.0
+    window_grid_lo: tuple = (0.05, 0.10, 0.15)  # M15
+    window_grid_hi: tuple = (0.30, 0.40, 0.50)
+    linearity_windows: tuple = ((0.05, 0.25), (0.25, 0.50))  # M15
+    rate_switch_proximity: float = 0.002  # strain distance for flag near_rate_switch
+    max_window_iterations: int = 20  # M5
+    window_rel_tol: float = 1e-4
+
 
 DEFAULT_PARAMETERS = AnalysisParameters()
 """The method defaults (method-spec v2.6), equal to ``AnalysisParameters()``."""

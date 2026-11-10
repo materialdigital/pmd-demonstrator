@@ -8,9 +8,9 @@ import numpy as np
 import pyiron_workflow as pwf
 import pytest
 
-from pmd_tensile import _acquisition, acquisition
-from pmd_tensile import _sources as sources
+from pmd_tensile import sources
 from pmd_tensile.contract import ColumnSpec, UnitError
+from pmd_tensile.nodes import acquisition
 
 # Synthetic CSV in the layout of the S355 curve files: ';' delimiter, ','
 # decimal mark, a header row and a unit row. The numbers are made up.
@@ -139,7 +139,7 @@ def test_fetch_bytes_rejects_non_http_urls(url):
 
 
 def test_fetch_curve_node_with_stubbed_fetch(monkeypatch, pmdco2_source):
-    record = _acquisition.build_specimen_record("pmdco2-tto", pmdco2_source, "Zx1")
+    record = acquisition.get_specimen_record("pmdco2-tto", pmdco2_source, "Zx1")
     calls = []
 
     def fake_fetch(url):

@@ -92,48 +92,193 @@ private module ``pmd_tensile._orchestration``; notebooks reach them through
   curve analyses of a finished batch run, from its run data.
 - ``DEFAULT_PARAMETERS``, ``parameter_values`` and ``parameters_from_values``
   (``pmd_tensile._parameters``): the method defaults and the conversion
-  between the dataclass and the dictionary form.
-"""
+  between the dataclass and the dictionary form."""
 
 from __future__ import annotations
+
+import dataclasses
 
 import flowrep as fr
 import pandas as pd
 
-from pmd_tensile._parameters import parameters_from_values
-from pmd_tensile.acquisition import fetch_curve, get_reported_properties, get_specimen_record
-from pmd_tensile.analysis import (
-    AnalysisParameters,
+from pmd_tensile.contract import Curve, SpecimenRecord
+from pmd_tensile.curve_math import NAN, _unique
+from pmd_tensile.nodes.acquisition import (
+    fetch_curve,
+    get_reported_properties,
+    get_specimen_record,
+)
+from pmd_tensile.nodes.analysis.comparison import compare_with_reported
+from pmd_tensile.nodes.analysis.elastic_line import (
+    bootstrap_fit,
+    final_elastic_fit,
+    proof_strength,
+    window_sensitivity,
+)
+from pmd_tensile.nodes.analysis.extensometer import (
+    check_time_order,
+    count_dropped_samples,
+    extensometer_validity,
+)
+from pmd_tensile.nodes.analysis.geometry import (
+    S0Scatter,
+    ScalarResult,
+    elongation_after_fracture,
+    reduction_of_area,
+    s0_scatter,
+)
+from pmd_tensile.nodes.analysis.maximum_force import (
+    elongation_at_maximum_force,
+    maximum_force,
+)
+from pmd_tensile.nodes.analysis.steps import (
+    Bootstrap,
+    ElasticResult,
+    Elongation,
+    ExtensometerValidity,
+    MaximumForce,
+    ProofStrength,
+    WindowSensitivity,
+    Yielding,
+)
+from pmd_tensile.nodes.analysis.yielding import yield_analysis
+from pmd_tensile.nodes.exploration import check_conformance, list_specimens
+from pmd_tensile.parameters import AnalysisParameters, parameters_from_values
+from pmd_tensile.units import (
     AreaMM2,
     CrossheadArray,
-    CurveAnalysis,
     ForceArray,
     OptionalAreaMM2,
     OptionalLengthMM,
     OptionalStrainPercent,
     OptionalStrainRatio,
-    ScalarResult,
-    S0Scatter,
     StrainArray,
     TimeArray,
-    assemble_curve_analysis,
-    bootstrap_fit,
-    check_time_order,
-    compare_with_reported,
-    count_dropped_samples,
-    elongation_after_fracture,
-    elongation_at_maximum_force,
-    extensometer_validity,
-    final_elastic_fit,
-    maximum_force,
-    proof_strength,
-    reduction_of_area,
-    s0_scatter,
-    window_sensitivity,
-    yield_analysis,
 )
-from pmd_tensile.contract import Curve, SpecimenRecord
-from pmd_tensile.exploration import check_conformance, list_specimens
+
+
+@dataclasses.dataclass(frozen=True)
+class CurveAnalysis:
+    """Per-specimen curve analysis (fields per analysis-api.md, then extras).
+
+    Undefined values are NaN. ``k_ext`` equals the number of samples if the
+    extensometer is valid to the end. ``flags`` entries are
+    ``"<property>:<flag>"``. Fields after ``flags`` are additional
+    diagnostics: the reference stress of the final E window, the final
+    residual noise (1.4826*MAD, M5 step 5), the number of E-window
+    iterations, the ReL plateau level and extent (M9), and sample indices
+    (-1 if undefined) for plotting.
+    """
+
+    yield_type: str
+    noise_mpa: float
+    e_gpa: float
+    e_intercept_mpa: float
+    e_n: int
+    e_r2: float
+    e_stderr_gpa: float
+    e_lag1_rho: float
+    e_n_eff: float
+    e_window_mpa: tuple[float, float]
+    strain_origin: float
+    reh_mpa: float
+    reh_sample_increment_mpa: float
+    rel_mpa: float
+    rel_incl_transient_mpa: float
+    rp02_mpa: float
+    fm_n: float
+    rm_mpa: float
+    agt_percent: float
+    ag_percent: float
+    ag_location_halfwidth_percent: float
+    k_ext: int
+    extensometer_max_valid_strain: float
+    e_window_range_gpa: tuple[float, float]
+    rp02_window_range_mpa: tuple[float, float]
+    ag_window_range_percent: tuple[float, float]
+    agt_window_range_percent: tuple[float, float]
+    e_linearity_rel_diff: float
+    dropped_samples: dict
+    flags: tuple[str, ...]
+    e_reference_stress_mpa: float = NAN
+    e_residual_noise_mpa: float = NAN
+    e_window_iterations: int = 0
+    rel_plateau_level_mpa: float = NAN
+    rel_plateau_extent: float = NAN
+    indices: dict = dataclasses.field(default_factory=dict)
+
+
+
+@fr.atomic
+def assemble_curve_analysis(
+    dropped_samples: dict,
+    extensometer: ExtensometerValidity,
+    bootstrap: Bootstrap,
+    yielding: Yielding,
+    elastic: ElasticResult,
+    proof: ProofStrength,
+    maximum: MaximumForce,
+    elongation: Elongation,
+    sensitivity: WindowSensitivity,
+) -> CurveAnalysis:
+    """Collect the step results into one :class:`CurveAnalysis`."""
+    fit = elastic.fit
+    flags = _unique(
+        extensometer.flags
+        + elastic.flags
+        + yielding.flags
+        + proof.flags
+        + maximum.flags
+        + elongation.flags
+        + sensitivity.flags
+    )
+    analysis = CurveAnalysis(
+        yield_type=yielding.yield_type,
+        noise_mpa=bootstrap.noise_mpa,
+        e_gpa=fit.e_gpa,
+        e_intercept_mpa=fit.intercept_mpa,
+        e_n=fit.n,
+        e_r2=fit.r2,
+        e_stderr_gpa=fit.stderr_gpa,
+        e_lag1_rho=fit.lag1_rho,
+        e_n_eff=fit.n_eff,
+        e_window_mpa=(fit.lo_mpa, fit.hi_mpa),
+        strain_origin=elastic.strain_origin,
+        reh_mpa=yielding.reh_mpa,
+        reh_sample_increment_mpa=yielding.reh_sample_increment_mpa,
+        rel_mpa=yielding.rel_mpa,
+        rel_incl_transient_mpa=yielding.rel_incl_transient_mpa,
+        rp02_mpa=proof.rp02_mpa,
+        fm_n=maximum.fm_n,
+        rm_mpa=maximum.rm_mpa,
+        agt_percent=elongation.agt_percent,
+        ag_percent=elongation.ag_percent,
+        ag_location_halfwidth_percent=elongation.ag_location_halfwidth_percent,
+        k_ext=extensometer.k_ext,
+        extensometer_max_valid_strain=extensometer.max_valid_strain,
+        e_window_range_gpa=sensitivity.e_range_gpa,
+        rp02_window_range_mpa=sensitivity.rp02_range_mpa,
+        ag_window_range_percent=sensitivity.ag_range_percent,
+        agt_window_range_percent=sensitivity.agt_range_percent,
+        e_linearity_rel_diff=sensitivity.linearity_rel_diff,
+        dropped_samples=dict(dropped_samples),
+        flags=flags,
+        e_reference_stress_mpa=elastic.reference_mpa,
+        e_residual_noise_mpa=elastic.residual_noise_mpa,
+        e_window_iterations=elastic.iterations,
+        rel_plateau_level_mpa=yielding.plateau_level_mpa,
+        rel_plateau_extent=yielding.plateau_extent,
+        indices={
+            "reh": yielding.i_p,
+            "rel": yielding.i_rel,
+            "work_hardening_start": yielding.i_h,
+            "rp02": proof.index,
+            "fm": maximum.i_m,
+            "ag_band": elongation.band,
+        },
+    )
+    return analysis
+
 
 GROUP_COLUMN = "orientation"
 """Grouping column of the per-orientation summary (method-spec §12)."""

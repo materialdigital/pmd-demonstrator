@@ -41,20 +41,19 @@ import numpy as np
 import pandas as pd
 from matplotlib.lines import Line2D
 
-from pmd_tensile._parameters import DEFAULT_PARAMETERS, parameters_from_values
-from pmd_tensile.analysis import (
-    _COMPARISONS,
-    AnalysisParameters,
-    Bootstrap,
-    CurveAnalysis,
-    ElasticResult,
-    ExtensometerValidity,
-    MaximumForce,
-    ProofStrength,
-    S0Scatter,
-    Yielding,
-)
 from pmd_tensile.contract import Curve, ReportedProperties, SpecimenRecord
+from pmd_tensile.nodes.analysis.comparison import _COMPARISONS
+from pmd_tensile.nodes.analysis.elastic_line import ElasticResult, ProofStrength
+from pmd_tensile.nodes.analysis.extensometer import ExtensometerValidity
+from pmd_tensile.nodes.analysis.geometry import S0Scatter
+from pmd_tensile.nodes.analysis.maximum_force import MaximumForce
+from pmd_tensile.nodes.analysis.yielding import Bootstrap, Yielding
+from pmd_tensile.nodes.workflows import CurveAnalysis
+from pmd_tensile.parameters import (
+    DEFAULT_PARAMETERS,
+    AnalysisParameters,
+    parameters_from_values,
+)
 
 # ---------------------------------------------------------------------------
 # Style
@@ -837,7 +836,7 @@ def results_overview_figure(result, *, retrieved=None, colors: Mapping[str, str]
     ``result.orientation_summary``; nothing is recomputed. ``retrieved`` and
     ``colors`` as for :func:`curves_overview_figure`. Returns the Figure.
     """
-    from pmd_tensile.workflows import GROUP_COLUMN
+    from pmd_tensile.nodes.workflows import GROUP_COLUMN
 
     views = _result_views(result, colors)
     table = result.results.set_index("specimen_id")

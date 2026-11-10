@@ -21,10 +21,29 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import pandas as pd  # noqa: E402
 import pytest  # noqa: E402
-from workflow_helpers import PMDCO2, PMDCO2_SOURCE, curve_bytes_for, run_with_stubbed_curves  # noqa: E402
+from workflow_helpers import (  # noqa: E402
+    PMDCO2,
+    PMDCO2_SOURCE,
+    curve_bytes_for,
+    run_with_stubbed_curves,
+)
 
-from pmd_tensile import _acquisition, _plotting, analysis, demo  # noqa: E402
-from pmd_tensile._parameters import DEFAULT_PARAMETERS  # noqa: E402
+from pmd_tensile import plotting
+from pmd_tensile.nodes import acquisition
+from pmd_tensile.nodes.analysis.elastic_line import (
+    bootstrap_fit,
+    final_elastic_fit,
+    proof_strength,
+    window_sensitivity,
+)
+from pmd_tensile.nodes.analysis.extensometer import extensometer_validity
+from pmd_tensile.nodes.analysis.geometry import elongation_after_fracture, s0_scatter
+from pmd_tensile.nodes.analysis.maximum_force import (
+    elongation_at_maximum_force,
+    maximum_force,
+)
+from pmd_tensile.nodes.analysis.yielding import yield_analysis
+from pmd_tensile.parameters import DEFAULT_PARAMETERS
 
 SPECIMENS = ("Zx1", "Zx2", "Zy1", "Zd2")  # the IDs with synthetic curves; all three orientations
 STAMP = pd.Timestamp("2026-11-09 12:34:56.789", tz="Europe/Berlin")
@@ -92,15 +111,15 @@ def test_specimen_colors_follow_orientation_then_natural_order():
         "Zx2": "in rolling direction",
         "Zd2": "diagonal to rolling direction",
     }
-    assert demo.specimen_order(orientations) == ["Zx2", "Zx10", "Zy1", "Zd2", "Zd3"]
-    tab10 = [_plotting._hex(rgb) for rgb in plt.get_cmap("tab10").colors]
-    assert demo.specimen_colors(orientations) == {
+    assert plotting.specimen_order(orientations) == ["Zx2", "Zx10", "Zy1", "Zd2", "Zd3"]
+    tab10 = [plotting._hex(rgb) for rgb in plt.get_cmap("tab10").colors]
+    assert plotting.specimen_colors(orientations) == {
         "Zx2": tab10[0], "Zx10": tab10[1], "Zy1": tab10[2], "Zd2": tab10[3], "Zd3": tab10[4]
     }
 
 
 def test_orientation_styles_use_the_mesh_04_styles_and_cover_unknown_labels():
-    styles = demo.orientation_styles(["diagonal to rolling direction", "other", "in rolling direction",
+    styles = plotting.orientation_styles(["diagonal to rolling direction", "other", "in rolling direction",
                                       "perpendicular to rolling direction"])
     assert styles["in rolling direction"] == ("solid", "o")
     assert styles["perpendicular to rolling direction"] == ("dotted", "x")
@@ -110,11 +129,11 @@ def test_orientation_styles_use_the_mesh_04_styles_and_cover_unknown_labels():
 
 @pytest.mark.parametrize("value", [NAN, None, float("inf"), np.float64("nan")])
 def test_undefined_values_are_written_as_a_dash(value):
-    assert demo.format_value(value, 1, "MPa") == "–"
+    assert plotting.format_value(value, 1, "MPa") == "–"
 
 
 def test_specimen_label_shows_values_with_units_and_dashes():
-    label = demo.specimen_label("Zy3", "perpendicular to rolling direction",
+    label = plotting.specimen_label("Zy3", "perpendicular to rolling direction",
                                 [("E", 205.0917, "GPa", 1), ("ReH", NAN, "MPa", 1)])
     assert label == "Zy3 (perpendicular to rolling direction)\nE = 205.1 GPa; ReH = –"
 
@@ -125,7 +144,7 @@ def test_specimen_label_shows_values_with_units_and_dashes():
 
 
 def test_curves_overview_has_the_four_panels_and_one_shared_legend(result):
-    fig = demo.curves_overview_figure(result, retrieved=STAMP, method_specimen="Zx1")
+    fig = plotting.curves_overview_figure(result, retrieved=STAMP, method_specimen="Zx1")
     assert tuple(fig.get_size_inches()) == (12.0, 12.0)
     assert [title[:3] for title in _titles(fig)] == ["(a)", "(b)", "(c)", "(d)"]
     assert fig.legends[0]._ncols == 3
@@ -155,9 +174,9 @@ def test_curves_overview_has_the_four_panels_and_one_shared_legend(result):
 
 
 def test_curves_overview_draws_exactly_the_arrays_the_run_used(result):
-    fig = demo.curves_overview_figure(result, method_specimen="Zx1")
+    fig = plotting.curves_overview_figure(result, method_specimen="Zx1")
     ax_a = _panel(fig, "(a)")
-    colors = demo.specimen_colors(dict(zip(result.results["specimen_id"], result.results["orientation"])))
+    colors = plotting.specimen_colors(dict(zip(result.results["specimen_id"], result.results["orientation"])))
     table = result.results.set_index("specimen_id")
     for sid in SPECIMENS:
         (line,) = [line for line in ax_a.get_lines() if line.get_color() == colors[sid]]
@@ -175,7 +194,7 @@ def test_curves_overview_uses_the_offset_of_the_run(result):
         curve_bytes_for(SPECIMENS), PMDCO2, PMDCO2_SOURCE, specimen_ids=SPECIMENS,
         parameters={"offset_plastic_strain": 0.003},
     )
-    fig = demo.curves_overview_figure(offset_result, method_specimen="Zx1")
+    fig = plotting.curves_overview_figure(offset_result, method_specimen="Zx1")
     table = offset_result.results.set_index("specimen_id")
 
     ax_c = _panel(fig, "(c)")
@@ -190,7 +209,7 @@ def test_curves_overview_uses_the_offset_of_the_run(result):
     # (b): one Rp marker per specimen, at Rp/E + 0.003 of shifted strain
     ax_b = _panel(fig, "(b)")
     markers = {(round(line.get_xdata()[0], 9), round(line.get_ydata()[0], 9))
-               for line in ax_b.get_lines() if line.get_marker() == _plotting.PROPERTY_MARKERS["Rp0.2"]}
+               for line in ax_b.get_lines() if line.get_marker() == plotting.PROPERTY_MARKERS["Rp0.2"]}
     expected = {(round(100 * (row["rp02_mpa"] / (1000 * row["e_gpa"]) + 0.003), 9), round(row["rp02_mpa"], 9))
                 for _, row in table.loc[list(SPECIMENS)].iterrows()}
     assert markers == expected
@@ -199,17 +218,17 @@ def test_curves_overview_uses_the_offset_of_the_run(result):
 
 
 def test_curves_overview_without_a_timestamp_says_so(result):
-    fig = demo.curves_overview_figure(result, method_specimen="Zx1")
+    fig = plotting.curves_overview_figure(result, method_specimen="Zx1")
     assert any("not recorded" in text for text in _legend_texts(fig))
 
 
 def test_curves_overview_rejects_an_unknown_method_specimen(result):
     with pytest.raises(KeyError, match="Zx3"):
-        demo.curves_overview_figure(result, method_specimen="Zx3")
+        plotting.curves_overview_figure(result, method_specimen="Zx3")
 
 
 def test_results_overview_has_the_four_panels(result):
-    fig = demo.results_overview_figure(result, retrieved=STAMP)
+    fig = plotting.results_overview_figure(result, retrieved=STAMP)
     assert tuple(fig.get_size_inches()) == (12.0, 12.0)
     assert [title[:3] for title in _titles(fig)] == ["(e)", "(f)", "(g)"]
     (subfigure,) = [sub for sub in fig.subfigs[1].subfigs if sub._suptitle is not None]
@@ -223,7 +242,7 @@ def test_results_overview_has_the_four_panels(result):
 
 
 def test_lab_deviation_is_scaled_by_the_tolerance(result):
-    fig = demo.results_overview_figure(result)
+    fig = plotting.results_overview_figure(result)
     ax_e = _panel(fig, "(e)")
     comparison = result.comparison
     row = comparison[(comparison["specimen_id"] == "Zx1") & (comparison["quantity"] == "e_gpa")].iloc[0]
@@ -234,7 +253,7 @@ def test_lab_deviation_is_scaled_by_the_tolerance(result):
 
 def test_undefined_values_are_labelled_and_no_specimen_is_dropped(result):
     changed = _with_undefined_values(result)
-    fig = demo.curves_overview_figure(changed, method_specimen="Zx1")
+    fig = plotting.curves_overview_figure(changed, method_specimen="Zx1")
     texts = _legend_texts(fig)
     assert any(text.startswith("Zy1 (") and "ReH = –;" in text for text in texts)
     assert any(text.startswith("Zd2 (") and "E = –;" in text for text in texts)
@@ -243,7 +262,7 @@ def test_undefined_values_are_labelled_and_no_specimen_is_dropped(result):
     notes = _texts(_panel(fig, "(b)"))
     assert "ReH – (no marker): Zy1" in notes and "Rp0.2 – (no marker): Zd2" in notes
 
-    fig = demo.results_overview_figure(changed)
+    fig = plotting.results_overview_figure(changed)
     assert "not comparable (a value missing): ReH Zy1" in _texts(_panel(fig, "(e)"))
     assert "not shown (ReH or Rm –): Zy1" in _texts(_panel(fig, "(f)"))
     assert "not shown (E or Rp0.2 –): Zd2" in _texts(_panel(fig, "(g)"))
@@ -262,29 +281,29 @@ def steps(result):
                                  "proof", "maximum", "elongation", "scatter")}
     windows, comparisons = [], []
     for sid in ids:
-        record = _acquisition.build_specimen_record(PMDCO2, PMDCO2_SOURCE, sid)
+        record = acquisition.get_specimen_record(PMDCO2, PMDCO2_SOURCE, sid)
         curve = result.curves[sid]
         out["records"][sid] = record
-        out["reported"][sid] = _acquisition.build_reported_properties(PMDCO2, PMDCO2_SOURCE, sid)
-        a = analysis.elongation_after_fracture(record.l0_mm, record.lu_mm)
-        ext, k, _ = analysis.extensometer_validity(curve.strain, curve.crosshead_mm, record.l0_mm, a.value,
+        out["reported"][sid] = acquisition.get_reported_properties(PMDCO2, PMDCO2_SOURCE, sid)
+        a = elongation_after_fracture(record.l0_mm, record.lu_mm)
+        ext, k, _ = extensometer_validity(curve.strain, curve.crosshead_mm, record.l0_mm, a.value,
                                                    record.rate_switch_strain)
-        boot, _ = analysis.bootstrap_fit(curve.force_n, curve.strain, record.s0_mm2, k)
-        yielding, *_ = analysis.yield_analysis(curve.force_n, curve.strain, record.s0_mm2, k, boot,
+        boot, _ = bootstrap_fit(curve.force_n, curve.strain, record.s0_mm2, k)
+        yielding, *_ = yield_analysis(curve.force_n, curve.strain, record.s0_mm2, k, boot,
                                                record.rate_switch_strain)
-        elastic, *_ = analysis.final_elastic_fit(curve.force_n, curve.strain, record.s0_mm2, k, boot, yielding)
-        proof, _ = analysis.proof_strength(curve.force_n, curve.strain, record.s0_mm2, k, elastic, yielding)
-        maximum, *_ = analysis.maximum_force(curve.force_n, record.s0_mm2, yielding)
-        elongation, *_ = analysis.elongation_at_maximum_force(curve.force_n, curve.strain, k, boot, elastic,
+        elastic, *_ = final_elastic_fit(curve.force_n, curve.strain, record.s0_mm2, k, boot, yielding)
+        proof, _ = proof_strength(curve.force_n, curve.strain, record.s0_mm2, k, elastic, yielding)
+        maximum, *_ = maximum_force(curve.force_n, record.s0_mm2, yielding)
+        elongation, *_ = elongation_at_maximum_force(curve.force_n, curve.strain, k, boot, elastic,
                                                               maximum)
         for name, value in (("extensometer", ext), ("bootstrap", boot), ("yielding", yielding),
                             ("elastic", elastic), ("proof", proof), ("maximum", maximum),
                             ("elongation", elongation)):
             out[name][sid] = value
-        out["scatter"][sid] = analysis.s0_scatter(record.s0_mm2, record.cross_section_measurements_mm2)
+        out["scatter"][sid] = s0_scatter(record.s0_mm2, record.cross_section_measurements_mm2)
         for f_lo in (0.05, 0.10):
             one = dataclasses.replace(DEFAULT_PARAMETERS, window_grid_lo=(f_lo,), window_grid_hi=(0.4,))
-            sens = analysis.window_sensitivity(curve.force_n, curve.strain, record.s0_mm2, k, elastic, maximum,
+            sens = window_sensitivity(curve.force_n, curve.strain, record.s0_mm2, k, elastic, maximum,
                                                elongation, one)
             windows.append({"specimen_id": sid, "f_lo": f_lo, "f_hi": 0.4, "e_gpa": sens.e_range_gpa[0]})
         comparisons.append(
@@ -297,7 +316,7 @@ def steps(result):
 
 
 def test_yield_step_figure(steps):
-    fig = demo.yield_step_figure(steps["records"], steps["curves"], steps["extensometer"], steps["bootstrap"],
+    fig = plotting.yield_step_figure(steps["records"], steps["curves"], steps["extensometer"], steps["bootstrap"],
                                  steps["yielding"], retrieved=STAMP)
     assert [title[:3] for title in _titles(fig)] == ["(a)", "(b)", "(c)", "(d)"]
     texts = _legend_texts(fig)
@@ -308,26 +327,26 @@ def test_yield_step_figure(steps):
 
 
 def test_elastic_step_figure(steps):
-    fig = demo.elastic_step_figure(
+    fig = plotting.elastic_step_figure(
         steps["records"], steps["curves"], steps["extensometer"], steps["yielding"], steps["elastic"],
         steps["proof"], steps["window_moduli"], steps["reported"], method_specimen="Zy1", retrieved=STAMP,
     )
     assert [title[:3] for title in _titles(fig)] == ["(a)", "(b)", "(c)", "(d)"]
     assert [tick.get_text() for tick in _panel(fig, "(c)").get_xticklabels()] == ["5–40", "10–40"]
     with pytest.raises(KeyError, match="Zx3"):
-        demo.elastic_step_figure(
+        plotting.elastic_step_figure(
             steps["records"], steps["curves"], steps["extensometer"], steps["yielding"], steps["elastic"],
             steps["proof"], steps["window_moduli"], steps["reported"],
         )
 
 
 def test_maximum_force_and_lab_comparison_step_figures(steps):
-    fig = demo.maximum_force_step_figure(steps["records"], steps["curves"], steps["extensometer"],
+    fig = plotting.maximum_force_step_figure(steps["records"], steps["curves"], steps["extensometer"],
                                          steps["maximum"], retrieved=STAMP)
     assert [title[:3] for title in _titles(fig)] == ["(a)", "(b)"]
     assert sum(text.startswith(("Zx1 (", "Zy1 (")) for text in _legend_texts(fig)) == 2
 
-    fig = demo.lab_comparison_step_figure(steps["records"], steps["scatter"], steps["comparison"],
+    fig = plotting.lab_comparison_step_figure(steps["records"], steps["scatter"], steps["comparison"],
                                           retrieved=STAMP)
     assert [title[:3] for title in _titles(fig)] == ["(a)", "(b)"]
     assert [tick.get_text() for tick in _panel(fig, "(a)").get_xticklabels()] == ["Zx1", "Zy1"]
@@ -335,20 +354,5 @@ def test_maximum_force_and_lab_comparison_step_figures(steps):
 
 def test_step_figures_need_a_colour_for_every_specimen(steps):
     with pytest.raises(ValueError, match="no colour"):
-        demo.maximum_force_step_figure(steps["records"], steps["curves"], steps["extensometer"],
+        plotting.maximum_force_step_figure(steps["records"], steps["curves"], steps["extensometer"],
                                        steps["maximum"], colors={"Zx1": "#000000"})
-
-
-# ---------------------------------------------------------------------------
-# sim_atlas
-# ---------------------------------------------------------------------------
-
-
-def test_plotting_helpers_are_not_collected_by_sim_atlas():
-    from test_sim_atlas_collection import PACKAGE, _collect_module, _filesystem_modules
-
-    assert "pmd_tensile._plotting" not in _filesystem_modules(PACKAGE)
-    assert _collect_module(demo) == []
-    for name in ("curves_overview_figure", "results_overview_figure", "yield_step_figure", "specimen_colors"):
-        assert name in demo.__all__
-        assert getattr(demo, name) is getattr(_plotting, name)

@@ -18,20 +18,22 @@ from pathlib import Path
 import numpy as np
 import pandas as pd
 import pytest
-
 import synthetic as sy
-from pmd_tensile import analysis
-from pmd_tensile._analysis import analyse_curve
-from pmd_tensile.analysis import (
-    check_time_order,
+
+import pmd_tensile.nodes.analysis as analysis_package
+from pmd_tensile.contract import ReportedProperties
+from pmd_tensile.nodes.analysis.comparison import (
     compare_with_reported,
-    elastic_fit,
+    summarize_by_group,
+)
+from pmd_tensile.nodes.analysis.elastic_line import elastic_fit
+from pmd_tensile.nodes.analysis.extensometer import check_time_order
+from pmd_tensile.nodes.analysis.geometry import (
     elongation_after_fracture,
     reduction_of_area,
     s0_scatter,
-    summarize_by_group,
 )
-from pmd_tensile.contract import ReportedProperties
+from pmd_tensile.orchestration import analyse_curve
 
 E = sy.E_MPA
 E0 = 4.9e-4
@@ -346,16 +348,17 @@ def test_check_time_order():
 # ---------------------------------------------------------------------------
 # Module boundary (acceptance criterion 2)
 
-ANALYSIS_PATH = Path(analysis.__file__)
+ANALYSIS_DIR = Path(analysis_package.__file__).parent
+ANALYSIS_FILES = sorted(ANALYSIS_DIR.glob("*.py"))
+REPOSITORY_ROOT = ANALYSIS_DIR.parents[2]
+ANALYSIS_HELPERS = ("pmd_tensile.curve_math", "pmd_tensile.units", "pmd_tensile.parameters", "pmd_tensile.contract")
 FORBIDDEN = (
     "rdflib",
     "praeco",
-    "pmd_tensile._sources",
+    "pmd_tensile.sources",
     "pmd_tensile.profiles",
-    "pmd_tensile.exploration",
-    "pmd_tensile._exploration",
-    "pmd_tensile.acquisition",
-    "pmd_tensile._acquisition",
+    "pmd_tensile.nodes.exploration",
+    "pmd_tensile.nodes.acquisition",
 )
 
 
@@ -382,7 +385,8 @@ def _imported_modules(path: Path) -> set[str]:
 
 
 def test_analysis_module_imports_no_ontology_aware_module():
-    imported = _imported_modules(ANALYSIS_PATH)
+    helper_files = [REPOSITORY_ROOT / (name.replace(".", "/") + ".py") for name in ANALYSIS_HELPERS]
+    imported = set().union(*(_imported_modules(path) for path in ANALYSIS_FILES + helper_files))
     assert "pmd_tensile.contract" in imported or any(
         n.startswith("pmd_tensile.contract") for n in imported
     )
@@ -393,27 +397,25 @@ def test_analysis_module_imports_no_ontology_aware_module():
 
 
 def test_analysis_module_source_has_no_pmd_ontology_iris():
-    text = ANALYSIS_PATH.read_text(encoding="utf-8")
-    assert "w3id.org/pmd" not in text
+    for path in ANALYSIS_FILES:
+        assert "w3id.org/pmd" not in path.read_text(encoding="utf-8"), path
 
 
 def test_importing_analysis_loads_no_ontology_aware_module():
     code = (
-        "import sys; import pmd_tensile.analysis; "
+        "import sys; import pmd_tensile.nodes.analysis.comparison, pmd_tensile.nodes.analysis.elastic_line, "
+        "pmd_tensile.nodes.analysis.extensometer, pmd_tensile.nodes.analysis.geometry, "
+        "pmd_tensile.nodes.analysis.maximum_force, pmd_tensile.nodes.analysis.yielding; "
         "print('\\n'.join(sorted(m for m in sys.modules "
         "if m.startswith('pmd_tensile') or m.split('.')[0] == 'praeco')))"
     )
     out = subprocess.run(
         [sys.executable, "-c", code],
-        cwd=ANALYSIS_PATH.parents[1],
+        cwd=REPOSITORY_ROOT,
         capture_output=True,
         text=True,
         check=True,
         env=dict(os.environ, PYTHONDONTWRITEBYTECODE="1"),
     ).stdout.split()
-    assert set(out) <= {
-        "pmd_tensile",
-        "pmd_tensile.analysis",
-        "pmd_tensile.contract",
-        "pmd_tensile._contract_units",
-    }
+    allowed = {"pmd_tensile", "pmd_tensile.nodes", "pmd_tensile.nodes.analysis", *ANALYSIS_HELPERS}
+    assert {m for m in out if not m.startswith("pmd_tensile.nodes.analysis.")} <= allowed

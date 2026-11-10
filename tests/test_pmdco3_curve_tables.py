@@ -15,12 +15,22 @@ import dataclasses
 import pytest
 import rdflib
 from conftest import PMDCO3_FULL_FILE, PMDCO3_ORIGINAL_FILE, PMDCO3_SLICE_FILES
-from workflow_helpers import PMDCO2, PMDCO2_SOURCE, PMDCO3, curve_bytes_for, run_with_stubbed_curves
+from workflow_helpers import (
+    PMDCO2,
+    PMDCO2_SOURCE,
+    PMDCO3,
+    curve_bytes_for,
+    run_with_stubbed_curves,
+)
 
-from pmd_tensile import _acquisition, _exploration
-from pmd_tensile import _sources as sources
+from pmd_tensile import profiles, sources
+from pmd_tensile.nodes import acquisition
 from pmd_tensile.profiles import get_profile, pmdco3_tto
-from pmd_tensile.profiles.base import CURVE_COLUMN_COLUMNS, CURVE_DIALECT_COLUMNS, SelectQuery
+from pmd_tensile.profiles.base import (
+    CURVE_COLUMN_COLUMNS,
+    CURVE_DIALECT_COLUMNS,
+    SelectQuery,
+)
 
 DATA_HOST = "https://data.pmds-mpcdf-2.pyiron.com/"
 TTO_RAW = "https://raw.githubusercontent.com/materialdigital/tensile-test-ontology/"
@@ -62,15 +72,15 @@ def cell_texts(table) -> dict[str, list[str]]:
     "path", [*PMDCO3_SLICE_FILES.values(), PMDCO3_FULL_FILE, PMDCO3_ORIGINAL_FILE], ids=lambda p: p.stem
 )
 def test_conformance_asks_pass(path):
-    results = _exploration.conformance_results(PMDCO3, turtle(path))
+    results = profiles.conformance_results(PMDCO3, turtle(path))
     assert results and all(all(answers.values()) for answers in results.values()), results
-    assert not _exploration.is_conformant(PMDCO2, turtle(path))
+    assert not profiles.is_conformant(PMDCO2, turtle(path))
 
 
 def test_slices_list_their_specimens():
     for orientation, path in PMDCO3_SLICE_FILES.items():
-        assert sorted(_exploration.specimen_table(PMDCO3, turtle(path))["specimen_id"]) == SLICE_IDS[orientation]
-    assert sorted(_exploration.specimen_table(PMDCO3, FULL)["specimen_id"]) == sorted(ALL_IDS)
+        assert sorted(profiles.specimen_table(PMDCO3, turtle(path))["specimen_id"]) == SLICE_IDS[orientation]
+    assert sorted(profiles.specimen_table(PMDCO3, FULL)["specimen_id"]) == sorted(ALL_IDS)
 
 
 def test_profile_contract_for_curve_columns_and_locators():
@@ -111,24 +121,24 @@ def test_curve_columns_query_reads_roles_numbers_units_and_dialect():
 @pytest.mark.parametrize("source", [SLICES, FULL], ids=["slices", "full"])
 def test_records_take_the_curves_from_the_graph(source, pmdco2_source):
     for sid in ALL_IDS:
-        r3 = _acquisition.build_specimen_record(PMDCO3, source, sid)
+        r3 = acquisition.get_specimen_record(PMDCO3, source, sid)
         assert r3.curve_url == f"{DATA_HOST}{sid}.csv"
         assert {role: (c.index, c.unit) for role, c in r3.curve_columns.items()} == EXPECTED_COLUMNS
         # Everything the analysis sees equals the pmdco2 record; only the provenance IRI differs.
-        r2 = _acquisition.build_specimen_record(PMDCO2, pmdco2_source, sid)
+        r2 = acquisition.get_specimen_record(PMDCO2, pmdco2_source, sid)
         assert dataclasses.replace(r3, provenance_iri=r2.provenance_iri) == r2, sid
-        q3 = _acquisition.build_reported_properties(PMDCO3, source, sid)
-        assert q3 == _acquisition.build_reported_properties(PMDCO2, pmdco2_source, sid), sid
+        q3 = acquisition.get_reported_properties(PMDCO3, source, sid)
+        assert q3 == acquisition.get_reported_properties(PMDCO2, pmdco2_source, sid), sid
 
 
 def test_an_explicit_locator_replaces_the_curve_tables():
-    record = _acquisition.build_specimen_record(PMDCO3, SLICES, "Zx3", curve_locator=LOCATOR)
+    record = acquisition.get_specimen_record(PMDCO3, SLICES, "Zx3", curve_locator=LOCATOR)
     assert record.curve_url == pmdco3_tto.CURVE_LOCATOR.url_for("Zx3")
     assert {role: c.header for role, c in record.curve_columns.items()} == {
         role: spec["header"] for role, spec in LOCATOR["columns"].items()
     }
     with pytest.raises(ValueError, match="not accepted"):  # pmdco2 still rejects a locator
-        _acquisition.build_specimen_record(PMDCO2, PMDCO2_SOURCE, "Zx3", curve_locator=LOCATOR)
+        acquisition.get_specimen_record(PMDCO2, PMDCO2_SOURCE, "Zx3", curve_locator=LOCATOR)
 
 
 CSVW = rdflib.Namespace("http://www.w3.org/ns/csvw#")
@@ -151,7 +161,7 @@ def test_a_declared_dialect_the_parser_cannot_read_is_rejected(tmp_path, predica
     path = tmp_path / "edited_diagonal.ttl"
     graph.serialize(destination=path, format="turtle")
     with pytest.raises(ValueError, match=message):
-        _acquisition.build_specimen_record(PMDCO3, turtle(path), "Zd3")
+        acquisition.get_specimen_record(PMDCO3, turtle(path), "Zd3")
 
 
 # ---------------------------------------------------------------------------
@@ -161,11 +171,11 @@ def test_a_declared_dialect_the_parser_cannot_read_is_rejected(tmp_path, predica
 
 def test_the_original_graph_needs_the_explicit_locator():
     with pytest.raises(LookupError, match="links no curve table for specimen 'Zx3'.*curve_locator"):
-        _acquisition.build_specimen_record(PMDCO3, ORIGINAL, "Zx3")
+        acquisition.get_specimen_record(PMDCO3, ORIGINAL, "Zx3")
     with pytest.raises(ExceptionGroup) as excinfo:  # a batch reports every failed specimen
         run_with_stubbed_curves(curve_bytes_for(["Zx1", "Zy1"]), PMDCO3, ORIGINAL, specimen_ids=["Zx1", "Zy1"])
     assert excinfo.group_contains(LookupError, match="links no curve table for specimen 'Zx1'")
-    record = _acquisition.build_specimen_record(PMDCO3, ORIGINAL, "Zx3", curve_locator=LOCATOR)
+    record = acquisition.get_specimen_record(PMDCO3, ORIGINAL, "Zx3", curve_locator=LOCATOR)
     assert record.curve_url.startswith(TTO_RAW)
 
 

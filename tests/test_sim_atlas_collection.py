@@ -1,14 +1,11 @@
 """sim_atlas module and filesystem mode collect only nodes, macros and dataclass types (D5.1, D6).
 
-Checked: module mode on every public module and on the packages
-``pmd_tensile`` and ``pmd_tensile.profiles``, and filesystem mode on
-``pmd_tensile``, collect exactly the listed nodes, macros and dataclass types,
-and no helper. Import mode (``recursive="import"``) is not imitated: D6 does
-not require it, and it walks every imported submodule, ``_``-prefixed ones
-included (collector.py:53-56 come before the ``_`` check), so on
-``pmd_tensile`` it would collect the private helpers that D5.1 keeps out of
-the public modules, and on ``pmd_tensile.profiles`` it would add
-``_units.qudt_unit_symbol``. Both are out of scope under D6.
+Checked: module mode on every node module and on the packages
+``pmd_tensile.nodes`` and ``pmd_tensile.nodes.analysis``, and filesystem mode
+on ``pmd_tensile.nodes``, the harvest target, collect exactly the listed
+nodes, macros and dataclass types, and no helper. Import mode
+(``recursive="import"``) is not imitated: it walks every imported submodule,
+including the helper modules outside the harvest target.
 
 sim_atlas is not installed. The test imitates the collection code of the
 sim_atlas toolkit at commit 753205bd61ef821517f5ea26bd5c564730e6a114
@@ -44,10 +41,10 @@ does):
   class is defined in the module (so its ``__module__`` matches): no parser,
   so sim_atlas raises.
 
-So every object collected from the public modules must be a node, a macro or
+So every object collected from the node modules must be a node, a macro or
 a dataclass type. Constants that sim_atlas skips (strings, tuples, dicts:
-no ``__module__``) may stay; helpers and instances live in ``_``-prefixed
-modules and reach notebooks through ``pmd_tensile.demo``.
+no ``__module__``) may stay; helper functions inside a node module are
+``_``-prefixed, and helper modules live outside ``pmd_tensile.nodes``.
 """
 
 from __future__ import annotations
@@ -66,8 +63,10 @@ from flowrep.api.schemas import AtomicRecipe, WorkflowRecipe
 
 import pmd_tensile
 
-PACKAGE = "pmd_tensile"
+PACKAGE = "pmd_tensile.nodes"
+"""The harvest target."""
 PACKAGE_DIR = Path(pmd_tensile.__path__[0])
+"""The whole package, for the offline import check."""
 
 ATOMIC = "atomic node"
 MACRO = "workflow macro"
@@ -78,54 +77,63 @@ CLASS = "other class"
 PARSABLE = (ATOMIC, MACRO, DATACLASS)
 """The kinds a sim_atlas parser accepts (FUNCTION would be mistaken for a node)."""
 
-ANALYSIS_DATACLASSES = (
-    "AnalysisParameters",
+STEP_DATACLASSES = (
     "Bootstrap",
-    "CurveAnalysis",
     "ElasticFit",
     "ElasticResult",
     "Elongation",
     "ExtensometerValidity",
     "MaximumForce",
     "ProofStrength",
-    "S0Scatter",
-    "ScalarResult",
     "WindowSensitivity",
     "Yielding",
 )
 
 NODE_MODULES: dict[str, dict[str, str]] = {
-    "pmd_tensile.exploration": {
+    "pmd_tensile.nodes.exploration": {
         "check_conformance": ATOMIC,
         "list_specimens": ATOMIC,
     },
-    "pmd_tensile.acquisition": {
+    "pmd_tensile.nodes.acquisition": {
         "get_specimen_record": ATOMIC,
         "get_reported_properties": ATOMIC,
         "fetch_curve": ATOMIC,
     },
-    "pmd_tensile.analysis": {
+    "pmd_tensile.nodes.analysis.extensometer": {
         "check_time_order": ATOMIC,
-        "engineering_stress": ATOMIC,
         "count_dropped_samples": ATOMIC,
         "extensometer_validity": ATOMIC,
+    },
+    "pmd_tensile.nodes.analysis.elastic_line": {
+        "engineering_stress": ATOMIC,
+        "elastic_fit": ATOMIC,
         "bootstrap_fit": ATOMIC,
-        "yield_analysis": ATOMIC,
         "final_elastic_fit": ATOMIC,
         "proof_strength": ATOMIC,
+        "window_sensitivity": ATOMIC,
+    },
+    "pmd_tensile.nodes.analysis.yielding": {
+        "yield_analysis": ATOMIC,
+    },
+    "pmd_tensile.nodes.analysis.maximum_force": {
         "maximum_force": ATOMIC,
         "elongation_at_maximum_force": ATOMIC,
-        "window_sensitivity": ATOMIC,
-        "assemble_curve_analysis": ATOMIC,
-        "elastic_fit": ATOMIC,
+    },
+    "pmd_tensile.nodes.analysis.geometry": {
         "s0_scatter": ATOMIC,
         "elongation_after_fracture": ATOMIC,
         "reduction_of_area": ATOMIC,
+        "S0Scatter": DATACLASS,
+        "ScalarResult": DATACLASS,
+    },
+    "pmd_tensile.nodes.analysis.comparison": {
         "compare_with_reported": ATOMIC,
         "summarize_by_group": ATOMIC,
-        **dict.fromkeys(ANALYSIS_DATACLASSES, DATACLASS),
     },
-    "pmd_tensile.workflows": {
+    "pmd_tensile.nodes.analysis.steps": dict.fromkeys(STEP_DATACLASSES, DATACLASS),
+    "pmd_tensile.nodes.workflows": {
+        "CurveAnalysis": DATACLASS,
+        "assemble_curve_analysis": ATOMIC,
         "analysis_parameters": ATOMIC,
         "curve_channels": ATOMIC,
         "specimen_geometry": ATOMIC,
@@ -141,27 +149,14 @@ NODE_MODULES: dict[str, dict[str, str]] = {
 }
 """What module mode collects from each node module: nodes, macros and the dataclass types they need."""
 
-OTHER_PUBLIC_MODULES: dict[str, dict[str, str]] = {
-    "pmd_tensile.contract": dict.fromkeys(
-        ("ColumnSpec", "Curve", "ReportedProperties", "SpecimenRecord"), DATACLASS
-    ),
-    "pmd_tensile.demo": {},
-    "pmd_tensile.profiles.base": dict.fromkeys(("CurveLocator", "OntologyProfile", "SelectQuery"), DATACLASS),
-    "pmd_tensile.profiles.pmdco2_tto": {},
-    "pmd_tensile.profiles.pmdco3_tto": {},
-}
-"""The other modules that filesystem mode reaches, and what it collects from them."""
+OTHER_PUBLIC_MODULES: dict[str, dict[str, str]] = {}
+"""Modules below the harvest target other than the node modules (none)."""
 
 PACKAGES: dict[str, dict[str, str]] = {
     PACKAGE: {},
-    "pmd_tensile.profiles": dict.fromkeys(("CurveLocator", "OntologyProfile", "SelectQuery"), DATACLASS),
+    "pmd_tensile.nodes.analysis": {},
 }
-"""Packages, whose ``__init__.py`` filesystem mode skips, and what module mode on them collects.
-
-``pmd_tensile.profiles`` re-exports the registry functions from the private
-top-level module ``pmd_tensile._profile_registry``; the dataclass types match
-the prefix ``pmd_tensile.profiles`` because they come from ``profiles.base``.
-"""
+"""Packages, whose ``__init__.py`` filesystem mode skips, and what module mode on them collects."""
 
 
 # ---------------------------------------------------------------------------
@@ -236,15 +231,6 @@ def test_module_mode_on_the_packages_collects_no_helper():
         assert collected == expected, package
 
 
-def test_profile_registry_is_still_public_in_profiles():
-    from pmd_tensile import _profile_registry, profiles
-
-    for name in ("register_profile", "get_profile", "available_profiles"):
-        assert name in profiles.__all__
-        assert getattr(profiles, name) is getattr(_profile_registry, name)
-    assert profiles.available_profiles() == ["pmdco2-tto", "pmdco3-tto"]
-
-
 def test_every_public_function_in_a_node_module_is_a_node_or_macro():
     for module in NODE_MODULES:
         for name, value in _collect_module(module):
@@ -289,29 +275,6 @@ def test_every_collected_object_has_a_sim_atlas_parser():
     assert not unparsable, f"sim_atlas has no parser for: {unparsable}"
     for expected in (*NODE_MODULES.values(), *OTHER_PUBLIC_MODULES.values(), *PACKAGES.values()):
         assert set(expected.values()) <= set(PARSABLE)
-
-
-def test_demo_facade_defines_nothing_and_resolves_every_name():
-    from pmd_tensile import demo
-
-    assert _collect_module(demo) == []
-    for name in demo.__all__:
-        value = getattr(demo, name)
-        module = getattr(value, "__module__", None)
-        assert module != demo.__name__, name
-        if module is None or not module.startswith(PACKAGE + "."):
-            continue
-        if inspect.isfunction(value) or isinstance(value, type):
-            assert module.split(".")[-1].startswith("_"), f"{name} comes from public {module}"
-        else:
-            # An instance reports its class's module (e.g. DEFAULT_PARAMETERS:
-            # pmd_tensile.analysis); that public module must not expose it,
-            # otherwise sim_atlas would collect it there.
-            public = importlib.import_module(module)
-            exposed = [key for key, item in vars(public).items() if item is value and not key.startswith("_")]
-            assert not exposed, f"{name} is public in {module} as {exposed}"
-    public = {name for name in vars(demo) if not name.startswith("_") and name != "annotations"}
-    assert public == set(demo.__all__)
 
 
 # Runs in a fresh interpreter, so that every module is really imported, with its
@@ -366,6 +329,6 @@ def test_importing_every_module_touches_no_network():
         parts = path.relative_to(PACKAGE_DIR).with_suffix("").parts
         if parts[-1] == "__init__":
             parts = parts[:-1]
-        every_module.add(".".join((PACKAGE, *parts)))
+        every_module.add(".".join(("pmd_tensile", *parts)))
     assert set(report["imported"]) == every_module
     assert report["attempts"] == []

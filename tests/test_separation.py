@@ -23,13 +23,18 @@ import pytest
 import rdflib
 from conftest import PMDCO2_ORIENTATION_FILES
 from rdflib.compare import isomorphic
-from workflow_helpers import PMDCO2, PMDCO2_SOURCE, curve_bytes_for, run_with_stubbed_curves
+from workflow_helpers import (
+    PMDCO2,
+    PMDCO2_SOURCE,
+    curve_bytes_for,
+    run_with_stubbed_curves,
+)
 
-from pmd_tensile import _knowledge_graph as kg
-from pmd_tensile import _sources as sources
-from pmd_tensile._parameters import parameter_values
-from pmd_tensile.analysis import QUANTITY_KIND_IRIS
+from pmd_tensile import knowledge_graph as kg
+from pmd_tensile import sources
+from pmd_tensile.parameters import parameter_values
 from pmd_tensile.profiles import pmdco3_tto
+from pmd_tensile.units import QUANTITY_KIND_IRIS
 
 KG_SPECIMENS = ("Zx1", "Zd2")
 PMD = "https://w3id.org/pmd/"
@@ -39,13 +44,13 @@ QK = "http://qudt.org/vocab/quantitykind/"
 UNIT = "http://qudt.org/vocab/unit/"
 
 EXPLORATION_FUNCTIONS = {
-    ("pmd_tensile.exploration", "check_conformance"),
-    ("pmd_tensile.exploration", "list_specimens"),
+    ("pmd_tensile.nodes.exploration", "check_conformance"),
+    ("pmd_tensile.nodes.exploration", "list_specimens"),
 }
 ACQUISITION_FUNCTIONS = {
-    ("pmd_tensile.acquisition", "get_specimen_record"),
-    ("pmd_tensile.acquisition", "get_reported_properties"),
-    ("pmd_tensile.acquisition", "fetch_curve"),
+    ("pmd_tensile.nodes.acquisition", "get_specimen_record"),
+    ("pmd_tensile.nodes.acquisition", "get_reported_properties"),
+    ("pmd_tensile.nodes.acquisition", "fetch_curve"),
 }
 
 # semantikon's data hashing calls networkx, which warns that its graph hashes
@@ -144,7 +149,8 @@ PREFIX pmdco: <https://w3id.org/pmd/co/PMD_>
 SELECT DISTINCT ?data WHERE {
     ?step ro:0000059 ?f ; bfo:0000051 ?port .
     ?f iao:0000235 ?module .
-    ?module a pmdco:0000101 ; pmdco:0000006 "pmd_tensile.analysis" .
+    ?module a pmdco:0000101 ; pmdco:0000006 ?module_name .
+    FILTER(STRSTARTS(STR(?module_name), "pmd_tensile.nodes.analysis."))
     ?port ro:0000057 ?data .
 }
 """
@@ -221,10 +227,11 @@ def test_query_step_roles(graphs, name):
     aware = {(m, f) for m, f, r in roles.itertuples(index=False) if r.startswith("ontology-aware")}
     assert aware == ACQUISITION_FUNCTIONS
     by_module = roles.groupby("module")["role"].agg(set).to_dict()
-    assert by_module["pmd_tensile.analysis"] == {"ontology-agnostic: analysis"}
-    analysis_functions = set(roles.loc[roles["module"] == "pmd_tensile.analysis", "function"])
+    analysis_modules = {m for m in by_module if m.startswith("pmd_tensile.nodes.analysis.")}
+    assert analysis_modules and all(by_module[m] == {"ontology-agnostic: analysis"} for m in analysis_modules)
+    analysis_functions = set(roles.loc[roles["module"].isin(analysis_modules), "function"])
     assert {"yield_analysis", "final_elastic_fit", "maximum_force", "summarize_by_group"} <= analysis_functions
-    assert ("pmd_tensile.workflows", "specimen_workflow", "workflow composition") in set(
+    assert ("pmd_tensile.nodes.workflows", "specimen_workflow", "workflow composition") in set(
         roles.itertuples(index=False, name=None)
     )
 

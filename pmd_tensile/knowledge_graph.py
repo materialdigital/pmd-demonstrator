@@ -126,19 +126,22 @@ TURTLE_PRECISION_NOTE = (
 """Why Turtle output is for display only (see the module docstring)."""
 
 MODULE_ROLES: dict[str, str] = {
-    "pmd_tensile.exploration": "ontology-aware: exploration",
-    "pmd_tensile.acquisition": "ontology-aware: acquisition",
-    "pmd_tensile.analysis": "ontology-agnostic: analysis",
-    "pmd_tensile.workflows": "ontology-agnostic: contract adapter",
+    "pmd_tensile.nodes.exploration": "ontology-aware: exploration",
+    "pmd_tensile.nodes.acquisition": "ontology-aware: acquisition",
+    **{
+        f"pmd_tensile.nodes.analysis.{topic}": "ontology-agnostic: analysis"
+        for topic in ("comparison", "elastic_line", "extensometer", "geometry", "maximum_force", "yielding")
+    },
+    "pmd_tensile.nodes.workflows": "ontology-agnostic: contract adapter",
     "flowrep.prospective.transformers": "workflow plumbing (flowrep)",
 }
 """Role of each Python module whose functions appear as workflow steps."""
 
 ONTOLOGY_AWARE_MODULES: tuple[str, ...] = (
-    "pmd_tensile.exploration",
-    "pmd_tensile.acquisition",
+    "pmd_tensile.nodes.exploration",
+    "pmd_tensile.nodes.acquisition",
 )
-ANALYSIS_MODULE = "pmd_tensile.analysis"
+ANALYSIS_MODULE = "pmd_tensile.nodes.analysis"
 
 _PREFIXES = """\
 PREFIX bfo:   <http://purl.obolibrary.org/obo/BFO_>
@@ -186,7 +189,8 @@ SELECT DISTINCT ?function ?output ?unit ?quantity_kind WHERE {
     ?step ro:0000059 ?f ;
           bfo:0000051 ?port .
     ?f iao:0000235 ?module_node, ?name_node .
-    ?module_node a pmdco:0000101 ; pmdco:0000006 "pmd_tensile.analysis" .
+    ?module_node a pmdco:0000101 ; pmdco:0000006 ?module_value .
+    FILTER(STRSTARTS(STR(?module_value), "pmd_tensile.nodes.analysis."))
     ?name_node a pmdco:0000100 ; pmdco:0000006 ?function_value .
     ?port a/rdfs:subClassOf pmdco:0000067 ;
           pmdco:0000128 ?output_value ;
@@ -227,7 +231,7 @@ SELECT DISTINCT ?specimen_id ?parameters WHERE {
     ?step ro:0000059 ?f ;
           bfo:0000051 ?port .
     ?f iao:0000235 ?module_node, ?name_node .
-    ?module_node a pmdco:0000101 ; pmdco:0000006 "pmd_tensile.workflows" .
+    ?module_node a pmdco:0000101 ; pmdco:0000006 "pmd_tensile.nodes.workflows" .
     ?name_node a pmdco:0000100 ; pmdco:0000006 "analysis_parameters" .
     ?port a/rdfs:subClassOf pmdco:0000067 ;
           ro:0000057 ?data .

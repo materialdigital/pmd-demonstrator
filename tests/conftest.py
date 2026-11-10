@@ -108,7 +108,7 @@ def _lift_network_block(request, monkeypatch):
 @pytest.fixture(autouse=True)
 def _fresh_graph_cache():
     """Tests must not see graphs parsed by other tests."""
-    from pmd_tensile import _sources as sources
+    from pmd_tensile import sources
 
     sources.clear_graph_cache()
     yield

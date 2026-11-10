@@ -14,7 +14,8 @@ import pytest
 from conftest import PMDCO2_DATASETS_FILES, PMDCO2_ORIENTATION_FILES
 from workflow_helpers import PMDCO2, curve_bytes_for, run_with_stubbed_curves
 
-from pmd_tensile import _acquisition, _exploration
+from pmd_tensile import profiles
+from pmd_tensile.nodes import acquisition
 
 DOWNLOADED = {"kind": "turtle", "locations": [str(path) for path in PMDCO2_ORIENTATION_FILES.values()]}
 DATASETS = {"kind": "turtle", "locations": [str(path) for path in PMDCO2_DATASETS_FILES.values()]}
@@ -27,23 +28,23 @@ def test_the_tests_use_the_downloaded_copies():
 
 
 def test_both_copies_conform_and_list_the_same_specimens():
-    assert _exploration.is_conformant(PMDCO2, DOWNLOADED)
-    assert _exploration.is_conformant(PMDCO2, DATASETS)
-    downloaded = _exploration.specimen_table(PMDCO2, DOWNLOADED)
-    datasets = _exploration.specimen_table(PMDCO2, DATASETS)
+    assert profiles.is_conformant(PMDCO2, DOWNLOADED)
+    assert profiles.is_conformant(PMDCO2, DATASETS)
+    downloaded = profiles.specimen_table(PMDCO2, DOWNLOADED)
+    datasets = profiles.specimen_table(PMDCO2, DATASETS)
     assert len(downloaded) == 10
     assert downloaded.to_dict("records") == datasets.to_dict("records")
 
 
 def test_both_copies_give_equal_records_and_reported_values():
-    ids = list(_exploration.specimen_table(PMDCO2, DOWNLOADED)["specimen_id"])
+    ids = list(profiles.specimen_table(PMDCO2, DOWNLOADED)["specimen_id"])
     for sid in ids:
-        assert _acquisition.build_specimen_record(PMDCO2, DOWNLOADED, sid) == _acquisition.build_specimen_record(
+        assert acquisition.get_specimen_record(PMDCO2, DOWNLOADED, sid) == acquisition.get_specimen_record(
             PMDCO2, DATASETS, sid
         ), sid
-        assert _acquisition.build_reported_properties(
+        assert acquisition.get_reported_properties(
             PMDCO2, DOWNLOADED, sid
-        ) == _acquisition.build_reported_properties(PMDCO2, DATASETS, sid), sid
+        ) == acquisition.get_reported_properties(PMDCO2, DATASETS, sid), sid
 
 
 @pytest.mark.filterwarnings("ignore:The hashes produced for directed graphs:UserWarning")

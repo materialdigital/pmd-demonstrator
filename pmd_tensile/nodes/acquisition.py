@@ -1,19 +1,20 @@
-"""Plain-function forms behind the acquisition nodes (ontology-aware).
+"""Acquisition nodes (ontology-aware): graph content -> neutral contract.
 
-:mod:`pmd_tensile.acquisition` holds the nodes; they call the functions here.
-The outputs are the ontology-free dataclasses of ``pmd_tensile.contract``, in
-contract units. Every unit is converted through an explicit table; an unknown
-or mismatched unit raises. Notebooks reach these functions through
-:mod:`pmd_tensile.demo`.
+These nodes, together with ``pmd_tensile.nodes.exploration``, are the only
+workflow nodes that know an ontology. Their outputs are the ontology-free
+dataclasses of ``pmd_tensile.contract``, in contract units. Every unit is
+converted through an explicit table; an unknown or mismatched unit raises.
 """
 
 from __future__ import annotations
 
+import functools
 import math
 from collections import defaultdict
 
-from pmd_tensile import _sources as sources
-from pmd_tensile._exploration import specimen_table
+import flowrep as fr
+
+from pmd_tensile import sources
 from pmd_tensile.contract import (
     CURVE_ROLE_KINDS,
     CURVE_ROLES,
@@ -25,7 +26,12 @@ from pmd_tensile.contract import (
     check_unit,
     to_contract_unit,
 )
-from pmd_tensile.profiles import CurveLocator, OntologyProfile, get_profile
+from pmd_tensile.profiles import (
+    CurveLocator,
+    OntologyProfile,
+    get_profile,
+    specimen_table,
+)
 from pmd_tensile.profiles.base import QUANTITY_KINDS
 
 # A measured value from the graph: (individual IRI, value, unit symbol or None).
@@ -178,10 +184,21 @@ def _located_curve_columns(
     return locator.url_for(specimen_id), dict(locator.columns)
 
 
-def build_specimen_record(
+@fr.atomic
+def get_specimen_record(
     profile_id: str, source: dict, specimen_id: str, curve_locator: dict | None = None
 ) -> SpecimenRecord:
-    """Plain-function form of :func:`pmd_tensile.acquisition.get_specimen_record`."""
+    """Neutral record of one specimen: geometry, orientation, notes, curve link.
+    
+    A semantic profile reads the curve link from the graph's curve tables.
+    ``curve_locator`` is a visibly non-semantic URL template with column
+    meanings (``profiles.base.CurveLocator``). A profile with
+    ``accepts_curve_locator`` (``pmdco3-tto``) also accepts one, which then
+    replaces the graph's curve tables; this is needed for the original TTO
+    graph, which has none, and a run records it as an input in its knowledge
+    graph. Other semantic profiles (``pmdco2-tto``) reject it; a profile
+    without semantic curve links uses it instead of its own locator.
+    """
     profile = get_profile(profile_id)
     if curve_locator is not None and profile.links_curves_semantically and not profile.accepts_curve_locator:
         raise ValueError(
@@ -195,7 +212,7 @@ def build_specimen_record(
         curve_url, curve_columns = _semantic_curve_columns(profile, source, process, specimen_id)
     else:  # the profile's own locator, or an explicit one that replaces the graph's links
         curve_url, curve_columns = _located_curve_columns(profile, specimen_id, curve_locator)
-    return SpecimenRecord(
+    record = SpecimenRecord(
         specimen_id=specimen_id,
         provenance_iri=process,
         orientation=row["orientation"],
@@ -209,32 +226,35 @@ def build_specimen_record(
         curve_columns=curve_columns,
         rate_switch_strain=_single_value(values, "eps_sw", specimen_id, required=False),
     )
+    return record
 
 
-def build_reported_properties(profile_id: str, source: dict, specimen_id: str) -> ReportedProperties:
-    """Plain-function form of :func:`pmd_tensile.acquisition.get_reported_properties`."""
+@fr.atomic
+def get_reported_properties(profile_id: str, source: dict, specimen_id: str) -> ReportedProperties:
+    """Lab-reported values of one specimen, for comparison only."""
     profile = get_profile(profile_id)
     process = _specimen_row(profile_id, source, specimen_id)["process"]
     values = _quantity_values(profile, source, process)
 
-    def reported(key: str) -> float | None:
-        return _single_value(values, key, specimen_id, required=False)
+    lab_value = functools.partial(_single_value, values, specimen_id=specimen_id, required=False)
 
-    return ReportedProperties(
+    reported = ReportedProperties(
         specimen_id=specimen_id,
-        e_gpa=reported("E"),
-        rp02_mpa=reported("Rp0.2"),
-        reh_mpa=reported("ReH"),
-        rel_mpa=reported("ReL"),
-        rm_mpa=reported("Rm"),
-        fm_n=reported("Fm"),
-        a_percent=reported("A"),
-        z_percent=reported("Z"),
+        e_gpa=lab_value("E"),
+        rp02_mpa=lab_value("Rp0.2"),
+        reh_mpa=lab_value("ReH"),
+        rel_mpa=lab_value("ReL"),
+        rm_mpa=lab_value("Rm"),
+        fm_n=lab_value("Fm"),
+        a_percent=lab_value("A"),
+        z_percent=lab_value("Z"),
     )
+    return reported
 
 
-def download_curve(record: SpecimenRecord) -> Curve:
-    """Plain-function form of :func:`pmd_tensile.acquisition.fetch_curve`."""
+@fr.atomic
+def fetch_curve(record: SpecimenRecord) -> Curve:
+    """Download (in memory, token-free) and parse the specimen's raw curve."""
     data, sha256 = sources.fetch_bytes(record.curve_url)
     curve = sources.parse_curve_csv(data, record.curve_columns, source_url=record.curve_url)
     if curve.sha256 != sha256:

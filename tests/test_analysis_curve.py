@@ -23,10 +23,11 @@ import re
 
 import numpy as np
 import pytest
-
 import synthetic as sy
-from pmd_tensile._analysis import analyse_curve
-from pmd_tensile.analysis import AnalysisParameters, CurveAnalysis
+
+from pmd_tensile.nodes.workflows import CurveAnalysis
+from pmd_tensile.orchestration import analyse_curve
+from pmd_tensile.parameters import AnalysisParameters
 
 EXACT = 1e-12
 E_REL_TOL = 1e-3

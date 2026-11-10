@@ -16,14 +16,26 @@ import math
 
 import numpy as np
 import pytest
-from workflow_helpers import PMDCO2, PMDCO2_SOURCE, curve_bytes_for, run_with_stubbed_curves, stub_fetch
+from workflow_helpers import (
+    PMDCO2,
+    PMDCO2_SOURCE,
+    curve_bytes_for,
+    run_with_stubbed_curves,
+    stub_fetch,
+)
 
-from pmd_tensile import _acquisition, _orchestration, demo, workflows
-from pmd_tensile import _knowledge_graph as kg
-from pmd_tensile import _sources as sources
-from pmd_tensile._analysis import analyse_curve
-from pmd_tensile._parameters import DEFAULT_PARAMETERS, parameter_values, parameters_from_values
-from pmd_tensile.analysis import AnalysisParameters, CurveAnalysis, elongation_after_fracture
+from pmd_tensile import knowledge_graph as kg
+from pmd_tensile import orchestration, sources
+from pmd_tensile.nodes import acquisition, workflows
+from pmd_tensile.nodes.analysis.geometry import elongation_after_fracture
+from pmd_tensile.nodes.workflows import CurveAnalysis
+from pmd_tensile.orchestration import analyse_curve
+from pmd_tensile.parameters import (
+    DEFAULT_PARAMETERS,
+    AnalysisParameters,
+    parameter_values,
+    parameters_from_values,
+)
 
 SPECIMENS = ("Zx1", "Zd2")
 OFFSET = 0.003
@@ -71,7 +83,6 @@ def changed_run(curves):
 
 def test_defaults_are_the_method_defaults():
     assert DEFAULT_PARAMETERS == AnalysisParameters()
-    assert demo.DEFAULT_PARAMETERS is DEFAULT_PARAMETERS
     assert parameters_from_values(None) == DEFAULT_PARAMETERS
     assert parameters_from_values({}) == DEFAULT_PARAMETERS
     assert workflows.analysis_parameters() == DEFAULT_PARAMETERS  # the node, called directly
@@ -112,7 +123,7 @@ def test_default_run_equals_analyse_curve_with_default_parameters(curves, defaul
     """The workflow default is analyse_curve's default (params=None), field by field."""
     rows = default_run.results.set_index("specimen_id")
     for sid in SPECIMENS:
-        record = _acquisition.build_specimen_record(PMDCO2, PMDCO2_SOURCE, sid)
+        record = acquisition.get_specimen_record(PMDCO2, PMDCO2_SOURCE, sid)
         curve = sources.parse_curve_csv(curves[sid], record.curve_columns, source_url=record.curve_url)
         a_percent = elongation_after_fracture(record.l0_mm, record.lu_mm).value
         args = (curve.force_n, curve.strain, curve.crosshead_mm, record.s0_mm2, record.l0_mm)
@@ -149,7 +160,7 @@ def test_changed_offset_equals_analyse_curve_with_the_same_parameters(curves, ch
     params = AnalysisParameters(offset_plastic_strain=OFFSET)
     rows = changed_run.results.set_index("specimen_id")
     for sid in SPECIMENS:
-        record = _acquisition.build_specimen_record(PMDCO2, PMDCO2_SOURCE, sid)
+        record = acquisition.get_specimen_record(PMDCO2, PMDCO2_SOURCE, sid)
         curve = sources.parse_curve_csv(curves[sid], record.curve_columns, source_url=record.curve_url)
         expected = analyse_curve(
             curve.force_n,
@@ -172,7 +183,7 @@ def test_specimen_workflow_takes_the_parameters(curves):
     fetch = stub_fetch(curves)
     with pytest.MonkeyPatch.context() as mp:
         mp.setattr(sources, "fetch_bytes", fetch)
-        node = _orchestration.build_specimen_node()
+        node = orchestration.build_specimen_node()
         default = node.run(profile_id=PMDCO2, source=PMDCO2_SOURCE, specimen_id="Zx1")
         changed = node.run(profile_id=PMDCO2, source=PMDCO2_SOURCE, specimen_id="Zx1", parameters=CHANGED)
     assert default.outputs.rp02_mpa != changed.outputs.rp02_mpa
@@ -203,7 +214,7 @@ def test_single_specimen_run_graph_records_the_parameters(curves):
     fetch = stub_fetch(curves)
     with pytest.MonkeyPatch.context() as mp:
         mp.setattr(sources, "fetch_bytes", fetch)
-        run = _orchestration.build_specimen_node().run(
+        run = orchestration.build_specimen_node().run(
             profile_id=PMDCO2, source=PMDCO2_SOURCE, specimen_id="Zd2", parameters=CHANGED
         )
     graph = kg.run_knowledge_graph(run)
@@ -241,7 +252,7 @@ def test_invalid_parameters_raise_a_clear_error(values, error, message):
     with pytest.raises(error, match=message):
         parameters_from_values(values)
     with pytest.raises(error, match=message):
-        _orchestration.batch_inputs(PMDCO2, PMDCO2_SOURCE, SPECIMENS, parameters=values)
+        orchestration.batch_inputs(PMDCO2, PMDCO2_SOURCE, SPECIMENS, parameters=values)
 
 
 def test_invalid_parameters_fail_before_any_work(curves):
@@ -252,7 +263,7 @@ def test_invalid_parameters_fail_before_any_work(curves):
         mp.setattr(sources, "select", lambda *args, **kwargs: pytest.fail("graph queried"))
         mp.setattr(sources, "ask", lambda *args, **kwargs: pytest.fail("graph queried"))
         with pytest.raises(ValueError, match="unknown analysis parameters"):
-            _orchestration.run_tensile_analysis(PMDCO2, PMDCO2_SOURCE, parameters={"offset": OFFSET})
+            orchestration.run_tensile_analysis(PMDCO2, PMDCO2_SOURCE, parameters={"offset": OFFSET})
     assert fetch.fetched == []
 
 
@@ -262,7 +273,7 @@ def test_invalid_parameters_fail_inside_the_specimen_workflow(curves):
     with pytest.MonkeyPatch.context() as mp:
         mp.setattr(sources, "fetch_bytes", fetch)
         with pytest.raises(ValueError, match="unknown analysis parameters"):
-            _orchestration.build_specimen_node().run(
+            orchestration.build_specimen_node().run(
                 profile_id=PMDCO2, source=PMDCO2_SOURCE, specimen_id="Zx1", parameters={"offset": OFFSET}
             )
     with pytest.raises(ValueError, match="unknown analysis parameters"):

@@ -17,17 +17,39 @@ import flowrep as fr
 import pandas as pd
 import pyiron_workflow as pwf
 
-from pmd_tensile._parameters import parameter_values, parameters_from_values
-from pmd_tensile.acquisition import fetch_curve
-from pmd_tensile.analysis import CurveAnalysis, summarize_by_group
 from pmd_tensile.contract import Curve
-from pmd_tensile.workflows import (
+from pmd_tensile.curve_math import _check_s0
+from pmd_tensile.nodes.acquisition import fetch_curve
+from pmd_tensile.nodes.analysis.comparison import summarize_by_group
+from pmd_tensile.nodes.analysis.elastic_line import (
+    bootstrap_fit,
+    final_elastic_fit,
+    proof_strength,
+    window_sensitivity,
+)
+from pmd_tensile.nodes.analysis.extensometer import (
+    count_dropped_samples,
+    extensometer_validity,
+)
+from pmd_tensile.nodes.analysis.maximum_force import (
+    elongation_at_maximum_force,
+    maximum_force,
+)
+from pmd_tensile.nodes.analysis.yielding import yield_analysis
+from pmd_tensile.nodes.workflows import (
     GROUP_COLUMN,
+    CurveAnalysis,
+    assemble_curve_analysis,
     comparison_table,
     exploration_workflow,
     results_table,
     specimen_workflow,
     summary_quantities,
+)
+from pmd_tensile.parameters import (
+    AnalysisParameters,
+    parameter_values,
+    parameters_from_values,
 )
 
 
@@ -260,3 +282,40 @@ def run_tensile_analysis(
         curves=curves,
         curve_analyses=curve_analyses,
     )
+
+
+
+def analyse_curve(
+    force_n,
+    strain,
+    crosshead_mm,
+    s0_mm2: float,
+    l0_mm: float,
+    *,
+    a_percent: float | None = None,
+    rate_switch_strain: float | None = None,
+    params: AnalysisParameters | None = None,
+) -> CurveAnalysis:
+    """Analyse one curve (M1-M12, M15-M16) in the M5 bootstrap order.
+
+    Arrays may contain NaN (per-channel handling, M1). ``a_percent`` (A from
+    metadata) enables the M3 end check; ``rate_switch_strain`` (ratio) only
+    sets ``near_rate_switch`` flags. This is a plain composition of the step
+    nodes listed in the docstring of :mod:`pmd_tensile.analysis`.
+    """
+    _check_s0(s0_mm2)
+    dropped_samples = count_dropped_samples(force_n, strain, crosshead_mm)
+    extensometer, k_ext, _ = extensometer_validity(
+        strain, crosshead_mm, l0_mm, a_percent, rate_switch_strain, params
+    )
+    bootstrap, _ = bootstrap_fit(force_n, strain, s0_mm2, k_ext, params)
+    yielding, _, _, _ = yield_analysis(force_n, strain, s0_mm2, k_ext, bootstrap, rate_switch_strain, params)
+    elastic, _, _ = final_elastic_fit(force_n, strain, s0_mm2, k_ext, bootstrap, yielding, params)
+    proof, _ = proof_strength(force_n, strain, s0_mm2, k_ext, elastic, yielding, rate_switch_strain, params)
+    maximum, _, _ = maximum_force(force_n, s0_mm2, yielding)
+    elongation, _, _ = elongation_at_maximum_force(force_n, strain, k_ext, bootstrap, elastic, maximum, params)
+    sensitivity = window_sensitivity(force_n, strain, s0_mm2, k_ext, elastic, maximum, elongation, params)
+    analysis = assemble_curve_analysis(
+        dropped_samples, extensometer, bootstrap, yielding, elastic, proof, maximum, elongation, sensitivity
+    )
+    return analysis

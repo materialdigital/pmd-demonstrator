@@ -31,10 +31,10 @@ import time
 
 import numpy as np
 import pytest
+import synthetic as sy
 from scipy.stats import beta
 
-import synthetic as sy
-from pmd_tensile._analysis import analyse_curve
+from pmd_tensile.orchestration import analyse_curve
 
 pytestmark = pytest.mark.statistical
 

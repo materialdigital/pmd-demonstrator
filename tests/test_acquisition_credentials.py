@@ -16,8 +16,8 @@ import pytest
 import rdflib
 from conftest import PMDCO2_ORIENTATION_FILES
 
-from pmd_tensile import _acquisition, _exploration, acquisition, exploration
-from pmd_tensile import _sources as sources
+from pmd_tensile import profiles, sources
+from pmd_tensile.nodes import acquisition, exploration
 from pmd_tensile.profiles import pmdco3_tto
 from pmd_tensile.profiles.base import CurveLocator
 
@@ -101,11 +101,11 @@ def test_no_node_output_contains_the_token(ontodocker_source):
     assert all(c.token == TOKEN and c.address == ADDRESS for c in _FakeOntodockerClient.instances)
     # ... and the Ontodocker path gives the same record as the local files.
     turtle = {"kind": "turtle", "locations": [str(p) for p in DATASETS.values()]}
-    assert runs["record"].outputs.record == _acquisition.build_specimen_record(
+    assert runs["record"].outputs.record == acquisition.get_specimen_record(
         "pmdco2-tto", turtle, "Zx1"
     )
     assert sorted(runs["specimens"].outputs.specimen_ids) == sorted(
-        _exploration.specimen_table("pmdco2-tto", turtle)["specimen_id"]
+        profiles.specimen_table("pmdco2-tto", turtle)["specimen_id"]
     )
 
 
@@ -167,30 +167,30 @@ def test_the_pinned_and_data_urls_are_accepted(pmdco2_source):
     sources.reject_url_credentials(pmdco3_tto.CURVE_LOCATOR.url_for("Zx1"))
     assert CurveLocator.from_dict(pmdco3_tto.CURVE_LOCATOR.as_dict()) == pmdco3_tto.CURVE_LOCATOR
     # Every curve URL of the ten pmdco2 specimens, as linked by the graphs.
-    specimen_ids = _exploration.specimen_table("pmdco2-tto", pmdco2_source)["specimen_id"]
+    specimen_ids = profiles.specimen_table("pmdco2-tto", pmdco2_source)["specimen_id"]
     assert len(specimen_ids) == 10
     for specimen_id in specimen_ids:
-        record = _acquisition.build_specimen_record("pmdco2-tto", pmdco2_source, specimen_id)
+        record = acquisition.get_specimen_record("pmdco2-tto", pmdco2_source, specimen_id)
         sources.reject_url_credentials(record.curve_url)
 
 
 def test_demo_builds_the_ontodocker_client_from_the_environment(ontodocker_source):
-    """Notebooks get the client from ``demo``, so they never read the token themselves (T9.1 NR1-1)."""
-    from pmd_tensile import demo
+    """Notebooks get the client from ``sources``, so they never read the token themselves (T9.1 NR1-1)."""
+    from pmd_tensile import sources
 
-    client = demo.ontodocker_client()
+    client = sources.ontodocker_client()
     assert isinstance(client, _FakeOntodockerClient)
     assert client.address == ADDRESS and client.token == TOKEN
 
 
 def test_demo_client_without_address_fails_without_echoing_the_token(monkeypatch):
-    from pmd_tensile import demo
+    from pmd_tensile import sources
 
     monkeypatch.delenv("ONTODOCKER_ADDRESS", raising=False)
     monkeypatch.setenv("ONTODOCKER_TOKEN", TOKEN)
     monkeypatch.setattr(sources, "OntodockerClient", _FakeOntodockerClient)
     with pytest.raises(sources.SourceError) as error:
-        demo.ontodocker_client()
+        sources.ontodocker_client()
     assert TOKEN not in str(error.value)
 
 
@@ -198,7 +198,7 @@ def test_missing_address_fails_without_echoing_the_token(monkeypatch):
     monkeypatch.delenv("ONTODOCKER_ADDRESS", raising=False)
     monkeypatch.setenv("ONTODOCKER_TOKEN", TOKEN)
     with pytest.raises(sources.SourceError) as error:
-        _exploration.specimen_table(
+        profiles.specimen_table(
             "pmdco2-tto", {"kind": "ontodocker", "datasets": ["pmdco2_tto_example_parallel"]}
         )
     assert TOKEN not in str(error.value)

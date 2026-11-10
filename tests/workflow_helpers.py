@@ -14,11 +14,11 @@ import re
 
 import numpy as np
 import pytest
+import synthetic as sy
 from conftest import PMDCO2_ORIENTATION_FILES
 
-import synthetic as sy
-from pmd_tensile import _acquisition, _orchestration
-from pmd_tensile import _sources as sources
+from pmd_tensile import orchestration, sources
+from pmd_tensile.nodes import acquisition
 
 PMDCO2 = "pmdco2-tto"
 PMDCO3 = "pmdco3-tto"
@@ -138,7 +138,7 @@ def pmdco3_twin_of_pmdco2(specimen_ids, tmp_path) -> dict:
     """A pmdco3 structural graph describing the given pmdco2 specimens with their values."""
     text = PMDCO3_PREFIXES
     for i, sid in enumerate(specimen_ids, start=1):
-        record = _acquisition.build_specimen_record(PMDCO2, PMDCO2_SOURCE, sid)
+        record = acquisition.get_specimen_record(PMDCO2, PMDCO2_SOURCE, sid)
         test = f"test_{i}"
         switch = round(100.0 * record.rate_switch_strain, 10)  # percent, as in the graphs
         block = pmdco3_test(test, sid, record.orientation, switch=repr(switch))
@@ -174,7 +174,7 @@ def synthetic_csv(s0_mm2: float, seed: int) -> bytes:
 def curve_bytes_for(specimen_ids, profile_id: str = PMDCO2, source: dict = PMDCO2_SOURCE) -> dict:
     """Synthetic CSV bytes per specimen ID, force scaled to the record's S0."""
     return {
-        sid: synthetic_csv(_acquisition.build_specimen_record(profile_id, source, sid).s0_mm2, NOISE_SEEDS[sid])
+        sid: synthetic_csv(acquisition.get_specimen_record(profile_id, source, sid).s0_mm2, NOISE_SEEDS[sid])
         for sid in specimen_ids
     }
 
@@ -197,5 +197,5 @@ def run_with_stubbed_curves(curves: dict, profile_id: str, source: dict, **kwarg
     fetch = stub_fetch(curves)
     with pytest.MonkeyPatch.context() as mp:
         mp.setattr(sources, "fetch_bytes", fetch)
-        result = _orchestration.run_tensile_analysis(profile_id, source, **kwargs)
+        result = orchestration.run_tensile_analysis(profile_id, source, **kwargs)
     return result, list(fetch.fetched)
