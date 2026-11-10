@@ -1,4 +1,4 @@
-"""SPARQL queries on the Turtle path must not overlap (T9-F1).
+"""SPARQL queries on the Turtle path must not overlap.
 
 pyiron_workflow runs nodes in a thread pool. rdflib's SPARQL grammar is
 module-level pyparsing state, and one overlap of ``Graph.query`` calls can break
@@ -22,6 +22,7 @@ import threading
 import time
 from concurrent import futures
 
+import pytest
 import rdflib
 from conftest import DEMO_DIR, PMDCO2_ORIENTATION_FILES
 from rdflib.plugins.sparql import prepareQuery
@@ -173,6 +174,7 @@ print(
 """
 
 
+@pytest.mark.slow
 def test_profile_queries_from_threads_in_a_fresh_interpreter():
     locations = [str(path) for path in PMDCO2_ORIENTATION_FILES.values()]
     done = subprocess.run(

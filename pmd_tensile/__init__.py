@@ -1,41 +1,24 @@
-"""Ontology-portable tensile-test workflow for the public demonstrator.
+"""Ontology-portable tensile-test workflow of the PMD demonstrator.
 
-The package separates *data description* from *data analysis*. Its public
-modules hold the workflow nodes and macros, the data contract and the
-ontology profiles; the helpers live in private ``_``-prefixed modules, so that
-sim_atlas catalogues only nodes and macros (see
-``tests/test_sim_atlas_collection.py``).
+The package separates the description of the data from their analysis.
 
-Nodes and macros (flowrep ``@fr.atomic`` and ``@fr.workflow``):
+- ``nodes``: the workflow nodes and macros, and the only part that sim_atlas
+  harvests. ``nodes.exploration`` and ``nodes.acquisition`` are the only
+  ontology-aware nodes; ``nodes.analysis`` holds the analysis of one curve,
+  split by topic; ``nodes.workflows`` holds the adapters and the two macros.
+- ``contract``: neutral, ontology-free records (specimen, curve, lab values)
+  in fixed units.
+- ``profiles``: declarative ontology profiles (SPARQL, unit vocabulary),
+  registered under a profile ID, and the queries every profile answers.
+- ``sources``: graph sources (Turtle files, Ontodocker) and the token-free
+  curve download.
+- ``orchestration``: the batch workflow, the two-stage run and
+  ``analyse_curve``; ``knowledge_graph``: export, validation and example
+  queries with semantikon; ``plotting``: the figures of the notebooks;
+  ``parameters``, ``units``, ``curve_math``: method parameters, annotated
+  types and numerical helpers.
 
-- ``exploration`` and ``acquisition``: the only ontology-aware workflow nodes.
-- ``analysis``: ontology-agnostic analysis nodes (method-defined,
-  ISO 6892-1-inspired), with their result types and annotations.
-- ``workflows``: contract adapter nodes and the exploration and per-specimen
-  workflows (macros).
-
-Data description:
-
-- ``contract``: neutral, ontology-free data contract (specimen records, curves,
-  lab-reported properties) in fixed units.
-- ``profiles``: declarative ontology profiles (SPARQL, unit vocabulary, naming
-  conventions), registered under a profile ID.
-
-Helpers for notebooks, re-exported by ``demo``:
-
-- ``_sources``: graph sources (local/remote Turtle via rdflib, Ontodocker via
-  praeco) and the token-free curve download.
-- ``_exploration``, ``_acquisition``, ``_analysis``: the plain-function forms
-  behind the nodes (conformance results, specimen table, specimen record,
-  curve download, ``analyse_curve``).
-- ``_orchestration``: the batch workflow and
-  ``run_tensile_analysis`` (both stages).
-- ``_parameters``: the default analysis parameters and their JSON-able
-  dictionary form, the ``parameters`` input of the workflows.
-- ``_knowledge_graph``: semantikon knowledge-graph export, validation, Turtle
-  helpers and example SPARQL queries.
-
-This module deliberately imports nothing, so that importing an
-ontology-agnostic submodule (e.g. ``pmd_tensile.contract``) does not pull
-in rdflib, praeco or the profiles.
+This module imports nothing, so that importing an ontology-agnostic part
+(e.g. ``pmd_tensile.contract``) does not pull in rdflib, praeco or the
+profiles.
 """

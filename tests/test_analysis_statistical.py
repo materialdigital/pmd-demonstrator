@@ -1,25 +1,25 @@
-"""VP-10 tolerance feasibility and VP-2/VP-8 (method-spec v2.4, §14), Monte Carlo.
+"""Tolerances on noisy curves, ReH on noisy curves and the accuracy of Ag: Monte Carlo checks.
 
 Opt-in: ``pytest --run-statistical -m statistical``. Each check runs the
 implementation over seeded noisy curves and counts how often the result is
 within the noisy tolerance of the **analytic** truth of the generator. The
-spec requires a pass rate of at least 99 %. A NaN result counts as a failure.
+required pass rate is at least 99 %. A NaN result counts as a failure.
 
 Truths: (a) E = 205 GPa, ReH = 400 MPa, ReL = 379 MPa (plateau minimum),
 Rp0.2 = 380 MPa (plateau stress at e_p = 0.002), Rm = 510 MPa, Ag = 15 %;
 RO n = 15: E and Rp0.2 from the analytic window-slope fixed point,
 Rm = 480 MPa, Ag = 12 %.
 
-Tolerances (§14, declared in advance): E +-2 %, ReH +-3 MPa, ReL +-2 MPa,
-Rp0.2 +-3 MPa, Rm +-0.5 %; VP-2 (v2.4): ReH in [true - 1.5, true + 1.5] MPa
-at sd = 0.5 MPa, and ReH equal to the independent M8 evaluation
-``synthetic.spec_reh`` in every seed; VP-8 / Ag: |Ag - Ag_true| <= 100 sqrt(2 n delta) pp with
+Tolerances (declared in advance): E +-2 %, ReH +-3 MPa, ReL +-2 MPa,
+Rp0.2 +-3 MPa, Rm +-0.5 %; ReH on noisy curves: ReH in [true - 1.5, true + 1.5] MPa
+at sd = 0.5 MPa, and ReH equal to the independent upper yield point evaluation
+``synthetic.spec_reh`` in every seed; Ag: |Ag - Ag_true| <= 100 sqrt(2 n delta) pp with
 delta = max(2e-4, 3 sigma/Rm) and n the generator's curvature parameter.
 
-Seeds: ``SEEDS`` per configuration (at least the spec's 100 for VP-2 and
-200 for VP-8; their pass rates on the first 100/200 seeds are reported too).
+Seeds: ``SEEDS`` per configuration (at least 100 for ReH on noisy curves and
+200 for Ag; their pass rates on the first 100/200 seeds are reported too).
 Rates come with a Clopper-Pearson 95 % interval. A rate below 99 % is an
-escalation item; tolerances are never loosened here.
+finding to be explained; tolerances are never loosened here.
 """
 
 from __future__ import annotations
@@ -40,7 +40,7 @@ pytestmark = pytest.mark.statistical
 
 SEEDS = 1000
 REQUIRED = 0.99
-NOISE_LEVELS_MPA = (0.25, 0.5, 1.0)  # VP-8: three noise levels
+NOISE_LEVELS_MPA = (0.25, 0.5, 1.0)  # Ag accuracy: three noise levels
 SEED_BASE = {("a", 0.25): 20_000, ("a", 0.5): 10_000, ("a", 1.0): 30_000, ("ro15", 0.5): 40_000}
 
 
@@ -85,7 +85,7 @@ def _checks() -> list[Check]:
         Check("E (a)", "a", 0.5, "e_gpa", ta.e_gpa, -0.02 * ta.e_gpa, 0.02 * ta.e_gpa),
         Check("E (RO n=15)", "ro15", 0.5, "e_gpa", tr.e_gpa, -0.02 * tr.e_gpa, 0.02 * tr.e_gpa),
         Check("ReH", "a", 0.5, "reh_mpa", ta.reh_mpa, -3.0, 3.0),
-        Check("VP-2 ReH in [true-1.5, true+1.5]", "a", 0.5, "reh_mpa", ta.reh_mpa, -1.5, 1.5),
+        Check("ReH in [true-1.5, true+1.5]", "a", 0.5, "reh_mpa", ta.reh_mpa, -1.5, 1.5),
         Check("ReL", "a", 0.5, "rel_mpa", ta.rel_mpa, -2.0, 2.0),
         Check("Rp0.2 (a, in plateau)", "a", 0.5, "rp02_mpa", ta.rp02_mpa, -3.0, 3.0),
         Check("Rp0.2 (RO n=15)", "ro15", 0.5, "rp02_mpa", tr.rp02_mpa, -3.0, 3.0),
@@ -95,11 +95,11 @@ def _checks() -> list[Check]:
     for sd in NOISE_LEVELS_MPA:
         tol = ag_tolerance_pp(ta, sd)
         checks.append(
-            Check(f"Ag VP-8 (a, sigma={sd:g})", "a", sd, "ag_percent", ta.ag_peak_percent, -tol, tol, 200)
+            Check(f"Ag (a, sigma={sd:g})", "a", sd, "ag_percent", ta.ag_peak_percent, -tol, tol, 200)
         )
     tol = ag_tolerance_pp(tr, 0.5)
     checks.append(
-        Check("Ag VP-8 (RO n=15, sigma=0.5)", "ro15", 0.5, "ag_percent", tr.ag_peak_percent, -tol, tol, 200)
+        Check("Ag (RO n=15, sigma=0.5)", "ro15", 0.5, "ag_percent", tr.ag_peak_percent, -tol, tol, 200)
     )
     return checks
 
@@ -137,9 +137,8 @@ def evaluate(check: Check) -> dict:
     }
 
 
-# Rates below 99 % found by T5 (Run 10); escalated, not loosened. See
-# .notes/tensile-workflow/evidence/T5/vp10.md. E5-1 (VP-2) was resolved by
-# method-spec v2.4 (two-sided +-1.5 MPa), so no check is escalated now.
+# Checks whose rate is below 99 %, by name, with the reason; a tolerance is never
+# loosened here. None at present.
 ESCALATED: dict[str, str] = {}
 
 
@@ -151,14 +150,14 @@ def _param(check: Check):
 
 
 @pytest.mark.parametrize("check", [_param(c) for c in CHECKS])
-def test_vp10_noisy_tolerance_is_met_in_99_percent_of_seeds(check):
+def test_noisy_tolerance_is_met_in_99_percent_of_seeds(check):
     outcome = evaluate(check)
     assert outcome["rate"] >= REQUIRED, _row(outcome)
 
 
 @functools.lru_cache(maxsize=None)
 def m8_agreement() -> dict:
-    """Implementation ReH versus the independent M8 evaluation, (a) sigma=0.5."""
+    """Implementation ReH versus the independent upper yield point evaluation, (a) sigma=0.5."""
     base = base_curve("a")
     first = SEED_BASE[("a", 0.5)]
     results, _ = runs("a", 0.5)
@@ -171,42 +170,42 @@ def m8_agreement() -> dict:
     return {"equal": equal, "below": below, "above": above}
 
 
-def test_vp2_reh_equals_the_m8_definition_in_every_seed():
-    # Separates the VP-2 outcome from implementation correctness.
+def test_reh_equals_the_independent_evaluation_in_every_seed():
+    # Separates the accuracy of ReH on noisy curves from the correctness of the implementation.
     assert m8_agreement()["equal"] == SEEDS
 
 
 # ---------------------------------------------------------------------------
-# R8-7: known method limitation, measured and recorded (method-spec v2.5)
+# A noisy plateau without upper peak: a known limitation of the method, measured and recorded
 # ---------------------------------------------------------------------------
 
-R8_7_SEEDS = 1000
-R8_7_SEED_BASE = {0.25: 60_000, 0.5: 50_000, 1.0: 70_000}
+NO_PEAK_SEEDS = 1000
+NO_PEAK_SEED_BASE = {0.25: 60_000, 0.5: 50_000, 1.0: 70_000}
 
 
-def test_r8_7_record_the_misclassification_of_a_noisy_plateau_without_upper_peak(capsys):
-    """Noisy M9 case (iv): how often does M7 report a spurious discontinuous yield?
+def test_record_the_misclassification_of_a_noisy_plateau_without_upper_peak(capsys):
+    """Case (iv) with noise: how often does the drop rule report a spurious discontinuous yield?
 
     This documents the rate and asserts no pass threshold: the limitation is
-    accepted by human decision (r11), and a prominence criterion is follow-up
-    F7. The expected classification is continuous, as in the noise-free case.
+    accepted and stated in the method notebook; a prominence criterion would
+    remove it. The expected classification is continuous, as in the noise-free case.
     """
     base = sy.discontinuous(upper_peak=False, serration=0.0)
     lines = []
-    for stress_sd, first in R8_7_SEED_BASE.items():
+    for stress_sd, first in NO_PEAK_SEED_BASE.items():
         results = [
             analyse_curve(*sy.noisy(base, seed, stress_sd=stress_sd).args())
-            for seed in range(first, first + R8_7_SEEDS)
+            for seed in range(first, first + NO_PEAK_SEEDS)
         ]
         spurious = [r.reh_mpa for r in results if r.yield_type == "discontinuous"]
         k = len(spurious)
-        lo, hi = clopper_pearson(k, R8_7_SEEDS)
-        rate = f"{k}/{R8_7_SEEDS} = {100 * k / R8_7_SEEDS:.1f} % (95 % CI [{100 * lo:.1f}, {100 * hi:.1f}] %)"
+        lo, hi = clopper_pearson(k, NO_PEAK_SEEDS)
+        rate = f"{k}/{NO_PEAK_SEEDS} = {100 * k / NO_PEAK_SEEDS:.1f} % (95 % CI [{100 * lo:.1f}, {100 * hi:.1f}] %)"
         reh = f"; spurious ReH {min(spurious):.2f} to {max(spurious):.2f} MPa (plateau 380 MPa)" if k else ""
         lines.append(f"- case (iv), sigma={stress_sd:g} MPa: classified discontinuous in {rate}{reh}")
     with capsys.disabled():
         print()
-        print("R8-7 (no pass threshold; plateau without upper peak, serration 0):")
+        print("Noisy plateau without upper peak (no pass threshold; serration 0):")
         print("\n".join(lines))
 
 
@@ -222,7 +221,7 @@ def _row(o: dict) -> str:
     )
 
 
-def test_vp10_summary_table(capsys):
+def test_summary_table(capsys):
     header = (
         "| check | seeds | pass rate | 95 % CI (Clopper-Pearson) | rate on first spec seeds "
         "| error interval | mean error | error range | NaN | verdict |\n"
@@ -246,7 +245,7 @@ def test_vp10_summary_table(capsys):
             )
         m8 = m8_agreement()
         print(
-            f"- VP-2 detail (a, sigma=0.5): implementation ReH equals the independent M8 "
+            f"- ReH detail (a, sigma=0.5): implementation ReH equals the independent upper yield point "
             f"evaluation in {m8['equal']}/{SEEDS} seeds; ReH < true in {m8['below']}, "
             f"ReH > true + 3 sd in {m8['above']}"
         )

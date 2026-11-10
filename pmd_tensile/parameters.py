@@ -1,10 +1,9 @@
-"""The analysis parameters as a JSON-able workflow input (decision D4).
+"""The method parameters, and their dictionary form as a JSON-able workflow input.
 
-The method parameters are the frozen dataclass
-:class:`pmd_tensile.analysis.AnalysisParameters`. Workflow inputs must be
-JSON-able (convention IC3), so the workflows take the parameters as a plain
-dictionary of field values instead; the node
-:func:`pmd_tensile.workflows.analysis_parameters` converts it with
+The method parameters are the frozen dataclass :class:`AnalysisParameters`.
+Workflow inputs are JSON-able, so the workflows take the parameters as a plain
+dictionary of field values; the node
+:func:`pmd_tensile.nodes.workflows.analysis_parameters` converts it with
 :func:`parameters_from_values`.
 
 The dictionary form:
@@ -19,10 +18,7 @@ The checks are on form, not on the method: unknown keys, wrong types,
 non-finite or negative numbers, integers below 1, ``f_lo >= f_hi``, an empty
 grid and a linearity window with ``lo >= hi`` are rejected with a
 ``TypeError`` or ``ValueError`` that names the field.
-
-The module is private, so that sim_atlas does not catalogue these plain
-functions or the default instance (an instance has no sim_atlas parser);
-notebooks reach them through :mod:`pmd_tensile.demo`."""
+"""
 
 from __future__ import annotations
 
@@ -38,40 +34,40 @@ from collections.abc import Mapping, Sequence
 
 @dataclasses.dataclass(frozen=True)
 class AnalysisParameters:
-    """Method parameters (method-spec v2 defaults). All thresholds are relative.
+    """Method parameters with the defaults of method version 3. All thresholds are relative.
 
     The nodes that use them take ``params`` (``None`` means these defaults).
     The workflows take them as a JSON-able dictionary instead, converted by the
-    node :func:`pmd_tensile.workflows.analysis_parameters` (decision D4).
+    node :func:`pmd_tensile.nodes.workflows.analysis_parameters`.
     """
 
-    f_lo: float = 0.10  # M4 window fractions of sigma_ref
+    f_lo: float = 0.10  # elastic window, fractions of the reference
     f_hi: float = 0.40
-    provisional_fraction_of_rm: float = 0.5  # M5 provisional reference = 0.5*Rm
-    min_elastic_points: int = 10  # M4
-    drop_rel: float = 0.005  # M7 d = max(drop_rel*M, k*s_n)
+    provisional_fraction_of_rm: float = 0.5  # provisional reference = 0.5 * highest force
+    min_elastic_points: int = 10  # samples needed in an elastic window
+    drop_rel: float = 0.005  # yield drop d = max(drop_rel * M, drop_noise_factor * s_n)
     drop_noise_factor: float = 5.0
-    peak_max_plastic_strain: float = 0.005  # M7
-    min_flow_plastic_strain: float = 0.0005  # M7 (0.05 %)
-    plateau_min_extent: float = 0.002  # M9 fallback to single_minimum
-    offset_plastic_strain: float = 0.002  # M10
-    ext_window_mm: float = 0.1  # M3
+    peak_max_plastic_strain: float = 0.005  # largest plastic strain at an upper yield point
+    min_flow_plastic_strain: float = 0.0005  # plastic flow after the peak (0.05 %)
+    plateau_min_extent: float = 0.002  # shorter plateaus give rel:single_minimum
+    offset_plastic_strain: float = 0.002  # plastic strain of the proof strength
+    ext_window_mm: float = 0.1  # crosshead travel of one extensometer check window
     ext_ratio_min: float = 0.05
     ext_jump: float = 1e-3
-    ext_end_fraction_of_a: float = 0.5  # M3 end check
-    band_rel_min: float = 2e-4  # M12
+    ext_end_fraction_of_a: float = 0.5  # valid strain below this fraction of A: ended early
+    band_rel_min: float = 2e-4  # smallest depth of the near-maximum band
     band_noise_factor: float = 3.0
-    window_grid_lo: tuple = (0.05, 0.10, 0.15)  # M15
+    window_grid_lo: tuple = (0.05, 0.10, 0.15)  # window grid of the sensitivity
     window_grid_hi: tuple = (0.30, 0.40, 0.50)
-    linearity_windows: tuple = ((0.05, 0.25), (0.25, 0.50))  # M15
+    linearity_windows: tuple = ((0.05, 0.25), (0.25, 0.50))  # windows of the linearity diagnostic
     rate_switch_proximity: float = 0.002  # strain distance for flag near_rate_switch
-    max_window_iterations: int = 20  # M5
+    max_window_iterations: int = 20  # iterations of the window for continuous yielding
     window_rel_tol: float = 1e-4
     e_window_range_max: float = 0.05  # flag e:window_sensitive above this relative range of E
 
 
 DEFAULT_PARAMETERS = AnalysisParameters()
-"""The method defaults (method-spec v2.6), equal to ``AnalysisParameters()``."""
+"""The method defaults, equal to ``AnalysisParameters()``."""
 
 _FIELDS = {field.name: field for field in dataclasses.fields(AnalysisParameters)}
 _GRID_FIELDS = ("window_grid_lo", "window_grid_hi")

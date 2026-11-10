@@ -1,8 +1,8 @@
-"""Analysis parameters as a workflow input (decision D4, follow-up TW-F5), offline (C5).
+"""Analysis parameters as a workflow input, offline.
 
 The runs use the local pmdco2 Turtle files and stubbed curve downloads with
 synthetic CSV bytes (see ``workflow_helpers``). The changed parameter is the
-proof-strength offset ``offset_plastic_strain`` (M10): for these
+proof-strength offset ``offset_plastic_strain`` (proof strength): for these
 discontinuously yielding curves it enters only Rp0.2 and its window range,
 so every other output must stay as it is.
 """
@@ -195,6 +195,7 @@ def test_specimen_workflow_takes_the_parameters(curves):
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.slow
 def test_run_graph_records_the_parameters_used(default_run, changed_run):
     for result, expected in ((default_run, DEFAULT_PARAMETERS), (changed_run, parameters_from_values(CHANGED))):
         graph = kg.run_knowledge_graph(result.batch_run)

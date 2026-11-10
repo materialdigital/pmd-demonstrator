@@ -3,7 +3,7 @@
 The pmdco3 builders write a structural fixture: it has the PMDco3/TTO modelling
 pattern, with made-up numbers. The curve helpers serve synthetic CSV bytes in
 the layout of the S355 curve files (``;`` delimiter, ``,`` decimal mark, a
-header row and a unit row). The stresses are method-spec §14 (a) with noise,
+header row and a unit row). The stresses are the synthetic case (a) with noise,
 scaled to each specimen's S0; their numbers are made up, not lab data.
 """
 
@@ -161,7 +161,7 @@ def pmdco3_twin_of_pmdco2(specimen_ids, tmp_path) -> dict:
 
 
 def synthetic_csv(s0_mm2: float, seed: int) -> bytes:
-    """§14 (a) with noise, as CSV bytes in the S355 layout, force scaled to ``s0_mm2``."""
+    """case (a) with noise, as CSV bytes in the S355 layout, force scaled to ``s0_mm2``."""
     curve = sy.noisy(sy.reference_a(), seed)
     force_kn = curve.force_n / curve.s0_mm2 * s0_mm2 / 1000.0
     time_s = np.arange(len(curve)) * 0.1

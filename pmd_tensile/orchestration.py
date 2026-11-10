@@ -1,11 +1,10 @@
-"""Builders and the two-stage run of the tensile workflows (private helpers).
+"""Building and running the tensile workflows, and the analysis of one curve by direct calls.
 
-:mod:`pmd_tensile.workflows` holds the nodes and macros. The functions here
-turn them into runnable ``pyiron_workflow`` objects, assemble the batch
-workflow (one per-specimen node per specimen ID, see the docstring of
-``workflows``) and run both stages. They are private so that sim_atlas does
-not catalogue them as nodes; notebooks reach them through
-:mod:`pmd_tensile.demo`.
+:mod:`pmd_tensile.nodes.workflows` holds the nodes and macros. The functions
+here turn them into runnable ``pyiron_workflow`` objects, assemble the batch
+workflow (one per-specimen node per specimen ID) and run both stages;
+:class:`SpecimenAnalysis` collects the values and diagnostics of one
+specimen, and :func:`analyse_curve` calls the analysis nodes directly.
 """
 
 from __future__ import annotations
@@ -98,7 +97,7 @@ def build_batch_workflow(specimen_ids: Sequence[str], label: str = "tensile_batc
     ``specimen_id_<i>`` (see :func:`batch_inputs`), so the recipe holds no
     data-specific values. Inputs: ``profile_id``, ``source``,
     ``curve_locator``, ``parameters`` and ``specimen_id_0`` ... Outputs: ``results``
-    (one row per specimen), ``orientation_summary`` (method-spec §12),
+    (one row per specimen), ``orientation_summary`` (statistics per orientation),
     ``comparison`` (all specimens) and ``rows`` (the gathered rows). A repeated specimen ID raises ``ValueError``.
 
     Every input is required, ``curve_locator`` and ``parameters`` included,

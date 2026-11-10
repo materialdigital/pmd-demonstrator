@@ -1,4 +1,4 @@
-"""The offline guard of ``conftest.py`` (R8-4).
+"""The offline guard of ``conftest.py``.
 
 Each attempt connects to a live listener on the loopback interface, so only
 the guard can make it fail, and no traffic leaves the machine.

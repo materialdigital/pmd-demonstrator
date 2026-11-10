@@ -1,9 +1,8 @@
-"""Specification-based tests of the non-curve analysis functions (T5).
+"""Specification-based tests of the analysis functions that do not need a whole curve.
 
-the least-squares fit of the elastic line (M4, M16, VP-6), s0_scatter (M14), A and Z (M13),
-compare_with_reported (§13), summarize_by_group (§12), check_time_order (M1)
-and the module boundary of acceptance criterion 2. Expected values are
-analytic.
+The least-squares fit of the elastic line, s0_scatter, A and Z,
+compare_with_reported, summarize_by_group, check_time_order, and the module
+boundary of the ontology-agnostic analysis. Expected values are analytic.
 """
 
 from __future__ import annotations
@@ -101,7 +100,7 @@ def test_elastic_fit_ignores_non_finite_samples():
     assert fit["e_gpa"] == pytest.approx(205.0, rel=1e-12)
 
 
-def test_elastic_fit_vp6_analytic_slope_of_a_quadratic_law():
+def test_elastic_fit_analytic_slope_of_a_quadratic_law():
     q = 2.44e-10
     s = np.arange(3.0, 400.0, 2.0)
     e = E0 + s / E + q * s**2
@@ -113,7 +112,7 @@ def test_elastic_fit_vp6_analytic_slope_of_a_quadratic_law():
         assert fit["intercept_mpa"] == pytest.approx(intercept, rel=1e-9)
 
 
-def test_elastic_fit_m16_standard_error():
+def test_elastic_fit_standard_error():
     rng = np.random.default_rng(11)
     s_true = np.arange(41.0, 160.0, 2.0)
     e = E0 + s_true / E
@@ -131,7 +130,7 @@ def test_elastic_fit_m16_standard_error():
 
 
 @pytest.mark.parametrize("pattern", ["alternating", "slow"])
-def test_elastic_fit_m16_lag1_autocorrelation_and_n_eff(pattern):
+def test_elastic_fit_lag1_autocorrelation_and_n_eff(pattern):
     e = E0 + np.linspace(40.0, 160.0, 60) / E
     i = np.arange(60)
     wiggle = (-1.0) ** i if pattern == "alternating" else np.sin(2 * np.pi * i / 30.0)
@@ -147,7 +146,7 @@ def test_elastic_fit_m16_lag1_autocorrelation_and_n_eff(pattern):
 
 
 # ---------------------------------------------------------------------------
-# s0_scatter (M14) and its exact propagation (acceptance criterion 5)
+# s0_scatter and its exact propagation
 
 
 def test_s0_scatter_three_measurements():
@@ -171,7 +170,7 @@ def test_s0_scatter_needs_two_measurements(measurements):
 
 
 def test_s0_spread_propagates_to_the_relative_stress_uncertainty():
-    # M14: u_rel(X) = u_rel(S0) for every stress-based X, strains unaffected.
+    # S0 scatter: u_rel(X) = u_rel(S0) for every stress-based X, strains unaffected.
     c = sy.reference_a()
     u, _, _ = s0_scatter(c.s0_mm2, [79.9, 80.0, 80.1])
     base = analyse_curve(*c.args())
@@ -184,7 +183,7 @@ def test_s0_spread_propagates_to_the_relative_stress_uncertainty():
 
 
 # ---------------------------------------------------------------------------
-# A and Z (M13)
+# A and Z
 
 
 def test_elongation_after_fracture():
@@ -214,7 +213,7 @@ def test_reduction_of_area_missing_input(s0, su):
 
 
 # ---------------------------------------------------------------------------
-# compare_with_reported (§13)
+# compare_with_reported
 
 QUANTITIES = ("fm_n", "rm_mpa", "reh_mpa", "rp02_mpa", "e_gpa", "a_percent", "z_percent")
 LAB = ReportedProperties(
@@ -328,7 +327,7 @@ def test_lab_resolutions_fit_the_s355_lab_values(pmdco2_source):
 
 
 # ---------------------------------------------------------------------------
-# summarize_by_group (§12)
+# summarize_by_group
 
 
 def test_summarize_by_group():
@@ -369,7 +368,7 @@ def test_summarize_by_group():
 
 
 # ---------------------------------------------------------------------------
-# M1 time order
+# sample checks time order
 
 
 def test_check_time_order():
@@ -379,7 +378,7 @@ def test_check_time_order():
 
 
 # ---------------------------------------------------------------------------
-# Module boundary (acceptance criterion 2)
+# Module boundary: the analysis imports nothing ontology-aware
 
 ANALYSIS_DIR = Path(analysis_package.__file__).parent
 ANALYSIS_FILES = sorted(ANALYSIS_DIR.glob("*.py"))

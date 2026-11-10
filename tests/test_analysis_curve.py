@@ -1,14 +1,14 @@
-"""Specification-based tests of ``analyse_curve`` (method-spec v2.3, T5).
+"""Specification-based tests of ``analyse_curve``.
 
 Every expected value comes from the synthetic generator's declared truth
 (``tests/synthetic.py``) or from the specification text, never from the
-implementation's output. Tolerances are those of method-spec §14:
+implementation's output. Tolerances are those of the generator's specification:
 
 - noise-free: E +-0.1 % (or the analytic slope), ReH the exact sample value,
   ReL +-0.5 MPa, Rp0.2 +-0.5 MPa, Rm/Fm exact, Ag +-0.05 percentage points
   at the declared mid-point, k_ext +-1 crosshead window;
 - noisy (sigma 0.5 MPa, e 2e-6): E +-2 %, ReH +-3 MPa, ReL +-2 MPa,
-  Rp0.2 +-3 MPa, Rm +-0.5 %, Ag per VP-8 (+-100*sqrt(2 n delta) pp).
+  Rp0.2 +-3 MPa, Rm +-0.5 %, Ag within +-100*sqrt(2 n delta) pp.
 
 "Exact" is checked to a relative 1e-12, the floating-point resolution of
 F/S0.
@@ -53,12 +53,10 @@ FLAG_NAMES = (
     "near_rate_switch",
     "missing_input",
     "no_s0_spread",
-    # R8-5, analysis-api.md amendment of 2026-11-03, 22:22 CET.
     "not_reached",
     "no_maximum_force",
     "no_elastic_modulus",
     "no_complete_window",
-    # Spec v2.6, analysis-api.md amendment of 2026-11-03, 23:30 CET.
     "no_return_to_reh",
     # Method version 3.
     "window_sensitive",
@@ -118,10 +116,10 @@ def flat(r: SpecimenAnalysis) -> dict:
 
 
 def ag_tolerance_pp(truth: sy.Truth, stress_sd: float) -> float:
-    """VP-8 tolerance, declared before any run: 100*sqrt(2 n delta) pp.
+    """Tolerance of Ag, declared before any run: 100*sqrt(2 n delta) pp.
 
     n is the generator's curvature parameter of ln s at the maximum and
-    delta = max(2e-4, 3*sigma/Rm) the M12 band depth for the true noise.
+    delta = max(2e-4, 3*sigma/Rm) the depth of the near-maximum band for the true noise.
     """
     delta = max(sy.BAND_REL_MIN, 3.0 * stress_sd / truth.rm_mpa)
     return 100.0 * math.sqrt(2.0 * truth.hardening_n * delta)
@@ -138,7 +136,7 @@ def assert_k_ext_within_one_window(r: SpecimenAnalysis, c: sy.SyntheticCurve, ex
 
 
 # ---------------------------------------------------------------------------
-# Reference case (a) = M9 case (i), noise-free
+# Reference case (a) = case (i) of the lower-yield rule, noise-free
 
 
 def test_reference_a_values():
@@ -161,22 +159,22 @@ def test_reference_a_values():
 
 
 def test_reference_a_flags():
-    # M10: the Rp0.2 crossing lies in the yield range [i_p, i_h].
+    # proof strength: the Rp0.2 crossing lies in the yield range [i_p, i_h].
     assert flag_set(result("a")) == {"rp02:in_yield_plateau"}
 
 
 def test_reference_a_elastic_fit_details():
     r = result("a")
-    # M4: window [0.10, 0.40] * ReH = [40, 160] MPa; odd stresses 41..159.
+    # Elastic window [0.10, 0.40] * ReH = [40, 160] MPa; odd stresses 41..159.
     assert r.elastic.window_mpa == pytest.approx((40.0, 160.0), rel=EXACT)
     assert r.elastic.n == 60
     assert r.elastic.r2 == pytest.approx(1.0, abs=1e-12)
-    assert r.noise_mpa == pytest.approx(0.0, abs=1e-9)  # M5: s_n of an exact line
+    assert r.noise_mpa == pytest.approx(0.0, abs=1e-9)  # provisional line: s_n of an exact line
     assert -1000.0 * r.e_gpa * r.strain_origin == pytest.approx(-sy.E_MPA * curve("a").e0, rel=1e-9)
 
 
 def test_window_sensitivity_is_zero_on_an_exactly_linear_curve():
-    # Acceptance criterion 5 / M15: every window gives the same E.
+    # Window sensitivity: every window gives the same E.
     r = result("a")
     lo, hi = r.e_min_gpa, r.e_max_gpa
     assert lo == pytest.approx(205.0, rel=1e-9) and hi == pytest.approx(205.0, rel=1e-9)
@@ -187,7 +185,7 @@ def test_window_sensitivity_is_zero_on_an_exactly_linear_curve():
 
 
 # ---------------------------------------------------------------------------
-# M9 ReL reference cases (VP-3)
+# Reference cases of the lower-yield rule
 
 
 @pytest.mark.parametrize(
@@ -199,7 +197,7 @@ def test_window_sensitivity_is_zero_on_an_exactly_linear_curve():
         ("iii", 372.0, True),  # (iii) monotone rise, no plateau
     ],
 )
-def test_m9_rel_cases(name, expected_rel, single_minimum):
+def test_lower_yield_reference_cases(name, expected_rel, single_minimum):
     r = result(name)
     assert curve(name).truth.rel_mpa == expected_rel
     assert r.yield_type == "discontinuous"
@@ -208,7 +206,7 @@ def test_m9_rel_cases(name, expected_rel, single_minimum):
     assert ("rel:single_minimum" in r.flags) is single_minimum
 
 
-def test_m9_case_iv_plateau_without_upper_peak_is_continuous():
+def test_case_iv_plateau_without_upper_peak_is_continuous():
     c, r = curve("iv"), result("iv")
     assert r.yield_type == "continuous"
     assert_nan(r.reh_mpa)
@@ -221,7 +219,7 @@ def test_m9_case_iv_plateau_without_upper_peak_is_continuous():
 
 
 @pytest.mark.parametrize("seed", NOISY_SEEDS)
-def test_m9_case_v_noise_free_and_noisy_rel_agree(seed):
+def test_case_v_noise_free_and_noisy_rel_agree(seed):
     noisy = run(sy.noisy(curve("a"), seed))
     assert noisy.rel_mpa == pytest.approx(result("a").rel_mpa, abs=NOISY["rel"])
 
@@ -271,10 +269,10 @@ def test_too_few_elastic_points():
     assert_nan(r.e_gpa)
     assert "e:insufficient_elastic_points" in r.flags
     assert r.elastic.n < 10
-    # Everything that needs E or the strain origin is undefined (M6, M10, M12).
+    # Everything that needs E or the strain origin is undefined (Rp0.2, Ag, Agt).
     for value in (r.rp02_mpa, r.ag_percent, r.agt_percent, r.strain_origin):
         assert_nan(value)
-    # Force-only properties are unaffected (M1).
+    # Force-only properties are unaffected.
     assert r.fm_n == pytest.approx(c.truth.fm_n, rel=EXACT)
     assert r.rm_mpa == pytest.approx(c.truth.rm_mpa, rel=EXACT)
 
@@ -298,8 +296,8 @@ def test_noisy_reference_a_within_the_noisy_tolerances(seed):
 
 
 @pytest.mark.parametrize("seed", NOISY_SEEDS)
-def test_noisy_reh_is_the_m8_sample_value(seed):
-    # M7/M8 on raw samples: ReH = s(i_p), i_p = argmax s[0..j*], evaluated
+def test_noisy_reh_is_the_raw_sample_value(seed):
+    # Upper yield point on raw samples: ReH = s(i_p), i_p = argmax s[0..j*], evaluated
     # independently from the spec text on the same noisy samples.
     c = sy.noisy(curve("a"), seed)
     reh, _ = sy.spec_reh(c)
@@ -319,7 +317,7 @@ def test_noisy_ramberg_osgood_within_the_noisy_tolerances(seed):
 
 
 # ---------------------------------------------------------------------------
-# VP-1 bootstrap independence
+# Independence of the provisional window
 
 
 PROVISIONAL = ("e0_gpa", "intercept0_mpa", "provisional.window_mpa", "provisional.n",
@@ -341,16 +339,16 @@ def _assert_identical(r1: SpecimenAnalysis, r2: SpecimenAnalysis, *, tolerant=()
 
 @pytest.mark.parametrize("name", ["a", "iv"])
 @pytest.mark.parametrize("fraction", [0.4, 0.6])
-def test_vp1_outputs_do_not_depend_on_the_provisional_window(name, fraction):
+def test_outputs_do_not_depend_on_the_provisional_window(name, fraction):
     # Exactly linear provisional window, no noise: every output is identical.
     params = AnalysisParameters(provisional_fraction_of_rm=fraction)
     _assert_identical(result(name), run(curve(name), params=params))
 
 
 @pytest.mark.parametrize("fraction", [0.4, 0.6])
-def test_vp1_continuous_fixed_point_is_independent_of_the_start(fraction):
-    # M5 step 4 stops at a relative E change < 1e-4, so sigma_ref (and the
-    # window bounds) may depend on the start below that; s_n is by M5 step 2
+def test_continuous_fixed_point_is_independent_of_the_start(fraction):
+    # The window iteration stops at a relative E change < 1e-4, so sigma_ref (and the
+    # window bounds) may depend on the start below that; s_n is by definition
     # a statistic of the provisional window itself. Everything else is
     # identical.
     base = result("ro15")
@@ -362,9 +360,9 @@ def test_vp1_continuous_fixed_point_is_independent_of_the_start(fraction):
 
 
 @pytest.mark.parametrize("fraction", [0.4, 0.6])
-def test_vp1_noisy_property_values_do_not_depend_on_the_provisional_window(fraction):
-    # With noise, s_n (M5 step 2) and hence delta_F (M12) change with the
-    # provisional window, so Ag is not covered here (see the T5 report).
+def test_noisy_property_values_do_not_depend_on_the_provisional_window(fraction):
+    # With noise, s_n and hence the band depth delta_F change with the
+    # provisional window, so Ag is not covered here.
     c = sy.noisy(curve("a"), 0)
     base = run(c)
     r = run(c, params=AnalysisParameters(provisional_fraction_of_rm=fraction))
@@ -373,7 +371,7 @@ def test_vp1_noisy_property_values_do_not_depend_on_the_provisional_window(fract
 
 
 # ---------------------------------------------------------------------------
-# VP-4 S0 scaling (M14 exact propagation)
+# S0 scaling: stresses scale exactly with 1/S0
 
 STRESS_FIELDS = (
     "noise_mpa", "e_gpa", "reh_mpa", "rel_mpa", "rp02_mpa", "rm_mpa", "e0_gpa", "intercept0_mpa",
@@ -398,7 +396,7 @@ IDENTICAL_FIELDS = (
 )
 
 
-def test_vp4_field_classification_covers_every_output():
+def test_field_classification_covers_every_output():
     classified = set(
         STRESS_FIELDS + STRESS_PAIRS + INVARIANT_FIELDS + INVARIANT_PAIRS + IDENTICAL_FIELDS
     )
@@ -415,7 +413,7 @@ def _scaled_pair(c: sy.SyntheticCurve, delta: float):
 
 @pytest.mark.parametrize("delta", [1e-3, 0.1])
 @pytest.mark.parametrize("which", ["a", "a-noisy", "ro5"])
-def test_vp4_stresses_scale_exactly_with_s0(which, delta):
+def test_stresses_scale_exactly_with_s0(which, delta):
     c = sy.noisy(curve("a"), 0) if which == "a-noisy" else curve(which)
     base, scaled = _scaled_pair(c, delta)
     factor = 1.0 / (1.0 + delta)
@@ -438,12 +436,12 @@ def test_vp4_stresses_scale_exactly_with_s0(which, delta):
 
 
 # ---------------------------------------------------------------------------
-# VP-5 origin invariance
+# Invariance under a shift of the strain origin
 
 
 @pytest.mark.parametrize("name", ["a", "ro15"])
 @pytest.mark.parametrize("shift", [0.0, 5e-4, 2e-3, "toe"])
-def test_vp5_strain_origin_invariance(name, shift):
+def test_strain_origin_invariance(name, shift):
     c0 = curve(name)
     c = sy.with_toe(c0) if shift == "toe" else sy.with_strain_shift(c0, shift)
     base, r = result(name), run(c)
@@ -457,7 +455,7 @@ def test_vp5_strain_origin_invariance(name, shift):
 
 
 # ---------------------------------------------------------------------------
-# VP-6 analytic window slopes for e = s/E + q s^2 (M4, M15)
+# Analytic window slopes for e = s/E + q s^2
 
 
 def _analytic_slope(c: sy.SyntheticCurve, f_lo: float, f_hi: float, ref: float) -> float:
@@ -465,13 +463,13 @@ def _analytic_slope(c: sy.SyntheticCurve, f_lo: float, f_hi: float, ref: float) 
     return sy.ols(s, e)[0] / 1000.0
 
 
-def test_vp6_final_fit_matches_the_analytic_window_slope():
+def test_final_fit_matches_the_analytic_window_slope():
     c, r = curve("quadratic"), result("quadratic")
     assert r.reh_mpa == pytest.approx(400.0, rel=EXACT)  # sigma_ref of the windows
     assert r.e_gpa == pytest.approx(_analytic_slope(c, 0.10, 0.40, 400.0), rel=1e-9)
 
 
-def test_vp6_window_grid_range_matches_the_analytic_slopes():
+def test_window_grid_range_matches_the_analytic_slopes():
     c, r = curve("quadratic"), result("quadratic")
     slopes = [
         _analytic_slope(c, lo, hi, 400.0)
@@ -483,7 +481,7 @@ def test_vp6_window_grid_range_matches_the_analytic_slopes():
     assert r.e_max_gpa == pytest.approx(max(slopes), rel=1e-9)
 
 
-def test_vp6_linearity_diagnostic_matches_the_analytic_slopes():
+def test_linearity_diagnostic_matches_the_analytic_slopes():
     c, r = curve("quadratic"), result("quadratic")
     e1 = _analytic_slope(c, 0.05, 0.25, 400.0)
     e2 = _analytic_slope(c, 0.25, 0.50, 400.0)
@@ -495,7 +493,7 @@ def test_vp6_linearity_diagnostic_matches_the_analytic_slopes():
 
 
 # ---------------------------------------------------------------------------
-# VP-7 extensometer end modes (M1-M3)
+# Ways the extensometer ends
 
 SPEEDS_MM_S = (0.02, 0.5)
 
@@ -508,17 +506,17 @@ def speed_base(speed: float) -> sy.SyntheticCurve:
 
 @pytest.mark.parametrize("speed", SPEEDS_MM_S)
 @pytest.mark.parametrize("mode", ["freeze", "nan", "zero"])
-def test_vp7_extensometer_removal_is_detected(mode, speed):
+def test_extensometer_removal_is_detected(mode, speed):
     base_curve = speed_base(speed)
     c = sy.extensometer_end(base_curve, mode)
     base, r = run(base_curve), run(c, a_percent=25.0)
     assert_k_ext_within_one_window(r, c, c.truth.k_ext)
     assert r.k_ext < len(c)
-    # Ag/Agt are evaluated beyond k_ext (M2, M12).
+    # Ag/Agt would need strain beyond k_ext.
     assert_nan(r.ag_percent)
     assert_nan(r.agt_percent)
     assert {"ag:extensometer_invalid", "agt:extensometer_invalid"} <= flag_set(r)
-    # Independent end check (M3): 0.039 < 0.5 * 25 %.
+    # Independent end check: 0.039 < 0.5 * 25 %.
     assert "extensometer:extensometer_ended_early" in r.flags
     # Force-only properties and strain properties before removal unchanged.
     assert r.fm_n == base.fm_n
@@ -528,17 +526,17 @@ def test_vp7_extensometer_removal_is_detected(mode, speed):
 
 
 @pytest.mark.parametrize("speed", SPEEDS_MM_S)
-def test_vp7_nan_tail_is_counted_as_dropped_strain(speed):
+def test_nan_tail_is_counted_as_dropped_strain(speed):
     c = sy.extensometer_end(speed_base(speed), "nan")
     r = run(c)
     assert r.dropped.strain == len(c) - c.truth.k_ext
     assert r.dropped.force == 0
-    assert r.k_ext <= c.truth.k_ext  # M1: the first non-finite strain ends it
+    assert r.k_ext <= c.truth.k_ext  # the first non-finite strain ends it
 
 
 @pytest.mark.parametrize("speed", SPEEDS_MM_S)
-def test_vp7_crosshead_substitution_is_not_detected(speed):
-    # Documented residual risk (M3, A1): a strain channel continued from the
+def test_crosshead_substitution_is_not_detected(speed):
+    # Documented residual risk: a strain channel continued from the
     # crosshead cannot be told apart from a valid extensometer.
     c = sy.extensometer_end(speed_base(speed), "crosshead")
     r = run(c, a_percent=25.0)
@@ -548,7 +546,7 @@ def test_vp7_crosshead_substitution_is_not_detected(speed):
 
 
 @pytest.mark.parametrize("speed", SPEEDS_MM_S)
-def test_vp7_hold_is_not_detected(speed):
+def test_hold_is_not_detected(speed):
     c = sy.with_hold(speed_base(speed))
     r, t = run(c, a_percent=25.0), c.truth
     assert r.k_ext == len(c)
@@ -558,7 +556,7 @@ def test_vp7_hold_is_not_detected(speed):
     assert r.rel_mpa == pytest.approx(t.rel_mpa, abs=REL_TOL_MPA)
 
 
-def test_vp7_temporary_flat_strain_is_not_detected():
+def test_temporary_flat_strain_is_not_detected():
     c = sy.with_temporary_flat_strain(curve("a"))
     r, t = run(c), c.truth
     assert r.k_ext == len(c)
@@ -569,8 +567,8 @@ def test_vp7_temporary_flat_strain_is_not_detected():
     assert r.ag_percent == pytest.approx(t.ag_percent, abs=AG_TOL_PP)
 
 
-def test_m1_single_nan_strain_ends_the_extensometer():
-    # M1: "the first non-finite e after a finite e marks extensometer end".
+def test_single_nan_strain_ends_the_extensometer():
+    # "The first non-finite e after a finite e marks the extensometer end."
     c0 = curve("a")
     k = c0.index_at_plastic_strain(0.05)
     strain = c0.strain.copy()
@@ -583,7 +581,7 @@ def test_m1_single_nan_strain_ends_the_extensometer():
     assert "ag:extensometer_invalid" in r.flags
 
 
-def test_m2_rp02_beyond_k_ext_is_nan_and_flagged():
+def test_rp02_beyond_k_ext_is_nan_and_flagged():
     # With L0 = 200 mm one 0.1 mm crosshead window spans 5e-4 strain, so a
     # removal between ReH (p = 2.9e-4) and the Rp0.2 crossing (p = 0.002)
     # leaves ReH and E valid. The crosshead is rescaled consistently (r = 1).
@@ -610,8 +608,8 @@ def _long_gauge(c: sy.SyntheticCurve) -> sy.SyntheticCurve:
     [0.003, 0.010],
     ids=["extent-below-plateau-min-extent", "extent-above-plateau-min-extent"],
 )
-def test_m2_plateau_beyond_k_ext_gives_nan_rel(mode, at_plastic_strain):
-    # R8-2: the extensometer ends inside the plateau (it runs to p = 0.015).
+def test_plateau_beyond_k_ext_gives_nan_rel(mode, at_plastic_strain):
+    # The extensometer ends inside the plateau (it runs to p = 0.015).
     # ReL is neither the transient minimum nor a plateau value.
     c = sy.extensometer_end(_long_gauge(curve("a")), mode, at_plastic_strain=at_plastic_strain)
     r = run(c)
@@ -623,7 +621,7 @@ def test_m2_plateau_beyond_k_ext_gives_nan_rel(mode, at_plastic_strain):
     assert r.fm_n == pytest.approx(c.truth.fm_n, rel=EXACT)
 
 
-def test_m2_extensometer_ending_after_the_plateau_keeps_rel():
+def test_extensometer_ending_after_the_plateau_keeps_rel():
     # Ends in the hardening rise, above the band: the plateau is complete.
     # k_ext is the start of a crosshead window (2e-3 strain at L0 = 50 mm), so
     # the removal is placed more than one window after the plateau.
@@ -634,7 +632,7 @@ def test_m2_extensometer_ending_after_the_plateau_keeps_rel():
     assert "rel:extensometer_invalid" not in r.flags
 
 
-def test_m1_non_finite_forces_do_not_change_fm():
+def test_non_finite_forces_do_not_change_fm():
     c0 = curve("a")
     force = c0.force_n.copy()
     idx = [c0.index_at_plastic_strain(p) for p in (0.03, 0.05, 0.2)]
@@ -645,16 +643,16 @@ def test_m1_non_finite_forces_do_not_change_fm():
     assert r.rel_mpa == pytest.approx(c0.truth.rel_mpa, abs=REL_TOL_MPA)
 
 
-def test_m3_extensometer_ended_early_is_not_raised_for_a_full_record():
+def test_extensometer_ended_early_is_not_raised_for_a_full_record():
     r = run(curve("a"), a_percent=25.0)
     assert not any(f.startswith("extensometer:") for f in r.flags)
 
 
 # ---------------------------------------------------------------------------
-# VP-8 near the maximum (deterministic parts)
+# Ag near the maximum (deterministic parts)
 
 
-def test_vp8_exact_flat_maximum_gives_its_midpoint():
+def test_exact_flat_maximum_gives_its_midpoint():
     c, r = curve("flat-top"), result("flat-top")
     p1, p2 = 0.12, 0.16
     assert r.ag_percent == pytest.approx(100.0 * (p1 + p2) / 2, abs=AG_TOL_PP)
@@ -662,8 +660,8 @@ def test_vp8_exact_flat_maximum_gives_its_midpoint():
     assert r.fm_n == pytest.approx(c.truth.fm_n, rel=EXACT)
 
 
-def test_vp8_reh_above_the_post_yield_maximum_gives_fm_per_m11():
-    # §8 v2.2/v2.3: the stress never returns to ReH but later rises above
+def test_reh_above_the_post_yield_maximum_gives_fm_after_yielding():
+    # The stress never returns to ReH but later rises above
     # the plateau band + d; Fm is the highest sample after that rise.
     c, r = curve("rise-below-reh"), result("rise-below-reh")
     t = c.truth
@@ -677,7 +675,7 @@ def test_vp8_reh_above_the_post_yield_maximum_gives_fm_per_m11():
 
 
 @pytest.mark.parametrize("phase", [0.0, 0.5])
-def test_m11_rise_above_the_band_with_off_vertex_serrations(phase):
+def test_rise_above_the_band_with_off_vertex_serrations(phase):
     c = sy.discontinuous(rm=395.0, ag_p=0.06, p_end=0.12, serration_phase=phase)
     r = run(c)
     assert r.fm_n == pytest.approx(c.truth.fm_n, rel=EXACT)
@@ -685,7 +683,7 @@ def test_m11_rise_above_the_band_with_off_vertex_serrations(phase):
 
 
 # ---------------------------------------------------------------------------
-# §8 edge cases: no work hardening
+# Edge cases: no work hardening
 
 
 def _assert_no_work_hardening(c: sy.SyntheticCurve, r: SpecimenAnalysis) -> None:
@@ -710,7 +708,7 @@ def test_no_work_hardening_plateau(transient, phase):
 
 
 def test_no_work_hardening_after_transient_dip_and_flat_serrated_plateau():
-    # v2.3: work hardening needs sigma > 2P - ReL + d. The serrated plateau
+    # Work hardening needs sigma > 2P - ReL + d. The serrated plateau
     # (extremes between samples) never exceeds that, so Fm is NaN and ReL is
     # the plateau minimum, despite the transient dip lowering P.
     c = sy.discontinuous(transient_min=372.0, hardening=None, plateau_end_p=0.03, serration_phase=0.5)
@@ -718,9 +716,9 @@ def test_no_work_hardening_after_transient_dip_and_flat_serrated_plateau():
 
 
 # ---------------------------------------------------------------------------
-# §8 v2.5: terminal force drop in the no-return branch (R8-1)
+# Edge case: terminal force drop when the stress never returns to ReH
 #
-# Without a return to ReH, the M7 search threshold is 0.5*ReH = 200 MPa. An
+# Without a return to ReH, the search threshold of the drop is 0.5*ReH = 200 MPa. An
 # abrupt drop has no sample between that threshold and the plateau.
 
 
@@ -741,7 +739,7 @@ def _assert_same_values(with_tail: SpecimenAnalysis, without_tail: SpecimenAnaly
 
 
 @pytest.mark.parametrize("phase", [0.0, 0.5])
-def test_v2_5_abrupt_terminal_drop_leaves_rel_and_fm_unchanged(phase):
+def test_abrupt_terminal_drop_leaves_rel_and_fm_unchanged(phase):
     c = sy.discontinuous(rm=395.0, ag_p=0.06, p_end=0.12, serration_phase=phase)
     tailed = sy.with_terminal_drop(c, first_mpa=190.0)
     r = run(tailed)
@@ -752,7 +750,7 @@ def test_v2_5_abrupt_terminal_drop_leaves_rel_and_fm_unchanged(phase):
 
 
 @pytest.mark.parametrize("seed", NOISY_SEEDS)
-def test_v2_5_abrupt_terminal_drop_on_a_noisy_curve(seed):
+def test_abrupt_terminal_drop_on_a_noisy_curve(seed):
     c = sy.discontinuous(rm=395.0, ag_p=0.06, p_end=0.12)
     noisy = sy.noisy(c, seed)
     # Appended to the noisy samples, so both runs share the same pre-drop noise.
@@ -767,7 +765,7 @@ def test_v2_5_abrupt_terminal_drop_on_a_noisy_curve(seed):
 
 
 @pytest.mark.parametrize("transient", [None, 372.0], ids=["no-dip", "dip"])
-def test_v2_5_no_work_hardening_with_abrupt_terminal_drop(transient):
+def test_no_work_hardening_with_abrupt_terminal_drop(transient):
     c = sy.discontinuous(
         transient_min=transient, hardening=None, plateau_end_p=0.03, serration_phase=0.5
     )
@@ -778,7 +776,7 @@ def test_v2_5_no_work_hardening_with_abrupt_terminal_drop(transient):
     _assert_same_values(r, run(c))
 
 
-def test_v2_5_remainder_ends_at_the_last_sample_above_the_threshold():
+def test_remainder_ends_at_the_last_sample_above_the_threshold():
     # The 205 MPa sample stays in the remainder (ReL incl. transient); the
     # 5 MPa sample after it does not.
     c = sy.discontinuous(rm=395.0, ag_p=0.06, p_end=0.12)
@@ -787,20 +785,20 @@ def test_v2_5_remainder_ends_at_the_last_sample_above_the_threshold():
 
 
 def test_terminal_drop_does_not_change_a_curve_that_returns_to_reh():
-    # The regular M11 branch has no truncation: Y ends at the return to ReH.
+    # With a return to ReH there is no truncation: Y ends at the return to ReH.
     c = curve("a")
     _assert_same_values(run(sy.with_terminal_drop(c, first_mpa=250.0, n=40)), result("a"))
 
 
-# v2.5 truncates only below 0.5*Rm_provisional, so a gradual drop keeps samples
+# The truncation is only below 0.5 * the highest force, so a gradual drop keeps samples
 # above it and ReL and Fm change. The human accepted this limit, visibly flagged.
-@pytest.mark.xfail(strict=True, reason="known limit, spec v2.6")
+@pytest.mark.xfail(strict=True, reason="known limit of the method")
 @pytest.mark.parametrize(
     "first_mpa, n",
     [(388.5, 60), (350.0, 3)],
     ids=["linear-drop-of-the-r8-1-repro", "one-sample-below-the-plateau"],
 )
-def test_v2_5_gradual_terminal_drop_leaves_rel_and_fm_unchanged(first_mpa, n):
+def test_gradual_terminal_drop_leaves_rel_and_fm_unchanged(first_mpa, n):
     c = sy.discontinuous(rm=395.0, ag_p=0.06, p_end=0.12, serration_phase=0.5)
     r = run(sy.with_terminal_drop(c, first_mpa=first_mpa, n=n))
     assert r.rel_mpa == pytest.approx(c.truth.rel_mpa, abs=REL_TOL_MPA)
@@ -823,7 +821,7 @@ NO_RETURN_FLAG = "fm:no_return_to_reh"
     ],
     ids=["rise-below-reh", "no-work-hardening"],
 )
-def test_v2_6_no_return_results_carry_the_flag(kwargs, tail):
+def test_no_return_results_carry_the_flag(kwargs, tail):
     c = sy.discontinuous(**kwargs)
     r = run(sy.with_terminal_drop(c, **tail) if tail else c)
     assert r.yield_type == "discontinuous"
@@ -831,24 +829,24 @@ def test_v2_6_no_return_results_carry_the_flag(kwargs, tail):
 
 
 @pytest.mark.parametrize("seed", NOISY_SEEDS)
-def test_v2_6_noisy_no_return_results_carry_the_flag(seed):
+def test_noisy_no_return_results_carry_the_flag(seed):
     assert NO_RETURN_FLAG in run(sy.noisy(curve("rise-below-reh"), seed)).flags
 
 
 @pytest.mark.parametrize("name", ["a", "ii", "iii", "flat-top", "rate-step", "ro15", "ro5"])
-def test_v2_6_curves_that_return_to_reh_or_yield_continuously_do_not_carry_the_flag(name):
+def test_curves_that_return_to_reh_or_yield_continuously_do_not_carry_the_flag(name):
     assert NO_RETURN_FLAG not in result(name).flags
 
 
 @pytest.mark.parametrize("name", ["a", "ro15"])
-def test_v2_6_flag_is_absent_with_a_tail_and_with_noise(name):
+def test_flag_is_absent_with_a_tail_and_with_noise(name):
     c = curve(name)
     assert NO_RETURN_FLAG not in run(sy.with_terminal_drop(c, first_mpa=250.0, n=40)).flags
     assert NO_RETURN_FLAG not in run(sy.noisy(c, 0)).flags
 
 
 # ---------------------------------------------------------------------------
-# VP-9 rate step inside the plateau
+# Rate step inside the plateau
 
 
 def _dip_strain(c: sy.SyntheticCurve) -> float:
@@ -858,7 +856,7 @@ def _dip_strain(c: sy.SyntheticCurve) -> float:
     return float(c.strain[k])
 
 
-def test_vp9_rel_is_the_dip_minimum():
+def test_rel_is_the_dip_minimum():
     c, r = curve("rate-step"), result("rate-step")
     assert r.rel_mpa == pytest.approx(377.0, abs=REL_TOL_MPA)
     assert r.yielding.rel_incl_transient_mpa == pytest.approx(372.0, rel=EXACT)
@@ -866,14 +864,14 @@ def test_vp9_rel_is_the_dip_minimum():
     assert r.fm_n == pytest.approx(c.truth.fm_n, rel=EXACT)
 
 
-def test_vp9_near_rate_switch_flag_when_the_switch_strain_is_given():
+def test_near_rate_switch_flag_when_the_switch_strain_is_given():
     c = curve("rate-step")
     r = run(c, rate_switch_strain=_dip_strain(c))
     assert r.rel_mpa == pytest.approx(377.0, abs=REL_TOL_MPA)
     assert "rel:near_rate_switch" in r.flags
 
 
-def test_vp9_no_near_rate_switch_flag_for_a_distant_switch():
+def test_no_near_rate_switch_flag_for_a_distant_switch():
     r = run(curve("rate-step"), rate_switch_strain=0.2)
     assert "rel:near_rate_switch" not in r.flags
 

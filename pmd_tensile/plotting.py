@@ -1,31 +1,27 @@
-"""Figures for the tensile notebooks, in the style of the mesh demonstrator (private helpers).
+"""Figures for the tensile notebooks, in the style of the earlier mesh demonstrator.
 
-The style follows ``archive/mesh-demonstrator/notebooks/04-stress_strain_analysis.ipynb``
-(decision D12): large multi-panel figures, one shared legend on top in three
+The style follows ``archive/mesh-demonstrator/notebooks/04-stress_strain_analysis.ipynb``:
+large multi-panel figures, one shared legend on top in three
 columns with per-specimen values in the labels, one colour per specimen
 (tab10), one line style and marker per orientation, and a "data retrieved"
 entry. Undefined values are shown as "–", and a specimen without a value is
 named in the panel instead of being dropped.
 
-Everything drawn comes from the analysis itself: the neutral curves and the
-node outputs (or the :class:`~pmd_tensile.analysis.CurveAnalysis` that collects
-them) and the result tables. Nothing is downloaded or smoothed here. Every
+Everything drawn comes from the analysis itself: the neutral curves, the
+:class:`~pmd_tensile.orchestration.SpecimenAnalysis` of each specimen (the
+node outputs and their diagnostics) and the result tables. Nothing is
+downloaded or smoothed here, and no rule of the method is repeated. Every
 transformation (strain-origin shift, zoom limits, normalisation) is stated in
-the figure. Lines that the method does not output directly (fit residuals,
-the yield-drop threshold) are recomputed here from the node outputs with the
-rules of method-spec v2.6, for display only.
+the figure.
 
 - Style: :func:`specimen_colors`, :func:`orientation_styles`,
   :func:`format_value`, :func:`specimen_label`.
-- Overview figures of a :class:`~pmd_tensile._orchestration.TensileAnalysis`
+- Overview figures of a :class:`~pmd_tensile.orchestration.TensileAnalysis`
   (notebook 05): :func:`curves_overview_figure` (panels a-d) and
   :func:`results_overview_figure` (panels e-h).
-- Step figures for the node tour (notebook 02), from the outputs of single
-  nodes: :func:`yield_step_figure`, :func:`elastic_step_figure`,
-  :func:`maximum_force_step_figure`, :func:`lab_comparison_step_figure`.
-
-The module is private so that sim_atlas does not catalogue its functions as
-nodes; notebooks reach them through :mod:`pmd_tensile.demo`.
+- Step figures of the method (notebook 02): :func:`yield_step_figure`,
+  :func:`elastic_step_figure`, :func:`maximum_force_step_figure`,
+  :func:`lab_comparison_step_figure`.
 """
 
 from __future__ import annotations
@@ -230,7 +226,7 @@ class _View:
 
     @property
     def valid(self) -> np.ndarray:
-        """Samples the method evaluates with strain: finite force and strain, below k_ext (M1/M2)."""
+        """Samples the method evaluates with strain: finite force and strain, before k_ext."""
         valid = np.isfinite(self.stress_mpa) & np.isfinite(self.strain)
         valid[max(int(self.k_ext), 0):] = False
         return valid
@@ -413,7 +409,7 @@ def _shift_note(views: Sequence[_View]) -> str:
 
 
 def _rp02_point(view: _View, offset: float) -> tuple[float, float]:
-    """(shifted strain, stress) of the Rp0.2 crossing: e − e0 = Rp0.2/E + offset (M6, M10)."""
+    """(shifted strain, stress) of the Rp0.2 crossing: e − e0 = Rp0.2/E + offset."""
     if not (_is_value(view.rp02_mpa) and _is_value(view.e_gpa)):
         return NAN, NAN
     return view.rp02_mpa / (1000.0 * view.e_gpa) + offset, view.rp02_mpa
@@ -571,7 +567,7 @@ def curves_overview_figure(
     yield_zoom: tuple[tuple[float, float], tuple[float, float]] | None = None,
     colors: Mapping[str, str] | None = None,
 ):
-    """Stress-strain overview of a :class:`~pmd_tensile._orchestration.TensileAnalysis` (D12, a-d).
+    """Stress-strain overview of a :class:`~pmd_tensile.orchestration.TensileAnalysis`, panels (a)-(d).
 
     - (a) every curve up to its extensometer end, shifted by its fitted strain
       origin e0 (the range of e0 is stated in the panel);
@@ -759,16 +755,16 @@ def _group_panels(subfig, views, table, summary, group_column: str) -> None:
 
 
 def results_overview_figure(result, *, retrieved=None, colors: Mapping[str, str] | None = None):
-    """Results overview of a :class:`~pmd_tensile._orchestration.TensileAnalysis` (D12, e-h).
+    """Results overview of a :class:`~pmd_tensile.orchestration.TensileAnalysis`, panels (e)-(h).
 
     - (e) computed minus lab value per specimen and quantity, divided by the
-      tolerance of method-spec §13, so the band from -1 to 1 is "within";
+      tolerance of the comparison, so the band from -1 to 1 is "within";
       quantities without a lab or computed value are listed in the panel;
     - (f) ReH against Rm, marker per orientation;
-    - (g) E against Rp0.2, with the E-window sensitivity ranges (M15) as bars;
+    - (g) E against Rp0.2, with the ranges over the window grid as bars;
     - (h) per orientation the mean and sd of E, ReH, Rp0.2 and Rm from
       ``result.orientation_summary``, with each specimen's value and its
-      S0-scatter uncertainty (M14), never combined.
+      uncertainty from the S0 scatter, never combined.
 
     Values come from ``result.results``, ``result.comparison`` and
     ``result.orientation_summary``; nothing is recomputed. ``retrieved`` and
@@ -797,7 +793,7 @@ def results_overview_figure(result, *, retrieved=None, colors: Mapping[str, str]
         x_range=("e_window_min_gpa", "e_window_max_gpa"), y_range=("rp02_window_min_mpa", "rp02_window_max_mpa"),
     )
     ax_g.set_title("(g) E against Rp0.2")
-    note = "bars: range over the E-window grid (M15),\na sensitivity, not an uncertainty"
+    note = "bars: range over the E-window grid,\na sensitivity, not an uncertainty"
     if absent:
         note += f"\nnot shown (E or Rp0.2 {MISSING}): {', '.join(absent)}"
     _note(ax_g, note, loc="lower left")
@@ -809,7 +805,7 @@ def results_overview_figure(result, *, retrieved=None, colors: Mapping[str, str]
 
 
 # ---------------------------------------------------------------------------
-# Step figures for the node tour (notebook 02)
+# Step figures of the method (notebook 02)
 # ---------------------------------------------------------------------------
 
 
@@ -830,7 +826,7 @@ def yield_step_figure(
     colors: Mapping[str, str] | None = None,
     retrieved=None,
 ):
-    """Node tour, extensometer validity and yield (M1-M3, M5 steps 1-3, M7-M9), 2x2.
+    """Extensometer validity, provisional line and yield search, 2x2.
 
     - (a) strain against crosshead travel with the extensometer end
       (``extensometer_validity``);
@@ -953,7 +949,7 @@ def elastic_step_figure(
     colors: Mapping[str, str] | None = None,
     retrieved=None,
 ):
-    """Node tour, elastic modulus and Rp0.2 (M4-M6, M10, M15), 2x2.
+    """Elastic line, Rp0.2 and window sensitivity, 2x2.
 
     - (a) the method on ``method_specimen`` (``final_elastic_fit``,
       ``proof_strength``), with an inset;
@@ -1058,7 +1054,7 @@ def maximum_force_step_figure(
     colors: Mapping[str, str] | None = None,
     retrieved=None,
 ):
-    """Node tour, maximum force (M11) and why Ag/Agt need the strain at Fm (M12), 1x2.
+    """Maximum force, and why Ag and Agt need the strain at Fm, 1x2.
 
     - (a) stress against crosshead travel to fracture, Fm and the extensometer
       end marked (``maximum_force`` uses the force channel only);
@@ -1108,7 +1104,7 @@ def lab_comparison_step_figure(
     colors: Mapping[str, str] | None = None,
     retrieved=None,
 ):
-    """Node tour, S0 scatter (M14) and the comparison with lab values (§13), 1x2.
+    """S0 scatter and the comparison with the lab values, 1x2.
 
     - (a) the cross-section measurements s1..sn and S0 with ± u(S0)
       (``s0_scatter``), as differences from S0;

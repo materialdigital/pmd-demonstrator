@@ -114,7 +114,7 @@ Triple = tuple
 
 
 class SliceError(RuntimeError):
-    """The input does not have the structure the approved modelling assumes."""
+    """The input does not have the structure the modelling assumes."""
 
 
 @dataclass(frozen=True)
@@ -225,7 +225,7 @@ def find_tests(graph: Graph) -> list[TensileTest]:
 
 
 def curve_table_triples(test: TensileTest, base: str) -> list[Triple]:
-    """The 63 triples of one test's curve table (approved at G1, D8.6)."""
+    """The 63 triples of one test's curve table."""
     stem = test.specimen_id
     test_stem = str(test.process).removesuffix("_process")
     table = URIRef(f"{base}{stem}_csvw_table")

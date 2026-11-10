@@ -113,7 +113,7 @@ def _first(mask: np.ndarray) -> int:
 
 
 def _strain_valid(force: np.ndarray, eps: np.ndarray, k_ext: int) -> np.ndarray:
-    """M1/M2: samples with finite force and strain below ``k_ext``."""
+    """Samples with valid strain: finite force and strain, before ``k_ext``."""
     valid = np.isfinite(force) & np.isfinite(eps)
     valid[max(int(k_ext), 0):] = False
     return valid
@@ -206,7 +206,7 @@ def _proof_crossing(
     start_n: float,
     offset: float,
 ) -> tuple[float, int, str]:
-    """First crossing of e_p = ``offset`` (M10), linearly interpolated in force.
+    """First crossing of the plastic strain e_p = ``offset``, linearly interpolated in force.
 
     The search runs over consecutive strain-valid samples from the first one
     with F >= ``start_n``. Returns (force at the crossing, index of the sample

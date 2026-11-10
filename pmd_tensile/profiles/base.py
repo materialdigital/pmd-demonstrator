@@ -19,7 +19,7 @@ Query result contracts (column names are fixed; profiles must bind them):
   ``contract.CURVE_ROLES``. Optionally also the CSV dialect the graph
   declares, :data:`CURVE_DIALECT_COLUMNS` (``delimiter``,
   ``header_row_count``, ``decimal_char``; each may be unbound). The curve
-  parser reads one fixed layout (``pmd_tensile._sources``); acquisition
+  parser reads one fixed layout (``pmd_tensile.sources``); acquisition
   checks a declared dialect against it and fails on a difference.
 
 A profile whose graph does not link curves semantically declares a

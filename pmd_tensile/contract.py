@@ -139,7 +139,7 @@ class SpecimenRecord:
     Optional values are ``None`` when the graph does not provide them.
 
     ``rate_switch_strain`` is the strain (ratio, not percent) at which the lab
-    switched the test speed. It is diagnostic only (method-spec M3/A2): the
+    switched the test speed. It is diagnostic only: the
     analysis uses it for the ``near_rate_switch`` flag and never to change a
     value.
     """

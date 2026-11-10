@@ -1,4 +1,4 @@
-"""Profile registry: re-registering the same object is a no-op (finding CR2-1).
+"""Profile registry: re-registering the same object is a no-op.
 
 The registry lives in ``pmd_tensile._profile_registry``, which reloading
 ``pmd_tensile.profiles`` does not reset; ``profiles/__init__`` then registers

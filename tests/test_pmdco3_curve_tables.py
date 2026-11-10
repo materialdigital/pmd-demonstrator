@@ -1,7 +1,7 @@
-"""The pmdco3-tto profile reads the curve tables of the PMDco3 slices (decision D8.3), offline (C7).
+"""The pmdco3-tto profile reads the curve tables of the PMDco3 slices, offline.
 
 The graphs are the committed PMDco3 files: the three orientation slices and the
-full file (each test with one CSVW curve table, decision D8.6), and the pinned
+full file (each test with one CSVW curve table), and the pinned
 original without curve tables. Curve downloads are stubbed with synthetic CSV
 bytes served by file name (``workflow_helpers``), so pmdco2 and pmdco3 runs
 analyse identical bytes. The slicing itself is tested in
@@ -56,7 +56,10 @@ TABLES = ("results", "orientation_summary", "comparison")
 
 # semantikon's data hashing calls networkx, which warns that its graph hashes
 # changed in networkx 3.5; an upstream notice, not a test concern.
-pytestmark = pytest.mark.filterwarnings("ignore:The hashes produced for directed graphs:UserWarning")
+pytestmark = [
+    pytest.mark.slow,
+    pytest.mark.filterwarnings("ignore:The hashes produced for directed graphs:UserWarning"),
+]
 
 
 def cell_texts(table) -> dict[str, list[str]]:
@@ -180,7 +183,7 @@ def test_the_original_graph_needs_the_explicit_locator():
 
 
 # ---------------------------------------------------------------------------
-# Analysis: pmdco3 equals pmdco2 on identical curve bytes (acceptance criterion 6)
+# Analysis: pmdco3 equals pmdco2 on identical curve bytes
 # ---------------------------------------------------------------------------
 
 

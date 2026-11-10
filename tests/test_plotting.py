@@ -1,4 +1,4 @@
-"""Figures of the tensile notebooks (decision D12; ``pmd_tensile._plotting``).
+"""Figures of the tensile notebooks (``pmd_tensile.plotting``).
 
 Offline: the graphs are the local pmdco2 Turtle files and the curve downloads
 are stubbed with synthetic CSV bytes (``workflow_helpers``). The tests check
@@ -175,8 +175,9 @@ def test_curves_overview_draws_exactly_the_arrays_the_run_used(result):
         np.testing.assert_array_equal(y, curve.force_n[:k][valid] / table.loc[sid, "s0_mm2"])
 
 
+@pytest.mark.slow
 def test_curves_overview_uses_the_offset_of_the_run(result):
-    """A run with offset 0.003 is drawn with its own offset line and Rp markers (T9.1 NR1-7)."""
+    """A run with offset 0.003 is drawn with its own offset line and Rp markers."""
     offset_result, _ = run_with_stubbed_curves(
         curve_bytes_for(SPECIMENS), PMDCO2, PMDCO2_SOURCE, specimen_ids=SPECIMENS,
         parameters={"offset_plastic_strain": 0.003},

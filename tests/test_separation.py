@@ -1,4 +1,4 @@
-"""Separation and knowledge graph (acceptance criteria 2 and 6), offline (C9).
+"""Separation of ontology-aware and ontology-agnostic steps, and the knowledge graph, offline.
 
 The workflow graphs come from runs on the local pmdco2 Turtle files with a
 stubbed curve download (synthetic CSV bytes, see ``workflow_helpers``), and from
@@ -55,7 +55,10 @@ ACQUISITION_FUNCTIONS = {
 
 # semantikon's data hashing calls networkx, which warns that its graph hashes
 # changed in networkx 3.5; an upstream notice, not a test concern.
-pytestmark = pytest.mark.filterwarnings("ignore:The hashes produced for directed graphs:UserWarning")
+pytestmark = [
+    pytest.mark.slow,
+    pytest.mark.filterwarnings("ignore:The hashes produced for directed graphs:UserWarning"),
+]
 
 
 # ---------------------------------------------------------------------------
@@ -84,7 +87,7 @@ def _bound_namespace(graph: rdflib.Graph, prefix: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Export, Turtle, validation (criterion 6)
+# Export, Turtle, validation
 # ---------------------------------------------------------------------------
 
 
@@ -138,7 +141,7 @@ def test_semantikon_vocabulary_namespace_is_pmdco3(graphs):
 
 
 # ---------------------------------------------------------------------------
-# Separation in the graph (criterion 2)
+# Separation in the graph
 # ---------------------------------------------------------------------------
 
 _ANALYSIS_DATA_NODES = """
@@ -216,7 +219,7 @@ def test_no_unit_ten_anywhere(graphs):
 
 
 # ---------------------------------------------------------------------------
-# Example queries (criterion 6)
+# Example queries
 # ---------------------------------------------------------------------------
 
 
@@ -299,7 +302,7 @@ def test_remove_data_keeps_the_run_inputs(analysis_run):
 
 
 # ---------------------------------------------------------------------------
-# Credentials (criterion 6): a dummy token never reaches graphs, outputs or tables
+# Credentials: a dummy token never reaches graphs, outputs or tables
 # ---------------------------------------------------------------------------
 
 TOKEN = "DUMMY_ONTODOCKER_TOKEN_7f3a91"

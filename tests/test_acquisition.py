@@ -1,7 +1,7 @@
 """Offline acquisition tests for the pmdco2-tto profile on the local Turtle files.
 
 The local files are ``downloaded/pmdco2_tto_example_*.ttl``, copies of the
-hosted Ontodocker graphs (decision D7; read-only assets of the demonstrator).
+hosted Ontodocker graphs (read-only assets of the demonstrator).
 The expected values below were first read from the older
 ``datasets/pmdco2_tto_example_*.ttl``; both give the same records
 (``test_pmdco2_sources.py``).

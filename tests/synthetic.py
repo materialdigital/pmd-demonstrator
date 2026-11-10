@@ -1,23 +1,23 @@
-"""Synthetic tensile curves with known truth (method-spec v2.3, §14), for T5.
+"""Synthetic tensile curves with known truth, for the tests and the method notebook.
 
 The generator is written from the method specification, not from the
 implementation. Each curve is built from a noise-free engineering stress
 ``s`` (MPa) and a generator plastic strain ``p`` per sample. The channels in
-contract units (method-spec §2) follow from them:
+contract units follow from them:
 
 - extensometer strain (ratio): ``e = e0 + s/E + q*s**2 + p``;
 - force (N): ``F = s * S0``;
 - crosshead (mm): ``c = L0 * (e_clean - e0)``. The crosshead follows the
-  specimen elongation without machine compliance, so the M3 ratio
+  specimen elongation without machine compliance, so the extensometer end ratio
   ``r = de / (dc / L0)`` is exactly 1 while the extensometer is valid.
 
-``e0`` is fixed by the reference start point (§14 (a)): the first sample is at
+``e0`` is fixed by the reference start point (case (a)): the first sample is at
 ``s = 2 MPa`` with ``e = 5e-4``. With ``q = 0`` the elastic part is exactly
-linear, so the M4 fit gives ``E`` and ``e0 = -b/E`` exactly, and the method's
-plastic strain ``e - e0 - s/E`` equals ``p``. ``q != 0`` gives the VP-6 curve
+linear, so the elastic window fit gives ``E`` and ``e0 = -b/E`` exactly, and the method's
+plastic strain ``e - e0 - s/E`` equals ``p``. ``q != 0`` gives the curve with analytic window slopes
 ``e = s/E + q*s**2`` (plus ``e0``).
 
-Default sampling densities (stated per segment, as §14 requires; every curve
+Default sampling densities (stated per segment; every curve
 records them in :attr:`SyntheticCurve.segments`):
 
 =================  ==========================================================
@@ -26,7 +26,7 @@ segment            density
 start              one sample at 2 MPa
 elastic            2 MPa per sample at odd stresses 3, 5, 7, ... MPa, so that
                    no sample lies on a window bound f*sigma_ref (even values)
-rounded pre-yield  C1 parabola from 340 MPa to ReH in 60 equal strain steps
+rounded pre-yield  smooth parabola from 340 MPa to ReH in 60 equal strain steps
                    (9.8e-6 per step); 2 MPa per sample at its start, at most
                    0.5 MPa per sample over the last 15 samples (the last
                    3.75 MPa below the peak); the peak is a sample
@@ -45,8 +45,8 @@ RO pre-yield       2 MPa per sample (odd stresses) below 0.8*Rp, then
 Hardening is Voce in true stress over the plastic strain, converted to
 engineering stress ``s = sigma_V(p) / (1 + p)``; its parameters are solved so
 that the maximum is ``Rm`` at ``p = Ag`` exactly. Near the maximum,
-``ln s = ln Rm - (p - Ag)**2 / (2 n)`` with ``n = (1 + Ag) * tau``, so the M12
-band ``F >= Fm (1 - delta)`` has the half-width ``sqrt(2 n delta)`` (VP-8).
+``ln s = ln Rm - (p - Ag)**2 / (2 n)`` with ``n = (1 + Ag) * tau``, so the near-maximum
+band ``F >= Fm (1 - delta)`` has the half-width ``sqrt(2 n delta)``.
 
 Truth values are analytic or read off the noise-free construction (for
 example the plateau minimum is the lowest plateau sample by construction).
@@ -74,12 +74,12 @@ SAMPLING_RATE_HZ = 10.0
 
 STRESS_NOISE_MPA = 0.5
 STRAIN_NOISE = 2e-6
-"""§14 (e) noise levels (standard deviations)."""
+"""Noise levels of the noisy cases (standard deviations)."""
 
 BAND_REL_MIN = 2e-4
-"""M12 delta_F floor; the noise-free band uses it (s_n = 0)."""
+"""Smallest depth delta_F of the near-maximum band; the noise-free band uses it (s_n = 0)."""
 OFFSET_STRAIN = 0.002
-"""M10 offset plastic strain."""
+"""Plastic strain of the proof strength."""
 SERRATION_PERIOD_SAMPLES = 40
 
 
@@ -115,7 +115,7 @@ class Truth:
     ag_peak_percent: float = NAN
     """100 * plastic strain at the analytic force maximum."""
     hardening_n: float = NAN
-    """n in sqrt(2 n delta) (VP-8): (1 + Ag) * tau of the Voce hardening."""
+    """n in sqrt(2 n delta): (1 + Ag) * tau of the Voce hardening."""
 
 
 @dataclasses.dataclass(frozen=True, eq=False)
@@ -338,7 +338,7 @@ def _grid_after(p_from: float, dp: float, p_end: float) -> np.ndarray:
 
 
 def _band_truth(curve_fn, p_lo: float, p_max: float, p_hi: float, rm: float, e_mpa: float) -> dict:
-    """Declared M12 mid-point of the noise-free band (delta_F = 2e-4), analytic."""
+    """Declared mid-point of the noise-free near-maximum band (delta_F = 2e-4), analytic."""
     threshold = rm * (1.0 - BAND_REL_MIN)
 
     def g(p: float) -> float:
@@ -368,7 +368,7 @@ def _add_elastic(b: _Builder, top: float, step: float = 2.0, offset: float = 1.0
 
 
 def _add_rounded(b: _Builder, s_from: float, s_to: float, n: int = 60) -> None:
-    """C1 parabola s(u) = s_to - (s_to - s_from)(1-u)^2 over mechanical strain."""
+    """Parabola s(u) = s_to - (s_to - s_from)(1-u)^2 over mechanical strain, with a continuous slope."""
     depth = s_to - s_from
     tangent_compliance = 1.0 / b.e_mpa + 2.0 * b.q * s_from
     width = 2.0 * depth * tangent_compliance
@@ -432,26 +432,26 @@ def discontinuous(
 ) -> SyntheticCurve:
     """Discontinuous-yielding family: reference case (a) and its variants.
 
-    Defaults give §14 (a) = M9 case (i): E = 205 GPa, start at 2 MPa with
+    Defaults give case (a), case (i) of the lower-yield rule: E = 205 GPa, start at 2 MPa with
     e = 5e-4, rounded pre-yield to ReH = 400 MPa, drop to the transient
     minimum 372 MPa, recovery to the plateau 380 +- 1 MPa up to p = 0.015,
     Voce hardening to Rm = 510 MPa at Ag = 15 %.
 
-    - ``serration``: plateau half-amplitude (M9 (ii): 3).
+    - ``serration``: plateau half-amplitude (case (ii) of the lower-yield rule: 3).
     - ``serration_phase``: sample offset of the triangle wave; 0.5 puts no
       sample on an extreme or on the plateau level.
     - ``plateau=None``: no plateau; hardening starts at the transient minimum
-      (M9 (iii)).
+      (case (iii)).
     - ``upper_peak=False``: the rounded part ends tangentially on the plateau
-      (M9 (iv)); use ``serration=0``.
+      (case (iv)); use ``serration=0``.
     - ``transient_min=None``: the drop goes straight to the plateau.
     - ``hardening``: ``"voce"``, ``"flat_top"`` (exact flat maximum between
-      ``flat_top`` plastic strains, VP-8) or ``None`` (the plateau runs to
-      ``p_end``: no work hardening, §8).
-    - ``rate_step``: plastic strain of a rate switch inside the plateau (VP-9):
+      ``flat_top`` plastic strains) or ``None`` (the plateau runs to
+      ``p_end``: no work hardening).
+    - ``rate_step``: plastic strain of a rate switch inside the plateau:
       a 3 MPa relaxation dip (1 MPa per sample) below the plateau level, then
       a +15 MPa step (3 MPa per sample) to a plateau 15 MPa higher.
-    - ``elastic_quadratic``: q in e = s/E + q s**2 (VP-6).
+    - ``elastic_quadratic``: q in e = s/E + q s**2 (analytic window slopes).
     """
     b = _Builder(e_mpa, elastic_quadratic)
     _add_elastic(b, round_start)
@@ -572,7 +572,7 @@ def discontinuous(
 
 
 def reference_a() -> SyntheticCurve:
-    """§14 (a), identical to M9 case (i)."""
+    """Case (a), identical to case (i) of the lower-yield rule."""
     return discontinuous()
 
 
@@ -604,9 +604,9 @@ def ramberg_osgood(
     hardening_dp: float = 1e-4,
     e_mpa: float = E_MPA,
 ) -> SyntheticCurve:
-    """§14 (b): continuous yielding, Ramberg-Osgood pre-yield, Voce hardening.
+    """Case (b): continuous yielding, Ramberg-Osgood pre-yield, Voce hardening.
 
-    Expected E and Rp0.2 are the M4/M5/M10 fixed point evaluated with exact
+    Expected E and Rp0.2 are the fixed point of the elastic window and the proof strength, evaluated with exact
     OLS sums over the generated window samples and an exact (root-found)
     crossing on the continuous model ("analytic window slope").
     """
@@ -669,7 +669,7 @@ def window_samples(curve: SyntheticCurve, ref: float, f_lo: float, f_hi: float):
 
 
 def spec_fixed_point(curve: SyntheticCurve, ro: RambergOsgood, tol: float = 1e-13):
-    """M5 steps 1, 2, 4 and M10 for a noise-free RO curve (my own evaluation).
+    """Provisional line and proof strength for a noise-free RO curve (an independent evaluation).
 
     Returns E (MPa), b (MPa) and Rp0.2 (MPa). The crossing of
     e - e0_fit - s/E_fit = 0.002 is solved on the continuous RO model.
@@ -700,9 +700,9 @@ def spec_fixed_point(curve: SyntheticCurve, ro: RambergOsgood, tol: float = 1e-1
 
 
 def spec_reh(curve: SyntheticCurve) -> tuple[float, int]:
-    """ReH and i_p by the M5 step 2 and M7/M8 text, on the (noisy) samples.
+    """ReH and i_p by the written rules of the provisional line, the drop and the upper yield point, on the (noisy) samples.
 
-    My own evaluation of the definitions, for curves with finite channels:
+    An independent evaluation of the definitions, for curves with finite channels:
     "Rm" is the maximum stress; the provisional OLS uses the samples before
     the stress first reaches 0.5*Rm within [0.10, 0.40]*0.5*Rm;
     s_n = 1.4826 * MAD (about the median) of the second differences of the
@@ -749,7 +749,7 @@ def noisy(
     stress_sd: float = STRESS_NOISE_MPA,
     strain_sd: float = STRAIN_NOISE,
 ) -> SyntheticCurve:
-    """§14 (e): Gaussian noise on force (stress_sd*S0) and strain; fixed seed."""
+    """Gaussian noise on force (stress_sd*S0) and strain; fixed seed."""
     rng = np.random.default_rng(seed)
     force = curve.force_n + rng.normal(0.0, stress_sd * curve.s0_mm2, len(curve))
     strain = curve.strain + rng.normal(0.0, strain_sd, len(curve))
@@ -767,13 +767,13 @@ def extensometer_end(
     at_plastic_strain: float = 0.039,
     substitution_gauge_ratio: float = 1.2,
 ) -> SyntheticCurve:
-    """§14 (c): the extensometer is removed at the first sample with p >= at.
+    """The extensometer is removed at the first sample with p >= at.
 
     - ``freeze``: the strain keeps its last value;
     - ``nan``: the strain becomes NaN;
     - ``zero``: the strain drops to 0;
     - ``crosshead``: vendor substitution, e continues as
-      ``e_last + (c - c_last) / (ratio * L0)``; undetectable by design (M3, A1),
+      ``e_last + (c - c_last) / (ratio * L0)``; undetectable by design,
       so the expected ``k_ext`` stays the record length.
     """
     k = curve.index_at_plastic_strain(at_plastic_strain)
@@ -796,7 +796,7 @@ def extensometer_end(
 def with_temporary_flat_strain(
     curve: SyntheticCurve, p_flat: float = 0.005, p_resume: float = 0.008, p_rejoin: float = 0.011
 ) -> SyntheticCurve:
-    """§14 (c): Lüders band outside the gauge; e flat, then catches up (r > 1)."""
+    """Lüders band outside the gauge; e flat, then catches up (r > 1)."""
     i1 = curve.index_at_plastic_strain(p_flat)
     i2 = curve.index_at_plastic_strain(p_resume)
     i3 = curve.index_at_plastic_strain(p_rejoin)
@@ -810,7 +810,7 @@ def with_temporary_flat_strain(
 def with_hold(
     curve: SyntheticCurve, at_plastic_strain: float = 0.05, n_hold: int = 50, relax_mpa: float = 3.0
 ) -> SyntheticCurve:
-    """§14 (c): a crosshead hold with stress relaxation, then elastic reloading.
+    """A crosshead hold with stress relaxation, then elastic reloading.
 
     During the hold the crosshead and the strain are constant; the stress
     relaxes by ``relax_mpa`` (1/n_hold of it per sample) as plastic strain
@@ -851,7 +851,7 @@ def with_hold(
 def with_terminal_drop(
     curve: SyntheticCurve, *, first_mpa: float, to_mpa: float = 5.0, n: int = 5
 ) -> SyntheticCurve:
-    """§8 v2.5: append a terminal force drop (fracture or unloading) of ``n`` samples.
+    """Append a terminal force drop (fracture or unloading) of ``n`` samples.
 
     The stress falls linearly from ``first_mpa`` (first appended sample) to
     ``to_mpa`` (last sample). The crosshead keeps its last step per sample and
@@ -887,14 +887,14 @@ def with_terminal_drop(
 
 
 def with_strain_shift(curve: SyntheticCurve, shift: float) -> SyntheticCurve:
-    """VP-5: e -> e + shift (moves the strain origin by ``shift``)."""
+    """e -> e + shift (moves the strain origin by ``shift``)."""
     return _with_strain(
         curve, curve.strain + shift, strain_origin=curve.truth.strain_origin + shift
     )
 
 
 def with_toe(curve: SyntheticCurve, amount: float = 1e-4, below_mpa: float = 12.0) -> SyntheticCurve:
-    """VP-5: nonlinear seating toe below ``below_mpa`` (C1), constant shift above.
+    """Nonlinear seating toe below ``below_mpa`` (continuous slope), constant shift above.
 
     ``toe(s) = amount * x (2 - x)`` with ``x = min(s / below_mpa, 1)``.
     """

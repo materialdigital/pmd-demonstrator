@@ -110,7 +110,7 @@ def test_no_node_output_contains_the_token(ontodocker_source):
 
 
 # ---------------------------------------------------------------------------
-# Credentials embedded in URLs (R8-6): refused, and not repeated in the error
+# Credentials embedded in URLs: refused, and not repeated in the error
 # ---------------------------------------------------------------------------
 
 SECRET = "s3cr3t"
@@ -160,6 +160,7 @@ def test_local_paths_may_contain_url_characters():
     assert sources.validate_source({"kind": "turtle", "locations": locations}) == ("turtle", locations)
 
 
+@pytest.mark.slow
 def test_the_pinned_and_data_urls_are_accepted(pmdco2_source):
     pinned = {"kind": "turtle", "locations": [pmdco3_tto.PINNED_GRAPH_URL]}
     assert sources.validate_source(pinned) == ("turtle", [pmdco3_tto.PINNED_GRAPH_URL])
@@ -175,7 +176,7 @@ def test_the_pinned_and_data_urls_are_accepted(pmdco2_source):
 
 
 def test_demo_builds_the_ontodocker_client_from_the_environment(ontodocker_source):
-    """Notebooks get the client from ``sources``, so they never read the token themselves (T9.1 NR1-1)."""
+    """Notebooks get the client from ``sources``, so they never read the token themselves."""
     from pmd_tensile import sources
 
     client = sources.ontodocker_client()

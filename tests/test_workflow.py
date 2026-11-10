@@ -1,11 +1,11 @@
-"""Two-stage workflow (decision D6): exploration, per-specimen workflow, batch (C9).
+"""Two-stage workflow: exploration, per-specimen workflow, batch.
 
 Offline: the graphs are the local pmdco2 Turtle files (and, for the pmdco3
 parity, the structural pmdco3 fixture); curve downloads are stubbed with
 synthetic CSV bytes (see ``workflow_helpers``).
 
 Parity: the per-specimen workflow must give exactly the numbers of
-``analyse_curve`` on the same parsed arrays (analysis-api.md), compared
+``analyse_curve`` on the same parsed arrays, compared
 NaN-aware.
 """
 
@@ -343,7 +343,7 @@ def test_repeated_specimen_ids_are_rejected(pmdco2_curves):
 
 
 # ---------------------------------------------------------------------------
-# pmdco2 versus pmdco3 (acceptance criterion 4, offline)
+# pmdco2 versus pmdco3 (offline)
 # ---------------------------------------------------------------------------
 #
 # The structural pmdco3 fixture (workflow_helpers.py) has the PMDco3/TTO
@@ -354,6 +354,7 @@ def test_repeated_specimen_ids_are_rejected(pmdco2_curves):
 PARITY_SPECIMENS = ("Zx1", "Zd2")
 
 
+@pytest.mark.slow
 def test_pmdco2_and_pmdco3_give_identical_analysis_for_identical_curve_bytes(tmp_path):
     curves = curve_bytes_for(PARITY_SPECIMENS)
     pmdco3_source = pmdco3_twin_of_pmdco2(PARITY_SPECIMENS, tmp_path)

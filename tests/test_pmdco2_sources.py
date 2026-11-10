@@ -1,4 +1,4 @@
-"""The two local copies of the pmdco2 graphs give the same analysis inputs and results (decision D7).
+"""The two local copies of the pmdco2 graphs give the same analysis inputs and results.
 
 The offline tests use ``downloaded/pmdco2_tto_example_*.ttl``, copies of the
 graphs hosted on Ontodocker. The older ``datasets/pmdco2_tto_example_*.ttl``
@@ -16,6 +16,8 @@ from workflow_helpers import PMDCO2, curve_bytes_for, run_with_stubbed_curves
 
 from pmd_tensile import profiles
 from pmd_tensile.nodes import acquisition
+
+pytestmark = pytest.mark.slow
 
 DOWNLOADED = {"kind": "turtle", "locations": [str(path) for path in PMDCO2_ORIENTATION_FILES.values()]}
 DATASETS = {"kind": "turtle", "locations": [str(path) for path in PMDCO2_DATASETS_FILES.values()]}

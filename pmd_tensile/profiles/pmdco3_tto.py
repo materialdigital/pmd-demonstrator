@@ -14,7 +14,7 @@ Graphs:
   ``datasets/pmdco3_tto_example.ttl``, written by
   ``scripts/slice_pmdco3.py`` (the slices are meant for Ontodocker as
   ``pmdco3_tto_example_*``). They are the original plus one CSVW curve table
-  per test (handoff decision D8.6), read by :data:`CURVE_COLUMNS`; no locator
+  per test, read by :data:`CURVE_COLUMNS`; no locator
   is needed.
 
 How the concepts are expressed (observed in the original graph; the slices
@@ -65,7 +65,7 @@ keep all of it):
   The aggregate lab table ``S355_data.csv`` is not a time series and is not
   matched.
 
-Gaps and non-semantic parts (reported as findings):
+Gaps and non-semantic parts:
 
 - **No curve links in the original graph.** The original links only the
   aggregate table ``S355_data.csv`` via CSVW, not the per-test curve CSVs.
@@ -281,7 +281,7 @@ WHERE {
 """,
     columns=CURVE_COLUMN_COLUMNS + CURVE_DIALECT_COLUMNS,
 )
-"""Curve columns from the per-test CSVW tables of the slices (D8.3, query of the T4 report).
+"""Curve columns from the per-test CSVW tables of the slices.
 
 Units are QUDT IRIs (``unit:SEC``, ``unit:MilliM``, ``unit:KiloN``,
 ``unit:PERCENT``), mapped through the shared unit table. Column numbers are
@@ -339,8 +339,6 @@ UNIT_ALIASES = {
 # ontology files at TTO_COMMIT: the released ``tto-full.ttl`` (repository root)
 # and ``src/ontology/tto-full.ttl``; OBO and PMDco labels agree with the PMDco
 # mirror ``src/ontology/mirror/pmdco.owl``. Columns: IRI, English label, note.
-# Extracted with .notes/tensile-workflow/evidence/T3/extract_labels.py and
-# inspect_terms.py (not committed).
 IRI_LABELS: tuple[tuple[str, str, str], ...] = (
     ("pmdco:PMD_0000974", "tensile testing process", ""),
     ("pmdco:PMD_0000006", "has value", ""),
@@ -369,7 +367,7 @@ IRI_LABELS: tuple[tuple[str, str, str], ...] = (
     ("tto:TTO_0000033", "percentage elongation after fracture", "reported A; deprecated in src"),
     ("tto:TTO_0000038", "percentage reduction of area", "reported Z; deprecated in src"),
     ("tto:TTO_0000058", "transition point testing rate", "strain at the test-speed switch (diagnostic)"),
-    # Curve tables of the slices (CURVE_COLUMNS; labels as in the T3 proposal, handoff D8.6).
+    # Curve tables of the slices (CURVE_COLUMNS).
     ("pmdco:PMD_0000992", "time series", "type of the per-test curve tables (slices only)"),
     ("obo:BFO_0000202", "temporal interval", "what the time column is about"),
     ("tto:TTO_0000013", "crosshead separation", "what the crosshead column is about"),

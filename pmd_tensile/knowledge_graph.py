@@ -1,4 +1,4 @@
-"""Knowledge-graph export of the tensile workflows with semantikon (acceptance criterion 6).
+"""Knowledge-graph export of the tensile workflows with semantikon.
 
 semantikon describes a workflow with its own workflow vocabulary: PMDco 3.x
 terms in the namespace ``https://w3id.org/pmd/co/PMD_`` (bound to the prefix
@@ -6,11 +6,7 @@ terms in the namespace ``https://w3id.org/pmd/co/PMD_`` (bound to the prefix
 terms (BFO, RO, IAO, OBI) and QUDT for units. This vocabulary describes
 functions, ports and data; it is independent of the ontology that describes
 the tensile-test *data* (the profile). Analysis ports carry only units and
-generic QUDT quantity kinds (decision D4).
-
-The module holds no nodes. It is private so that sim_atlas does not catalogue
-its plain functions as workflow nodes; notebooks reach them through
-:mod:`pmd_tensile.demo`.
+generic QUDT quantity kinds.
 
 Graphs
 ------
@@ -27,13 +23,13 @@ Graphs
     inputs can be queried (example queries (b) and (c)). semantikon writes
     values as literals; arrays and tables become their (shortened, lossy)
     ``repr``, which is why each specimen reports its raw-curve SHA-256 and
-    URL as explicit strings (IC3). ``remove_data=True`` drops every value that
+    URL as explicit strings. ``remove_data=True`` drops every value that
     has a hash, i.e. all computed values; workflow inputs (profile ID,
-    source, specimen IDs) always stay (T1 finding). Use it for a compact
+    source, specimen IDs) always stay. Use it for a compact
     graph without results.
 
   Credentials never enter either graph: they are not node inputs or outputs
-  (decision D5, ``pmd_tensile._sources``).
+  (``pmd_tensile.sources`` reads them from the environment).
 
 - :func:`validate_knowledge_graph`: ``semantikon.validate_values`` (RDFS
   reasoning and SHACL), returning ``(conforms, report text)``.
@@ -50,8 +46,8 @@ Saving and display
   rdflib 7.6.0 writes verbatim, so that a plain N-Triples file of a batch KG
   cannot be parsed again. Blank-node labels are local to a document, so the
   written graph is isomorphic to the original: same triples, same literals.
-  JSON-LD would also round-trip, but N-Triples is the decided default
-  (handoff r10) and is line-based, which makes diffs easy.
+  JSON-LD would also round-trip, but N-Triples is line-based, which
+  makes diffs easy.
 - :func:`to_turtle`, :func:`write_turtle`, :func:`parse_turtle`,
   :func:`read_turtle`: Turtle, for human-readable display only.
   :data:`TURTLE_PRECISION_NOTE` explains why: rdflib 7.6.0 writes
@@ -97,7 +93,7 @@ The queries:
     analysis nodes received, i.e. the value of the output of the
     ``analysis_parameters`` step (the ``repr`` of the
     ``AnalysisParameters`` dataclass, with every field). Works on run graphs,
-    batch or single specimen (decision D4).
+    batch or single specimen.
 """
 
 from __future__ import annotations

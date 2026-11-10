@@ -18,10 +18,6 @@ they are never merged into one graph, because some files reuse node labels
 Raw curves and remote Turtle files are fetched with a separate, token-free
 praeco ``HttpClient`` bound to the URL's host, never with an authenticated
 service client. Downloads stay in memory; nothing is written to disk.
-
-The module holds no nodes. It is private so that sim_atlas does not catalogue
-its plain functions as workflow nodes; notebooks reach the functions they need
-through :mod:`pmd_tensile.demo`.
 """
 
 from __future__ import annotations
@@ -280,7 +276,7 @@ def fetch_bytes(url: str) -> tuple[bytes, str]:
 # A declared assumption for the pmdco2 graphs and the original PMDco3 graph,
 # which state no dialect. The PMDco3 slices declare it in their curve tables
 # (csvw:Dialect, csvw:NumericFormat); acquisition checks that declaration
-# against these values (``pmd_tensile._acquisition``).
+# against these values (``pmd_tensile.nodes.acquisition``).
 CSV_DELIMITER = ";"
 CSV_DECIMAL = ","
 CSV_HEADER_ROWS = 2

@@ -1,4 +1,4 @@
-"""sim_atlas module and filesystem mode collect only nodes, macros and dataclass types (D5.1, D6).
+"""sim_atlas module and filesystem mode collect only nodes, macros and dataclass types.
 
 Checked: module mode on every node module and on the packages
 ``pmd_tensile.nodes`` and ``pmd_tensile.nodes.analysis``, and filesystem mode

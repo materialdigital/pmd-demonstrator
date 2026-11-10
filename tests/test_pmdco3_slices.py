@@ -5,8 +5,7 @@ The script adds one curve table per test, relinks the lab table, and writes the
 full file ``datasets/pmdco3_tto_example.ttl`` and the slices
 ``datasets/pmdco3_tto_example_{parallel,perpendicular,diagonal}.ttl``.
 
-The checks follow decision D8.6 of the tensile-notebooks plan (modelling
-approved at gate G1) and acceptance criterion 4. They use rdflib only: the
+The checks follow the modelling of the curve tables. They use rdflib only: the
 script runs in a subprocess (its write helper is also imported directly),
 and nothing is read from the network. Expected
 values (tests, orientations, counts, the curve-table Turtle) are written out
@@ -79,7 +78,7 @@ TESTS = {
     "Zd3": (10, "diagonal"),
 }
 
-# Triple counts (T3 proposal, section 6; D8.6).
+# Triple counts of the modelling.
 ORIGINAL_TRIPLES = 6876
 SHARED_ORIGINAL_TRIPLES = 246  # header 4, lab table 5, schema 58, 57 columns x 3, units 8
 PER_TEST_ORIGINAL_TRIPLES = 663
@@ -103,7 +102,7 @@ PREFIXES = """\
 @prefix xsd: <http://www.w3.org/2001/XMLSchema#> .
 """
 
-# The approved Turtle for Zx3 (T3 proposal, section 3), with <…> written out.
+# The expected Turtle for Zx3, with <…> written out.
 ZX3_CURVE_TABLE = """\
 abox:pmdao-tto-tt-S355-3_process obo:OBI_0000299 abox:Zx3_csvw_table .
 
@@ -195,7 +194,7 @@ def process_iri(specimen_id: str) -> URIRef:
 
 
 def curve_table_turtle(specimen_id: str) -> str:
-    """The approved Zx3 Turtle, renamed for ``specimen_id``."""
+    """The expected Zx3 Turtle, renamed for ``specimen_id``."""
     number = TESTS[specimen_id][0]
     return ZX3_CURVE_TABLE.replace("tt-S355-3_", f"tt-S355-{number}_").replace(
         "Zx3", specimen_id

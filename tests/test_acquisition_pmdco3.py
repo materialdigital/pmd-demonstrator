@@ -68,7 +68,7 @@ def test_profile_reads_curve_tables_and_accepts_an_explicit_locator():
     profile = get_profile(PROFILE)
     assert profile.links_curves_semantically
     assert profile.curve_columns is pmdco3_tto.CURVE_COLUMNS
-    assert profile.curve_locator is None  # no default locator any more (D8.3)
+    assert profile.curve_locator is None  # the slices carry their own curve tables
     assert profile.accepts_curve_locator
     # The explicit option for the original graph is unchanged.
     assert pmdco3_tto.CURVE_LOCATOR.url_for("Zx1") == (
@@ -226,6 +226,7 @@ def test_iri_label_table_covers_every_iri_used():
 # ---------------------------------------------------------------------------
 
 
+@pytest.mark.slow
 def test_real_pinned_graph_matches_pmdco2(pmdco2_source):
     """The original graph, with the explicit locator, describes the pmdco2 specimens identically."""
     source = {"kind": "turtle", "locations": [str(PMDCO3_ORIGINAL_FILE)]}

@@ -1,4 +1,4 @@
-"""Self-checks of the synthetic generator against method-spec §14.
+"""Self-checks of the synthetic generator against its declared construction.
 
 These tests do not call the analysis; they make sure the generated curves and
 their declared truths match the specification before any analysis test relies
@@ -56,11 +56,11 @@ def test_reference_a_rounded_peak(a):
     assert s[-1] == 400.0 == a.stress_mpa.max(where=a.plastic_strain < 0.01, initial=0)
     increments = np.diff(s)
     assert np.all(increments > 0)
-    # §14 (a): at most 0.5 MPa per sample near the peak (the last 15 samples,
+    # case (a): at most 0.5 MPa per sample near the peak (the last 15 samples,
     # i.e. the last 3.75 MPa below ReH).
     assert increments[-15:].max() <= 0.5
     assert s[-16] == pytest.approx(400.0 - 3.75)
-    assert p[-1] <= 0.005  # M7: e_p(i_p) <= 0.005
+    assert p[-1] <= 0.005  # drop rule: e_p(i_p) <= 0.005
     assert a.truth.reh_sample_increment_mpa == pytest.approx(s[-1] - s[-2], rel=1e-12)
 
 
@@ -71,7 +71,7 @@ def test_reference_a_transient_and_plateau(a):
     assert s_pl.min() == 379.0 and s_pl.max() == 381.0
     assert np.median(s_pl) == pytest.approx(380.0, abs=0.05)
     assert p_pl[-1] == pytest.approx(0.015, abs=1e-12)
-    assert p_pl[-1] - p_pl[0] >= 0.002  # plateau extent (M9)
+    assert p_pl[-1] - p_pl[0] >= 0.002  # plateau extent (lower-yield rule)
     # Serration amplitude is below d = 0.005*ReH = 2 MPa peak-to-peak bound.
     assert s_pl.max() - s_pl.min() <= 2.0
 
@@ -88,7 +88,7 @@ def test_reference_a_hardening_maximum(a):
 
 
 def test_voce_band_halfwidth_matches_sqrt_2_n_delta(a):
-    # VP-8 basis: half-width of F >= Fm (1 - delta) is sqrt(2 n delta).
+    # Basis of the Ag tolerance: half-width of F >= Fm (1 - delta) is sqrt(2 n delta).
     expected = 100.0 * math.sqrt(2.0 * a.truth.hardening_n * sy.BAND_REL_MIN)
     assert a.truth.ag_halfwidth_percent == pytest.approx(expected, rel=0.01)
     assert a.truth.ag_percent == pytest.approx(15.0, abs=0.02)
@@ -99,7 +99,7 @@ def test_reference_a_rp02_truth_is_in_the_plateau(a):
 
 
 @pytest.mark.parametrize("serration, expected", [(1.0, 379.0), (3.0, 377.0)])
-def test_m9_plateau_minima(serration, expected):
+def test_lower_yield_plateau_minima(serration, expected):
     curve = sy.discontinuous(serration=serration)
     s_pl, _ = _segment_values(curve, "plateau")
     assert s_pl.min() == expected == curve.truth.rel_mpa
@@ -114,7 +114,7 @@ def test_half_sample_serration_phase_avoids_the_extremes_and_the_level():
     assert np.mean(s_pl) == pytest.approx(380.0, abs=1e-3)
 
 
-def test_m9_case_iii_rises_monotonically_after_the_dip():
+def test_lower_yield_case_iii_rises_monotonically_after_the_dip():
     curve = sy.discontinuous(plateau=None)
     seg = curve.segment("hardening")
     s = curve.stress_mpa[seg.start - 1 : seg.start + 1000]
@@ -122,7 +122,7 @@ def test_m9_case_iii_rises_monotonically_after_the_dip():
     assert np.all(np.diff(s) > 0)
 
 
-def test_m9_case_iv_has_no_peak_above_the_plateau():
+def test_lower_yield_case_iv_has_no_peak_above_the_plateau():
     curve = sy.discontinuous(upper_peak=False, serration=0.0)
     s_pl, _ = _segment_values(curve, "plateau")
     assert np.all(s_pl == 380.0)
@@ -147,7 +147,7 @@ def test_edge_case_post_yield_maximum_below_reh():
     assert s_hard.max() == pytest.approx(395.0, rel=1e-14)
     i_peak = curve.segment("rounded").stop - 1
     assert curve.stress_mpa[i_peak + 1 :].max() < 400.0  # never returns to ReH
-    # The rise exceeds the v2.3 band 2P - ReL + d = 2*380 - 379 + 2 = 383.
+    # The rise exceeds the band 2P - ReL + d = 2*380 - 379 + 2 = 383.
     assert curve.truth.rm_mpa > 383.0
 
 
@@ -188,7 +188,7 @@ def test_ramberg_osgood_n5_window_slope_differs_from_e():
     assert abs(curve.truth.e_gpa / 205.0 - 1.0) > 1e-3
 
 
-def test_too_few_elastic_points_in_the_m4_window():
+def test_too_few_elastic_points_in_the_elastic_window():
     curve = sy.ramberg_osgood(15, elastic_step=20.0, elastic_offset=15.0)
     s, _ = sy.window_samples(curve, 300.0, 0.10, 0.40)
     assert 3 <= len(s) < 10

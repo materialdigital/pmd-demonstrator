@@ -38,7 +38,7 @@ does not query it and the reported ReL is ``None``.
 The older ``datasets/`` pmdco2 files write some nodes as pseudo-IRIs
 ``<_:tNNN>`` (not blank nodes; the ``downloaded/`` copies use blank nodes).
 Their labels repeat across files, so the files must be queried one by one and
-never merged into one graph; ``pmd_tensile._sources`` does that for every
+never merged into one graph; ``pmd_tensile.sources`` does that for every
 source.
 
 The queries adapt patterns of ``query_collection.S355queries`` (notably the
