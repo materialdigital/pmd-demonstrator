@@ -34,7 +34,7 @@ from urllib.parse import urlsplit
 
 import pandas as pd
 import rdflib
-from praeco import HttpClient, OntodockerClient
+from praeco import DataportalClient, HttpClient, OntodockerClient
 from rdflib.util import guess_format
 
 from pmd_tensile.contract import (
@@ -48,6 +48,7 @@ from pmd_tensile.contract import (
 
 ONTODOCKER_ADDRESS_ENV = "ONTODOCKER_ADDRESS"
 ONTODOCKER_TOKEN_ENV = "ONTODOCKER_TOKEN"
+DATAPORTAL_TOKEN_ENV = "DATAPORTAL_TOKEN"
 
 _SOURCE_KEYS = {"turtle": "locations", "ontodocker": "datasets"}
 
@@ -242,6 +243,22 @@ def ontodocker_client() -> OntodockerClient:
     set.
     """
     return _ontodocker_client()
+
+
+def dataportal_client(*, write: bool = False) -> DataportalClient:
+    """A praeco ``DataportalClient`` for the MaterialDigital Dataportal.
+
+    Without ``write`` the client reads public records anonymously. With
+    ``write=True`` it carries the token from ``DATAPORTAL_TOKEN``, read here from
+    the environment so that the caller never holds it; raises
+    :class:`SourceError` if it is not set.
+    """
+    if not write:
+        return DataportalClient()
+    token = os.environ.get(DATAPORTAL_TOKEN_ENV) or None
+    if token is None:
+        raise SourceError(f"set {DATAPORTAL_TOKEN_ENV} to write to the Dataportal")
+    return DataportalClient(api_token=token)
 
 
 # --------------------------------------------------------------------------

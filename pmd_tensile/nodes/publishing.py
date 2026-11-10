@@ -12,17 +12,16 @@ from __future__ import annotations
 
 import datetime
 import hashlib
-import os
+import shutil
+import tempfile
 from pathlib import Path
 
 import flowrep as fr
-from praeco import DataportalClient, Person, PublicationMetadata
+from praeco import Person, PublicationMetadata
 from praeco.exceptions import HttpError
 from praeco.services.dataportal.metadata import DataportalMetadata
 
 from pmd_tensile import sources
-
-DATAPORTAL_TOKEN_ENV = "DATAPORTAL_TOKEN"
 
 RECORD_FIELDS = (
     "name", "title", "description", "creators", "license", "keywords", "publication_date", "owner_org", "private",
@@ -30,14 +29,6 @@ RECORD_FIELDS = (
 """The keys of a reviewed record description (``extras`` is optional)."""
 
 _RDF_SUFFIXES = {".nt": "nt", ".ttl": "ttl"}
-
-
-def _dataportal_client() -> DataportalClient:
-    """A Dataportal client with the token from the environment (never from node inputs)."""
-    token = os.environ.get(DATAPORTAL_TOKEN_ENV) or None
-    if token is None:
-        raise RuntimeError(f"set {DATAPORTAL_TOKEN_ENV} to create a Dataportal record")
-    return DataportalClient(api_token=token)
 
 
 def _sha256(path: str) -> str:
@@ -73,7 +64,8 @@ def publish_to_ontodocker(dataset: str, paths: list, file_name: str) -> str:
     """Create a new Ontodocker dataset and upload one RDF file of ``paths`` into it.
 
     Inputs: ``dataset`` (the new dataset's name), ``paths`` (written files),
-    ``file_name`` (which of them; Turtle or N-Triples, which is Turtle too).
+    ``file_name`` (which of them; Turtle or N-Triples, which is Turtle too and is
+    uploaded as a ``.ttl`` copy of the same bytes).
     Output: ``ontodocker_dataset``, the dataset's name. An existing dataset of that
     name raises, because an upload would merge into it.
     """
@@ -84,7 +76,10 @@ def publish_to_ontodocker(dataset: str, paths: list, file_name: str) -> str:
     if dataset in client.datasets.list():
         raise FileExistsError(f"Ontodocker dataset {dataset!r} exists; an upload would merge into it")
     client.datasets.create(dataset)
-    client.datasets.upload_turtlefile(dataset, path)
+    with tempfile.TemporaryDirectory() as folder:  # Ontodocker takes Turtle; N-Triples is Turtle too
+        turtle = Path(folder) / (Path(path).stem + ".ttl")
+        shutil.copyfile(path, turtle)
+        client.datasets.upload_turtlefile(dataset, turtle)
     ontodocker_dataset = dataset
     return ontodocker_dataset
 
@@ -94,7 +89,7 @@ def publish_to_dataportal(record: dict, paths: list) -> str:
     """Create a Dataportal record from a reviewed description and upload the files as its assets.
 
     ``record`` holds :data:`RECORD_FIELDS`: ``name``, ``title``, ``description``,
-    ``creators`` (names), ``license`` (an identifier such as ``CC-BY-4.0``),
+    ``creators`` (names, or mappings with ``name`` and ``orcid``), ``license`` (an identifier such as ``CC-BY-4.0``),
     ``keywords``, ``publication_date`` (ISO date), ``owner_org``, ``private``, and
     optionally ``extras`` (text values). The SHA-256 of every file is added to the
     extras as ``sha256:<file name>``. RDF files (``.nt``, ``.ttl``) are uploaded as
@@ -104,7 +99,7 @@ def publish_to_dataportal(record: dict, paths: list) -> str:
     missing = [key for key in RECORD_FIELDS if key not in record]
     if missing:
         raise ValueError(f"the record description lacks {missing}")
-    client = _dataportal_client()
+    client = sources.dataportal_client(write=True)
     try:
         state = client.datasets.show(record["name"]).raw.get("state")
     except HttpError as error:
@@ -116,7 +111,8 @@ def publish_to_dataportal(record: dict, paths: list) -> str:
     metadata = PublicationMetadata(
         title=record["title"],
         description=record["description"],
-        creators=tuple(Person(name=name) for name in record["creators"]),
+        creators=tuple(Person(name=c) if isinstance(c, str) else Person(name=c["name"], orcid=c.get("orcid"))
+                       for c in record["creators"]),
         publication_date=datetime.date.fromisoformat(record["publication_date"]),
         keywords=tuple(record["keywords"]),
         license=record["license"],

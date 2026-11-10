@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import hashlib
 import types
+from pathlib import Path
 
 import pyiron_workflow as pwf
 import pytest
@@ -36,7 +37,7 @@ class FakeOntodocker:
         self.existing.append(name)
 
     def _upload(self, name, path):
-        self.calls.append(("upload", name, str(path)))
+        self.calls.append(("upload", name, Path(path).name, Path(path).read_bytes()))
 
 
 class FakeDataportal:
@@ -65,8 +66,8 @@ class FakeDataportal:
 def services(monkeypatch):
     ontodocker, dataportal = FakeOntodocker(), FakeDataportal()
     monkeypatch.setattr(sources, "ontodocker_client", lambda: ontodocker)
-    monkeypatch.setattr(publishing, "DataportalClient", lambda api_token: dataportal if api_token == DUMMY_TOKEN else None)
-    monkeypatch.setenv(publishing.DATAPORTAL_TOKEN_ENV, DUMMY_TOKEN)
+    monkeypatch.setattr(sources, "DataportalClient", lambda api_token=None: dataportal if api_token == DUMMY_TOKEN else None)
+    monkeypatch.setenv(sources.DATAPORTAL_TOKEN_ENV, DUMMY_TOKEN)
     return ontodocker, dataportal
 
 
@@ -86,7 +87,7 @@ def test_ontodocker_dataset_is_created_and_never_merged(tmp_path, services):
     ontodocker, _ = services
     paths = publishing.write_publication_files(CONTENTS, str(tmp_path))
     assert publishing.publish_to_ontodocker("pmd_results", paths, "results.nt") == "pmd_results"
-    assert ontodocker.calls == [("create", "pmd_results"), ("upload", "pmd_results", str(tmp_path / "results.nt"))]
+    assert ontodocker.calls == [("create", "pmd_results"), ("upload", "pmd_results", "results.ttl", CONTENTS["results.nt"].encode())]
     with pytest.raises(FileExistsError, match="merge"):
         publishing.publish_to_ontodocker("pmd_results", paths, "results.nt")
     with pytest.raises(LookupError):
@@ -136,8 +137,8 @@ def test_dataportal_errors_other_than_not_found_stop(services):
 def test_dataportal_needs_a_token_and_a_complete_description(monkeypatch, services):
     with pytest.raises(ValueError, match="lacks"):
         publishing.publish_to_dataportal({"name": "x"}, [])
-    monkeypatch.delenv(publishing.DATAPORTAL_TOKEN_ENV)
-    with pytest.raises(RuntimeError, match=publishing.DATAPORTAL_TOKEN_ENV):
+    monkeypatch.delenv(sources.DATAPORTAL_TOKEN_ENV)
+    with pytest.raises(sources.SourceError, match=sources.DATAPORTAL_TOKEN_ENV):
         publishing.publish_to_dataportal(RECORD, [])
 
 
@@ -155,3 +156,11 @@ def test_publishing_workflow_runs_and_its_graph_holds_no_token(tmp_path, service
     graph = run_knowledge_graph(run)
     assert validate_knowledge_graph(graph)[0]
     assert DUMMY_TOKEN not in graph.serialize(format="nt")
+
+
+def test_dataportal_creators_may_carry_an_orcid(tmp_path, services):
+    _, dataportal = services
+    record = dict(RECORD, creators=[{"name": "A Person", "orcid": "0000-0002-1825-0097"}, "B Person"])
+    publishing.publish_to_dataportal(record, [])
+    payload = dataportal.calls[0][1]
+    assert "0000-0002-1825-0097" in str(payload["creator"]) and "B Person" in str(payload["creator"])
