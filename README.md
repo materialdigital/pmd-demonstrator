@@ -3,26 +3,26 @@
 This repository collects technical demonstrators for the Platform MaterialDigital (PMD). It shows concrete usage patterns for public PMD infrastructure, semantic data, notebooks and supporting Python tooling, in two parts that share one environment:
 
 - `notebooks/demonstrator.ipynb` uses `praeco` to access Ontodocker and the MaterialDigital Dataportal, query RDF data, and publish datasets and assets.
-- A series of five notebooks on ten tensile tests of S355 steel. It analyses the raw curves with a semantic workflow built from the nodes of the package [`pmd_tensile`](pmd_tensile/) in this repository, on research graphs in two generations of the PMD core ontology (PMDco 2 and PMDco 3, both used together with the Tensile Test Ontology, TTO).
+- A series of notebooks on ten tensile tests of S355 steel. It analyses the raw curves with a semantic workflow built from the nodes of the package [`pmd_tensile`](pmd_tensile/) in this repository, on research graphs in two generations of the PMD core ontology (PMDco 2 and PMDco 3, both used together with the Tensile Test Ontology, TTO).
 
 ## Notebooks
 
 | Notebook | Main audience | Content |
 | --- | --- | --- |
 | [`demonstrator.ipynb`](notebooks/demonstrator.ipynb) | all; a guided presentation | Ontodocker and Dataportal with `praeco`: what is available, what it means, what belongs together, which metadata can be reused, what others can access |
-| [`01-tensile-data-from-graphs.ipynb`](notebooks/01-tensile-data-from-graphs.ipynb) | ontologists and RDF experts | the same test in PMDco 2 and PMDco 3, ontology profiles mapping both to the same neutral records, and publication metadata harvested from the graphs with `praeco` 0.2.0 |
-| [`02-tensile-analysis-nodes.ipynb`](notebooks/02-tensile-analysis-nodes.ipynb) | MSE experts | the analysis nodes one by one on Zx3, Zy3 and Zd3: what each computes, on which part of the curve, and where it fails |
-| [`03-tensile-workflow-building.ipynb`](notebooks/03-tensile-workflow-building.ipynb) | workflow developers | atomic nodes, the per-specimen workflow and the batch with `pyiron_workflow` and `flowrep`, a parameter change, and reuse of the nodes |
-| [`04-tensile-workflow-knowledge-graph.ipynb`](notebooks/04-tensile-workflow-knowledge-graph.ipynb) | ontologists, workflow developers | what `semantikon` records about a recipe and a run, unit annotations, validation, and one query across run graph and data graph |
-| [`05-tensile-analysis-overview.ipynb`](notebooks/05-tensile-analysis-overview.ipynb) | all; entry point for MSE experts | the analysis of all ten specimens from PMDco 2 and PMDco 3 with identical results, the comparison with the lab values, two overview figures, and the limitations |
+| [`01-tensile-data-from-graphs.ipynb`](notebooks/01-tensile-data-from-graphs.ipynb) | ontologists and RDF experts | the same test in PMDco 2 and PMDco 3, and ontology profiles mapping both to the same neutral records |
+| [`02-tensile-method.ipynb`](notebooks/02-tensile-method.ipynb) | MSE domain experts | the method: for every property its definition, rule, node, parameters, flags and limits, drawn on Zx3, Zy3 and Zd3 and checked on synthetic curves; the one place for the limitations |
+| [`03-tensile-workflow-building.ipynb`](notebooks/03-tensile-workflow-building.ipynb) | workflow developers | atomic nodes, the source of the per-specimen workflow, the batch assembled with `pyiron_workflow` and `flowrep`, a parameter change, and reuse of the nodes |
+| [`04-tensile-workflow-knowledge-graph.ipynb`](notebooks/04-tensile-workflow-knowledge-graph.ipynb) | ontologists, workflow developers | what `semantikon` records about a recipe and a run (called directly), unit annotations, validation, the example queries printed, and one query across run graph and data graph |
+| [`05-tensile-analysis-overview.ipynb`](notebooks/05-tensile-analysis-overview.ipynb) | all; entry point for MSE domain experts | the analysis of all ten specimens from PMDco 2 and PMDco 3 with identical results, the comparison with the lab values in steps of the lab's rounding, and two overview figures |
 
-Reading paths through the tensile series:
+Reading paths through the tensile series, each ending with the publication of the results (notebook 06):
 
-- MSE experts: 05 → 02 → 01
-- Ontologists and RDF experts: 01 → 04 → 05
-- Workflow developers: 03 → 04 → 02 → 05
+- MSE domain experts: 05 → 02 → 01 → 06
+- Ontologists and RDF experts: 01 → 04 → 05 → 06
+- Workflow developers: 03 → 04 → 02 → 05 → 06
 
-The tensile-test properties (E, ReH, ReL, Rp0.2, Fm, Rm, Ag, Agt, A, Z, with flags and uncertainty components) are method-defined and ISO 6892-1-inspired, not ISO-conformant. The comparison with the lab-reported values is a consistency check, not a validation.
+The tensile-test properties (E, ReH, ReL, Rp0.2, Fm, Rm, Ag, Agt, A, Z, with flags and uncertainty components) are defined by the method of notebook 02, inspired by ISO 6892-1 and not ISO-conformant. The comparison with the lab-reported values is a consistency check, not a validation.
 
 ## Setup
 
@@ -58,7 +58,12 @@ Set `ONTODOCKER_ADDRESS`, `ONTODOCKER_TOKEN` (if required by the service) and, f
 
 `demonstrator.ipynb` combines local computation, remote queries, and operations that create datasets and upload assets. Review the creation, publication, and cleanup cells before executing them against a service.
 
-The tensile notebooks only check that `ONTODOCKER_ADDRESS` is set; the package `pmd_tensile` reads `ONTODOCKER_ADDRESS` and `ONTODOCKER_TOKEN` and prints neither. Notebooks 01 and 04 get the Ontodocker client from `pmd_tensile.demo.ontodocker_client()`. Credentials are never workflow inputs, so they cannot enter results or knowledge graphs; [`tests/test_separation.py`](tests/test_separation.py) checks this with a dummy token. No Dataportal token is needed: notebook 01 reads the two Dataportal records publicly. Each notebook states its execution class; all five are network-read: SPARQL queries and Turtle downloads from Ontodocker, curve CSVs from the public data host, and public Dataportal reads. They create, upload or delete no remote resources. Notebook 04 writes graph files only to a temporary directory that it creates and removes. Each tensile notebook can be run with papermill, a development tool that is not part of `environment.yml` (install it locally, like `pytest`), e.g. from `notebooks/`: `papermill -k pmd-demonstrator 05-tensile-analysis-overview.ipynb /tmp/05-tensile-analysis-overview.ipynb`.
+For the tensile notebooks:
+
+- They only check that `ONTODOCKER_ADDRESS` is set; the package `pmd_tensile` reads `ONTODOCKER_ADDRESS` and `ONTODOCKER_TOKEN` (`pmd_tensile.sources.ontodocker_client()`) and prints neither. No Dataportal token is needed.
+- Credentials are never workflow inputs, so they cannot enter results or knowledge graphs; [`tests/test_separation.py`](tests/test_separation.py) checks this with a dummy token.
+- Each notebook states its execution class. Notebooks 01–05 are network-read: SPARQL queries and Turtle downloads from Ontodocker and curve CSVs from the public data host. They create, upload or delete no remote resources; notebook 04 writes graph files only to a temporary directory that it creates and removes.
+- Each can be run with papermill, a development tool that is not part of `environment.yml` (install it locally, like `pytest`), e.g. from `notebooks/`: `papermill -k pmd-demonstrator 05-tensile-analysis-overview.ipynb /tmp/05-tensile-analysis-overview.ipynb`.
 
 ## What is hosted where
 
@@ -68,28 +73,27 @@ The tensile notebooks only check that `ONTODOCKER_ADDRESS` is set; the package `
 | Ontodocker | `pmdco3_tto_example_{parallel,perpendicular,diagonal}`: the PMDco 3 graphs, cut by [`scripts/slice_pmdco3.py`](scripts/slice_pmdco3.py) from the original graph of the TTO repository at commit `08a7aec` (committed unchanged as [`datasets/S355_data_tto_pmdco3.ttl`](datasets/S355_data_tto_pmdco3.ttl)). The script adds one CSVW curve table per test, relinks the lab table to the data host, and appends the orientation to the title; the added triples are marked with `rdfs:comment`. The slices and the full file [`datasets/pmdco3_tto_example.ttl`](datasets/pmdco3_tto_example.ttl) are committed. Ontodocker returns `xsd:string` literals as plain literals, which is the same term under RDF 1.1. |
 | Data host `https://data.pmds-mpcdf-2.pyiron.com/` | the ten raw curves `Zx1.csv` … `Zx4.csv`, `Zy1.csv` … `Zy4.csv`, `Zd2.csv`, `Zd3.csv`, linked by both generations, and the lab table `S355_data.csv`, unchanged from the TTO repository at commit `08a7aec`; public, read without a token |
 | Dataportal | [`pmdco2-tto-recombined`](https://dataportal.material-digital.de/dataset/pmdco2-tto-recombined): the combined PMDco 2 graph, published from `demonstrator.ipynb` |
-| Dataportal | [`pmdco3-tto-recombined`](https://dataportal.material-digital.de/dataset/pmdco3-tto-recombined): the full PMDco 3 file with links to the eleven CSV files, with metadata harvested from the graph and reviewed (notebook 01) |
+| Dataportal | [`pmdco3-tto-recombined`](https://dataportal.material-digital.de/dataset/pmdco3-tto-recombined): the full PMDco 3 file with links to the eleven CSV files, with metadata harvested from the graph with `praeco` and reviewed by a person |
 
 ## The `pmd_tensile` package
 
 `pmd_tensile` holds the workflow nodes and macros, so other notebooks can import them. It is installed editable by `environment.yml`.
 
-- **Node modules** contain only `@fr.atomic` nodes, `@fr.workflow` macros, and the types and constants they need:
-  - `exploration` and `acquisition`: the only ontology-aware nodes (conformance check, specimen listing, specimen record, lab-reported values, curve download);
-  - `analysis`: the ontology-agnostic analysis nodes and their result types, with unit and quantity-kind annotations;
-  - `workflows`: adapter nodes between the neutral records and the analysis, and the macros `exploration_workflow` and `specimen_workflow`.
-- `contract`: the neutral, ontology-free records and unit conversion.
-- `profiles`: the ontology profiles `pmdco2-tto` and `pmdco3-tto` (SPARQL queries, unit aliases, conventions) and their registry.
-- **Private helpers** in `_`-prefixed modules: graph sources and the token-free curve download, the plain-function forms of the nodes, building and running the batch workflow (`run_tensile_analysis`), the method parameters, knowledge-graph export and queries, and the figures. Notebooks reach them through the facade `pmd_tensile.demo`.
+- **`pmd_tensile.nodes`** contains only `@fr.atomic` nodes, `@fr.workflow` macros, and the types and constants they need:
+  - `nodes.exploration` and `nodes.acquisition`: the only ontology-aware nodes (conformance check, specimen listing, specimen record, lab-reported values, curve download);
+  - `nodes.analysis`: the ontology-agnostic analysis nodes, one module per topic (extensometer, elastic line, yielding, maximum force, geometry, comparison). Their inputs and outputs are numbers and arrays with unit and quantity-kind annotations, plus one diagnostics object per node;
+  - `nodes.workflows`: adapter nodes between the neutral records and the analysis, and the macros `exploration_workflow` and `specimen_workflow`.
+- **Helper modules**, ordinary modules outside `nodes`: `contract` (the neutral, ontology-free records), `profiles` (the ontology profiles `pmdco2-tto` and `pmdco3-tto` with their SPARQL queries, unit aliases and conventions), `sources` (graph sources and the token-free curve download), `parameters` (the method parameters), `orchestration` (building and running the batch, `run_tensile_analysis`), `knowledge_graph` (export, validation, queries) and `plotting` (the figures).
 
-This layout prepares the package for collection by [sim_atlas](https://github.com/XzzX/sim_atlas/): [`tests/test_sim_atlas_collection.py`](tests/test_sim_atlas_collection.py) imitates its collector (commit `753205b`) and checks that only nodes, macros and dataclass types are collected, no helper, and that importing the package opens no network connection. The nodes have not been uploaded to a sim_atlas instance, and one gap remains: semantikon stores units and quantity kinds as a flat tuple in the type hint's metadata, while sim_atlas at that commit reads units only from a dictionary, so a catalogue entry would currently lose the units (notebook 03, section 7).
+This layout prepares the package for collection by [sim_atlas](https://github.com/XzzX/sim_atlas/): [`tests/test_sim_atlas_collection.py`](tests/test_sim_atlas_collection.py) imitates its collector (commit `753205b`) and checks that only nodes, macros and dataclass types are collected from `pmd_tensile.nodes`, no helper, and that importing the package opens no network connection. The nodes have not been uploaded to a sim_atlas instance, and one gap remains: semantikon stores units and quantity kinds as a flat tuple in the type hint's metadata, while sim_atlas at that commit reads units only from a dictionary, so a catalogue entry would currently lose the units (notebook 03, section 7).
 
 ## Tests
 
 The tests in [`tests/`](tests/) run offline and block outbound connections. They use the local graphs (the PMDco 2 copies in `downloaded/`, the PMDco 3 files in `datasets/`) and synthetic curves. `pytest` is not part of `environment.yml`; install it locally to run the tests from the repository root:
 
 ```bash
-python -m pytest -p no:cacheprovider tests -m "not network"
+python -m pytest -p no:cacheprovider tests -m "not network"               # the default run
+python -m pytest -p no:cacheprovider tests -m "not network" --run-slow    # also the slow tests (full graphs, knowledge-graph exports)
 python -m pytest -p no:cacheprovider tests --run-statistical -m statistical  # Monte Carlo tolerance checks, slower
 python -m pytest -p no:cacheprovider tests --run-network -m network  # checks that the connection block is lifted (loopback only)
 ```
