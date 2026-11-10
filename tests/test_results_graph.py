@@ -149,8 +149,18 @@ def test_pmdco2_has_no_results_graph():
 
 
 def test_the_batch_without_results_graph_is_unchanged():
-    assert "results_graph" not in orchestration.build_batch_workflow(IDS).nodes
-    assert "results_graph" in orchestration.build_batch_workflow(IDS, results_graph=True).nodes
+    plain, with_results = orchestration.build_batch_workflow(IDS), orchestration.build_batch_workflow(IDS, results_graph=True)
+    assert "results_graph" not in plain.nodes and "results_graph" in with_results.nodes
+    assert "results_ntriples" not in plain.outputs and "results_ntriples" in with_results.outputs
+    assert set(with_results.outputs) - set(plain.outputs) == {"results_ntriples"}
+
+
+def test_a_profile_without_results_mapping_fails_before_the_batch(monkeypatch):
+    def no_run(*args, **kwargs):
+        raise AssertionError("the exploration must not start")
+    monkeypatch.setattr(orchestration, "build_exploration_workflow", no_run)
+    with pytest.raises(ValueError, match="PMDco 3 only"):
+        orchestration.run_tensile_analysis(PMDCO2, PMDCO2_SOURCE, results_graph=True)
 
 
 @pytest.mark.slow

@@ -145,6 +145,7 @@ def test_dataportal_needs_a_token_and_a_complete_description(monkeypatch, servic
 @pytest.mark.slow
 @pytest.mark.filterwarnings("ignore:The hashes produced for directed graphs:UserWarning")
 def test_publishing_workflow_runs_and_its_graph_holds_no_token(tmp_path, services):
+    # ASCII contents: with non-ASCII contents the export fails upstream (see the xfail test below).
     from pmd_tensile.knowledge_graph import run_knowledge_graph, validate_knowledge_graph
 
     ontodocker, dataportal = services
@@ -164,3 +165,38 @@ def test_dataportal_creators_may_carry_an_orcid(tmp_path, services):
     publishing.publish_to_dataportal(record, [])
     payload = dataportal.calls[0][1]
     assert "0000-0002-1825-0097" in str(payload["creator"]) and "B Person" in str(payload["creator"])
+
+
+def test_files_are_checked_before_any_is_written(tmp_path):
+    (tmp_path / "results.nt").write_text("already here", encoding="utf-8")
+    with pytest.raises(FileExistsError):
+        publishing.write_publication_files(CONTENTS, str(tmp_path))
+    assert not (tmp_path / "results.csv").exists()  # sorted first, but not written
+
+
+def test_files_are_written_as_utf8_bytes(tmp_path):
+    text = "Zx1;Weggeschwindigkeit wurde erhöht\r\nmm²\n"
+    (path,) = publishing.write_publication_files({"notes.csv": text}, str(tmp_path))
+    assert Path(path).read_bytes() == text.encode("utf-8")
+
+
+def test_anonymous_dataportal_client_ignores_the_token(monkeypatch):
+    seen = []
+    monkeypatch.setattr(sources, "DataportalClient", lambda api_token=None: seen.append(api_token))
+    monkeypatch.setenv(sources.DATAPORTAL_TOKEN_ENV, DUMMY_TOKEN)
+    sources.dataportal_client()
+    sources.dataportal_client(write=True)
+    assert seen == [None, DUMMY_TOKEN]
+
+
+@pytest.mark.slow
+@pytest.mark.xfail(strict=True, reason="networkx 3.6.1 hashes graph labels as ASCII; the published files hold non-ASCII text")
+@pytest.mark.filterwarnings("ignore:The hashes produced for directed graphs:UserWarning")
+def test_publishing_run_graph_with_non_ascii_contents(tmp_path, services):
+    from pmd_tensile.knowledge_graph import run_knowledge_graph
+
+    run = pwf.node(publishing.publishing_workflow).run(
+        contents={"results.nt": "<urn:a> <urn:b> \"erhöht\" .\n"}, directory=str(tmp_path),
+        ontodocker_dataset="pmd_results", graph_file="results.nt", record=RECORD,
+    )
+    run_knowledge_graph(run)

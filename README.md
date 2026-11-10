@@ -15,6 +15,7 @@ This repository collects technical demonstrators for the Platform MaterialDigita
 | [`03-tensile-workflow-building.ipynb`](notebooks/03-tensile-workflow-building.ipynb) | workflow developers | atomic nodes, the source of the per-specimen workflow, the batch assembled with `pyiron_workflow` and `flowrep`, a parameter change, and reuse of the nodes |
 | [`04-tensile-workflow-knowledge-graph.ipynb`](notebooks/04-tensile-workflow-knowledge-graph.ipynb) | ontologists, workflow developers | what `semantikon` records about a recipe and a run (called directly), unit annotations, validation, the example queries printed, and one query across run graph and data graph |
 | [`05-tensile-analysis-overview.ipynb`](notebooks/05-tensile-analysis-overview.ipynb) | all; entry point for MSE domain experts | the analysis of all ten specimens from PMDco 2 and PMDco 3 with identical results, the comparison with the lab values in steps of the lab's rounding, and two overview figures |
+| [`06-tensile-results-publication.ipynb`](notebooks/06-tensile-results-publication.ipynb) | all; the shared end of every path | the whole chain on the PMDco 3 graphs: analysis ending in the results graph, the computed values next to the lab's, the run graph joined by the curve checksums, and publication with a publishing workflow |
 
 Reading paths through the tensile series, each ending with the publication of the results (notebook 06); readers new to Ontodocker and the Dataportal may start with notebook 00:
 
@@ -56,13 +57,13 @@ Restart any running notebook kernel after changing the installation.
 
 Set `ONTODOCKER_ADDRESS`, `ONTODOCKER_TOKEN` (if required by the service) and, for publishing, `DATAPORTAL_TOKEN` in the environment before starting Jupyter. Keep credentials out of the notebooks and version control.
 
-Notebook 00 only reads by default; with its papermill parameter `publish = True` it creates the two data records of its section 5, which must not exist. Review its reviewed metadata before setting it.
+Notebooks 00 and 06 only read by default. Notebook 00 creates the data records named in its papermill parameter `publish_records`; notebook 06 publishes the results with `publish = True`. Neither writes over an existing record or dataset; review their metadata before setting the parameter.
 
 For the tensile notebooks:
 
-- They only check that `ONTODOCKER_ADDRESS` is set; the package `pmd_tensile` reads `ONTODOCKER_ADDRESS` and `ONTODOCKER_TOKEN` (`pmd_tensile.sources.ontodocker_client()`) and prints neither. No Dataportal token is needed.
+- They only check that `ONTODOCKER_ADDRESS` is set; the package `pmd_tensile` reads `ONTODOCKER_ADDRESS` and `ONTODOCKER_TOKEN` (`pmd_tensile.sources.ontodocker_client()`) and prints neither. Only publishing (notebooks 00 and 06) needs `DATAPORTAL_TOKEN`.
 - Credentials are never workflow inputs, so they cannot enter results or knowledge graphs; [`tests/test_separation.py`](tests/test_separation.py) checks this with a dummy token.
-- Each notebook states its execution class. Notebooks 01–05 are network-read: SPARQL queries and Turtle downloads from Ontodocker and curve CSVs from the public data host. They create, upload or delete no remote resources; notebook 04 writes graph files only to a temporary directory that it creates and removes.
+- Each notebook states its execution class. Notebooks 01–05, and 00 and 06 with their default parameters, are network-read: SPARQL queries and Turtle downloads from Ontodocker and curve CSVs from the public data host. They create, upload or delete no remote resources; notebook 04 writes graph files only to a temporary directory that it creates and removes.
 - Each can be run with papermill, a development tool that is not part of `environment.yml` (install it locally, like `pytest`), e.g. from `notebooks/`: `papermill -k pmd-demonstrator 05-tensile-analysis-overview.ipynb /tmp/05-tensile-analysis-overview.ipynb`.
 
 ## What is hosted where
@@ -71,9 +72,11 @@ For the tensile notebooks:
 | --- | --- |
 | Ontodocker | `pmdco2_tto_example_{parallel,perpendicular,diagonal}`: the PMDco 2 graphs of the tests, one dataset per orientation group. Local copies are in [`downloaded/`](downloaded/). |
 | Ontodocker | `pmdco3_tto_example_{parallel,perpendicular,diagonal}`: the PMDco 3 graphs, cut by [`scripts/slice_pmdco3.py`](scripts/slice_pmdco3.py) from the original graph of the TTO repository at commit `08a7aec` (committed unchanged as [`datasets/S355_data_tto_pmdco3.ttl`](datasets/S355_data_tto_pmdco3.ttl)). The script adds one CSVW curve table per test, relinks the lab table to the data host, and appends the orientation to the title; the added triples are marked with `rdfs:comment`. The slices and the full file [`datasets/pmdco3_tto_example.ttl`](datasets/pmdco3_tto_example.ttl) are committed. Ontodocker returns `xsd:string` literals as plain literals, which is the same term under RDF 1.1. |
+| Ontodocker | `pmdco3_tto_example_results`: the results graph of notebook 06, to be queried together with the PMDco 3 graphs |
 | Data host `https://data.pmds-mpcdf-2.pyiron.com/` | the ten raw curves `Zx1.csv` … `Zx4.csv`, `Zy1.csv` … `Zy4.csv`, `Zd2.csv`, `Zd3.csv`, linked by both generations, and the lab table `S355_data.csv`, unchanged from the TTO repository at commit `08a7aec`; public, read without a token |
 | Dataportal | [`pmdco2-tto-recombined`](https://dataportal.material-digital.de/dataset/pmdco2-tto-recombined): the combined PMDco 2 graph, published by notebook 00 |
 | Dataportal | [`pmdco3-tto-recombined`](https://dataportal.material-digital.de/dataset/pmdco3-tto-recombined): the full PMDco 3 file with links to the eleven CSV files, with metadata harvested from the graph with `praeco` and reviewed by a person |
+| Dataportal | [`pmdco3-tto-results`](https://dataportal.material-digital.de/dataset/pmdco3-tto-results): the computed tensile properties as a results graph in PMDco 3/TTO terms, the semantikon run graph of the computation and the results table, published by notebook 06 |
 
 ## The `pmd_tensile` package
 

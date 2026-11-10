@@ -56,6 +56,7 @@ from pmd_tensile.parameters import (
     parameter_values,
     parameters_from_values,
 )
+from pmd_tensile.profiles import get_profile
 
 
 def build_exploration_workflow(label: str = "exploration"):
@@ -261,7 +262,9 @@ class TensileAnalysis:
     that the specimen's ``fetch_curve`` step returned and to the
     :class:`SpecimenAnalysis` of its node outputs. Both come from the batch
     run's own data, not from a second download, so a figure drawn from them
-    shows exactly the arrays the analysis used.
+    shows exactly the arrays the analysis used. ``results_ntriples`` is the
+    results graph (N-Triples) when the batch ended in the results node, else
+    ``None``.
     """
 
     profile_id: str
@@ -349,6 +352,8 @@ def run_tensile_analysis(
     its N-Triples are ``results_ntriples`` of the result.
     """
     parameters_from_values(parameters)  # fail early on invalid parameters
+    if results_graph and get_profile(profile_id).results is None:  # fail early, before any download
+        raise ValueError(f"profile {profile_id!r} has no results mapping; results graphs are written for PMDco 3 only")
     if specimen_ids is not None:
         specimen_ids = _unique_specimen_ids(specimen_ids)  # fail early on repeated IDs
     exploration_node = build_exploration_workflow()

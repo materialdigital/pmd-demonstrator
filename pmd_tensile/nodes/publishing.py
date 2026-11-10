@@ -1,6 +1,7 @@
 """Publishing nodes: the files of a results publication, an Ontodocker dataset and a Dataportal record.
 
-The nodes wrap praeco calls, the same calls notebook 00 makes directly.
+The nodes wrap praeco calls; the Dataportal calls are those notebook 00 makes
+directly.
 Addresses and tokens come from the environment (``ONTODOCKER_ADDRESS``,
 ``ONTODOCKER_TOKEN``, ``DATAPORTAL_TOKEN``), never from node inputs, so they
 cannot enter a recipe, a run or a knowledge graph. Every remote node refuses to
@@ -37,25 +38,31 @@ def _sha256(path: str) -> str:
 
 @fr.atomic
 def write_publication_files(contents: dict, directory: str) -> list:
-    """Write each text of ``contents`` (file name -> text) to ``directory`` as UTF-8.
+    """Write each text of ``contents`` (file name -> text) to ``directory`` as UTF-8 bytes.
 
     Inputs: ``contents``, ``directory`` (an existing directory the caller chose).
-    Output: ``paths``, the written files in the order of the names. A name with a
-    path separator, an existing file or a missing directory raises (nothing is
-    overwritten).
+    Output: ``paths``, the written files in the order of the names. Every name is
+    checked before anything is written: a name with a path separator, an existing
+    file or a missing directory raises. Files are created exclusively and written
+    as bytes, so line endings are never translated and a file's SHA-256 is that of
+    its text's UTF-8 encoding.
+    Limits: a file that appears between the check and the write makes that write
+    fail; files written before it remain.
     """
     folder = Path(directory)
     if not folder.is_dir():
         raise FileNotFoundError(f"not a directory: {folder}")
-    paths = []
-    for name in sorted(contents):
+    names = sorted(contents)
+    for name in names:
         if Path(name).name != name or name in ("", ".", ".."):
             raise ValueError(f"a file name, not a path, is expected: {name!r}")
-        target = folder / name
-        if target.exists():
-            raise FileExistsError(f"refusing to overwrite {target}")
-        target.write_text(contents[name], encoding="utf-8")
-        paths.append(str(target))
+        if (folder / name).exists():
+            raise FileExistsError(f"refusing to overwrite {folder / name}")
+    paths = []
+    for name in names:
+        with open(folder / name, "xb") as handle:  # exclusive: never overwrites
+            handle.write(contents[name].encode("utf-8"))
+        paths.append(str(folder / name))
     return paths
 
 
@@ -95,6 +102,8 @@ def publish_to_dataportal(record: dict, paths: list) -> str:
     extras as ``sha256:<file name>``. RDF files (``.nt``, ``.ttl``) are uploaded as
     RDF, others with their suffix as format.
     Output: ``record_name``. A record of that name that is not deleted raises.
+    Limits: the record is created before the files are uploaded; if an upload
+    fails, the record remains with the assets uploaded so far (no rollback).
     """
     missing = [key for key in RECORD_FIELDS if key not in record]
     if missing:
@@ -136,7 +145,17 @@ def publish_to_dataportal(record: dict, paths: list) -> str:
 
 @fr.workflow
 def publishing_workflow(contents: dict, directory: str, ontodocker_dataset: str, graph_file: str, record: dict):
-    """Write the files, then publish the graph file on Ontodocker and all files as a Dataportal record."""
+    """Write the files, then publish the graph file on Ontodocker and all files as a Dataportal record.
+
+    Inputs: ``contents`` (file name -> text), ``directory`` (where the files are
+    written), ``ontodocker_dataset`` (name of the new dataset), ``graph_file``
+    (which file goes to Ontodocker), ``record`` (the reviewed record description,
+    see :func:`publish_to_dataportal`).
+    Outputs: ``paths``, ``dataset`` (the Ontodocker dataset), ``record_name``.
+    Limits: the steps are not one transaction. The Ontodocker dataset is created
+    before the Dataportal record is checked; if the record step refuses or fails,
+    the dataset remains, and a rerun is refused by the Ontodocker step.
+    """
     paths = write_publication_files(contents, directory)
     dataset = publish_to_ontodocker(ontodocker_dataset, paths, graph_file)
     record_name = publish_to_dataportal(record, paths)
