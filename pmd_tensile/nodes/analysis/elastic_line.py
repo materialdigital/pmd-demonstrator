@@ -103,11 +103,6 @@ class WindowSensitivityDiagnostics:
     flags: tuple[str, ...] = ()
 
 
-def _force_line(e_gpa: float, intercept_mpa: float, s0: float) -> tuple[float, float]:
-    """A line sigma = E*e + b in force units: (dF/de in N, intercept in N)."""
-    return e_gpa * 1000.0 * s0, intercept_mpa * s0
-
-
 @fr.atomic
 def engineering_stress(force_n: ForceArray, s0_mm2: AreaMM2) -> StressArray:
     """Engineering stress sigma = F/S0 (MPa) from force (N) and S0 (mm²), for display."""
@@ -246,7 +241,7 @@ def elastic_line(
         iterations = 1
         status = "converged" if math.isfinite(ols.slope) else "insufficient"
     else:
-        slope0, intercept0 = _force_line(e0_gpa, intercept0_mpa, s0)
+        slope0, intercept0 = e0_gpa * 1000.0 * s0, intercept0_mpa * s0  # the provisional line in force units
         ols, lo, hi, reference, iterations, status = _continuous_window(
             force, eps, valid, slope0, intercept0, highest_force_n, p
         )

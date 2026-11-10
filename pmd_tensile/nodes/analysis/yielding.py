@@ -38,7 +38,7 @@ from pmd_tensile.units import (
 CONTINUOUS = "continuous"
 DISCONTINUOUS = "discontinuous"
 
-SEARCH_FRACTION_OF_FM = 0.5
+SEARCH_FRACTION_OF_HIGHEST_FORCE = 0.5
 """The yield drop is searched only where the force exceeds this fraction of the highest force."""
 
 _NO_UPPER_YIELD = ("reh:no_upper_yield", "rel:no_upper_yield")
@@ -88,15 +88,16 @@ def _no_valid_peak_cause(drop_has_valid_strain: bool) -> str:
     return "reh:extensometer_invalid" if drop_has_valid_strain else "reh:no_drop_in_valid_strain"
 
 
-def _first_qualifying_drop(f: np.ndarray, highest_force: float, noise: float, p: AnalysisParameters) -> tuple[int, np.ndarray]:
-    """First finite sample, above the search fraction of the highest force, that lies at
-    least d(j) = max(drop_rel * M(j), drop_noise_factor * noise) below the running maximum M(j).
+def _first_qualifying_drop(forces: np.ndarray, highest_force: float, noise: float, p: AnalysisParameters) -> tuple[int, np.ndarray]:
+    """First of the finite-force samples ``forces``, above the search fraction of the highest
+    force, that lies at least d(j) = max(drop_rel * M(j), drop_noise_factor * noise) below the
+    running maximum M(j).
 
-    Returns its position in ``f`` (-1 if none) and the running maximum.
+    Returns its position in ``forces`` (-1 if none) and the running maximum.
     """
-    running = np.maximum.accumulate(f)
+    running = np.maximum.accumulate(forces)
     required = np.maximum(p.drop_rel * running, p.drop_noise_factor * noise)
-    first = _first((f > SEARCH_FRACTION_OF_FM * highest_force) & (f <= running - required))
+    first = _first((forces > SEARCH_FRACTION_OF_HIGHEST_FORCE * highest_force) & (forces <= running - required))
     return first, running
 
 
@@ -141,30 +142,32 @@ def _lower_yield(
     rel_incl_transient = float(y_force.min())
     level = _plateau_level(y_force, reh)
     start = _recovery(y_force, level, threshold)
-    common = dict(rel_incl_transient=rel_incl_transient, level=level, recovery=start)
+    extent, band_upper = NAN, None
     if start >= 0:
         candidate = start + int(np.argmin(y_force[start:]))
         band_upper = 2.0 * level - float(y_force[candidate])
-        if not valid[y_index[start]]:
-            return _LowerYield(band_upper=band_upper, flags=("rel:extensometer_invalid",), **common)
         in_band = y_force[start:] <= band_upper
         strain_valid = valid[y_index[start:]]
-        last_valid = int(np.flatnonzero(strain_valid)[-1])
-        if in_band[last_valid] and np.any(in_band[last_valid + 1 :]):
-            return _LowerYield(band_upper=band_upper, flags=("rel:extensometer_invalid",), **common)
+        last_valid = int(np.flatnonzero(strain_valid)[-1]) if np.any(strain_valid) else -1
+        # The extent is unknown if the plateau starts or continues beyond the valid strain.
+        if not valid[y_index[start]] or (in_band[last_valid] and np.any(in_band[last_valid + 1 :])):
+            return _LowerYield(rel_incl_transient=rel_incl_transient, level=level, recovery=start,
+                               band_upper=band_upper, flags=("rel:extensometer_invalid",))
         inside = np.flatnonzero(in_band & strain_valid)
         last = start + int(inside[-1]) if len(inside) else start
         extent = float(plastic[y_index[last]] - plastic[y_index[start]])
         if extent >= p.plateau_min_extent:
-            return _LowerYield(rel_index=int(y_index[candidate]), extent=extent, band_upper=band_upper, **common)
-        common["extent"] = extent
-        common["band_upper"] = band_upper
+            return _LowerYield(rel_index=int(y_index[candidate]), rel_incl_transient=rel_incl_transient,
+                               level=level, extent=extent, recovery=start, band_upper=band_upper)
+    # No plateau after the transient, or a plateau too short: the minimum before the recovery.
     transient = y_force[:start] if start > 0 else y_force
-    return _LowerYield(rel_index=int(y_index[int(np.argmin(transient))]), flags=("rel:single_minimum",), **common)
+    return _LowerYield(rel_index=int(y_index[int(np.argmin(transient))]), rel_incl_transient=rel_incl_transient,
+                       level=level, extent=extent, recovery=start, band_upper=band_upper,
+                       flags=("rel:single_minimum",))
 
 
 def _end_without_return(
-    f: np.ndarray, finite_idx: np.ndarray, peak: int, reh: float, threshold: float, highest_force: float,
+    forces: np.ndarray, finite_idx: np.ndarray, peak: int, reh: float, threshold: float, highest_force: float,
     valid: np.ndarray, plastic: np.ndarray, p: AnalysisParameters,
 ) -> tuple[int, bool, _LowerYield]:
     """End of yielding when the stress never returns to ReH.
@@ -175,28 +178,35 @@ def _end_without_return(
     the stress, after having been in the band, rises above it by more than the drop
     threshold d. Then the end of yielding is the highest sample from that rise on,
     and the lower-yield rule is applied again up to it. Returns (end position in
-    ``f``, whether work hardening was reached, lower-yield result).
+    ``forces``, whether work hardening was reached, lower-yield result).
     """
-    above = np.flatnonzero(f[peak + 1 :] > SEARCH_FRACTION_OF_FM * highest_force)
+    # The first qualifying drop lies after the peak and above this threshold, so ``above`` is never empty.
+    above = np.flatnonzero(forces[peak + 1 :] > SEARCH_FRACTION_OF_HIGHEST_FORCE * highest_force)
     end = peak + 1 + int(above[-1]) + 1
-    y_force, y_index = f[peak + 1 : end], finite_idx[peak + 1 : end]
+    y_force, y_index = forces[peak + 1 : end], finite_idx[peak + 1 : end]
     lower = _lower_yield(y_force, y_index, reh, threshold, valid, plastic, p)
     if lower.band_upper is not None:
         tail = y_force[lower.recovery :]
         inside = _first(tail <= lower.band_upper)
         if inside >= 0:
+            # The maxima of a symmetric serrated plateau lie on the band's upper edge,
+            # so work hardening must rise above it by more than d.
             rise = _first(tail[inside + 1 :] > lower.band_upper + threshold)
             if rise >= 0:
                 rise_pos = lower.recovery + inside + 1 + rise
                 end = peak + 1 + rise_pos + int(np.argmax(y_force[rise_pos:]))
-                lower = _lower_yield(f[peak + 1 : end], finite_idx[peak + 1 : end], reh, threshold, valid, plastic, p)
+                lower = _lower_yield(forces[peak + 1 : end], finite_idx[peak + 1 : end], reh, threshold, valid, plastic, p)
                 return end, True, lower
     return end, False, lower
 
 
 def _yield_result(force_n, strain, s0_mm2, k_ext, highest_force_n, e0_gpa, intercept0_mpa, noise_mpa,
                   rate_switch_strain, params) -> tuple[str, float, float, int, int, bool, YieldDiagnostics]:
-    """The computation of :func:`yield_points`, with early returns for continuous yielding."""
+    """The computation of :func:`yield_points`, with early returns for continuous yielding.
+
+    It is separate from the node because flowrep takes a node's output names from its
+    single ``return`` statement.
+    """
     p = _params(params)
     s0 = _check_s0(s0_mm2)
     force, eps, _ = _channels(force_n, strain)
@@ -204,21 +214,25 @@ def _yield_result(force_n, strain, s0_mm2, k_ext, highest_force_n, e0_gpa, inter
     slope, intercept = e0_gpa * 1000.0 * s0, intercept0_mpa * s0
     noise = noise_mpa * s0 if math.isfinite(noise_mpa) else 0.0
     finite_idx = np.flatnonzero(np.isfinite(force))
-    f = force[finite_idx]
+    forces = force[finite_idx]
 
     def continuous(*flags: str, first_drop: int = -1, largest: float = NAN):
-        diagnostics = YieldDiagnostics(-1, NAN, NAN, NAN, NAN, largest, first_drop, NAN, _unique((*flags, *_NO_UPPER_YIELD)))
+        diagnostics = YieldDiagnostics(
+            rel_index=-1, rel_incl_transient_mpa=NAN, plateau_level_mpa=NAN, plateau_extent=NAN,
+            drop_threshold_mpa=NAN, largest_valid_drop_mpa=largest, first_drop_index=first_drop,
+            reh_sample_increment_mpa=NAN, flags=_unique((*flags, *_NO_UPPER_YIELD)),
+        )
         return CONTINUOUS, NAN, NAN, -1, -1, False, diagnostics
 
-    if len(f) < 2 or not math.isfinite(highest_force_n):
+    if len(forces) < 2 or not math.isfinite(highest_force_n):
         return continuous()
-    first, running = _first_qualifying_drop(f, highest_force_n, noise, p)
-    searched = (f > SEARCH_FRACTION_OF_FM * highest_force_n) & valid[finite_idx]
-    largest = float((running - f)[searched].max()) / s0 if np.any(searched) else NAN
+    first, running = _first_qualifying_drop(forces, highest_force_n, noise, p)
+    searched = (forces > SEARCH_FRACTION_OF_HIGHEST_FORCE * highest_force_n) & valid[finite_idx]
+    largest = float((running - forces)[searched].max()) / s0 if np.any(searched) else NAN
     if first < 0:
         return continuous(largest=largest)
     first_drop = int(finite_idx[first])
-    peak = int(np.argmax(f[: first + 1]))
+    peak = int(np.argmax(forces[: first + 1]))
     i_p = int(finite_idx[peak])
     if not (math.isfinite(slope) and slope > 0 and math.isfinite(intercept)):
         return continuous("reh:insufficient_elastic_points", first_drop=first_drop, largest=largest)
@@ -227,7 +241,7 @@ def _yield_result(force_n, strain, s0_mm2, k_ext, highest_force_n, e0_gpa, inter
     plastic = eps - (force - intercept) / slope
     if plastic[i_p] > p.peak_max_plastic_strain:
         return continuous(first_drop=first_drop, largest=largest)
-    exceeded = _first(f[peak + 1 :] > f[peak])
+    exceeded = _first(forces[peak + 1 :] > forces[peak])
     stop = len(force) if exceeded < 0 else int(finite_idx[peak + 1 + exceeded])
     flow = np.arange(i_p + 1, stop)
     flow = flow[valid[flow]]
@@ -236,16 +250,16 @@ def _yield_result(force_n, strain, s0_mm2, k_ext, highest_force_n, e0_gpa, inter
     if plastic[flow].max() - plastic[i_p] < p.min_flow_plastic_strain:
         return continuous(first_drop=first_drop, largest=largest)
 
-    reh = float(f[peak])
+    reh = float(forces[peak])
     threshold = max(p.drop_rel * reh, p.drop_noise_factor * noise)
     flags = []
-    back_at_reh = _first(f[peak + 1 :] >= reh)
+    back_at_reh = _first(forces[peak + 1 :] >= reh)
     if back_at_reh >= 0:
         end, work_hardening = peak + 1 + back_at_reh, True
-        lower = _lower_yield(f[peak + 1 : end], finite_idx[peak + 1 : end], reh, threshold, valid, plastic, p)
+        lower = _lower_yield(forces[peak + 1 : end], finite_idx[peak + 1 : end], reh, threshold, valid, plastic, p)
     else:
         flags.append("fm:no_return_to_reh")
-        end, work_hardening, lower = _end_without_return(f, finite_idx, peak, reh, threshold, highest_force_n, valid, plastic, p)
+        end, work_hardening, lower = _end_without_return(forces, finite_idx, peak, reh, threshold, highest_force_n, valid, plastic, p)
         if not work_hardening:
             flags.append("rel:no_work_hardening")
     flags += lower.flags
@@ -257,7 +271,7 @@ def _yield_result(force_n, strain, s0_mm2, k_ext, highest_force_n, e0_gpa, inter
     yield_type = DISCONTINUOUS
     reh_mpa, rel_mpa = reh / s0, rel / s0
     upper_yield_index = i_p
-    end_of_yielding_index = int(finite_idx[end]) if end < len(f) else len(force)
+    end_of_yielding_index = int(finite_idx[end]) if end < len(forces) else len(force)
     diagnostics = YieldDiagnostics(
         rel_index=lower.rel_index,
         rel_incl_transient_mpa=lower.rel_incl_transient / s0,
@@ -266,7 +280,7 @@ def _yield_result(force_n, strain, s0_mm2, k_ext, highest_force_n, e0_gpa, inter
         drop_threshold_mpa=threshold / s0,
         largest_valid_drop_mpa=largest,
         first_drop_index=first_drop,
-        reh_sample_increment_mpa=float(f[peak] - f[peak - 1]) / s0 if peak > 0 else NAN,
+        reh_sample_increment_mpa=float(forces[peak] - forces[peak - 1]) / s0 if peak > 0 else NAN,
         flags=_unique(flags),
     )
     return yield_type, reh_mpa, rel_mpa, upper_yield_index, end_of_yielding_index, work_hardening, diagnostics

@@ -228,9 +228,10 @@ class SpecimenAnalysis:
         """From a mapping of node output names to values (the names of the macro's variables)."""
         fields = {f.name for f in dataclasses.fields(cls)} - {"flags"}
         values = {name: outputs[name] for name in fields}
-        steps = ("extensometer", "elastic", "yielding", "proof", "elongation", "sensitivity")
-        flags = [flag for step in steps[:4] for flag in values[step].flags]
-        flags += [*values["maximum_flags"], *values["elongation"].flags, *values["sensitivity"].flags]
+        # The flags of the steps, in this order, once each.
+        flags = (*values["extensometer"].flags, *values["elastic"].flags, *values["yielding"].flags,
+                 *values["proof"].flags, *values["maximum_flags"], *values["elongation"].flags,
+                 *values["sensitivity"].flags)
         return cls(**values, flags=tuple(dict.fromkeys(flags)))
 
 
@@ -383,35 +384,30 @@ def analyse_curve(
     same arrays.
     """
     _check_s0(s0_mm2)
-    out = {"dropped": count_dropped_samples(force_n, strain, crosshead_mm)}
-    out["k_ext"], out["max_valid_strain"], out["extensometer"] = extensometer_validity(
+    dropped = count_dropped_samples(force_n, strain, crosshead_mm)
+    k_ext, max_valid_strain, extensometer = extensometer_validity(
         strain, crosshead_mm, l0_mm, a_percent, rate_switch_strain, params
     )
-    k_ext = out["k_ext"]
-    (out["highest_force_n"], out["e0_gpa"], out["intercept0_mpa"], out["noise_mpa"],
-     out["provisional"]) = provisional_elastic_line(force_n, strain, s0_mm2, k_ext, params)
-    (out["yield_type"], out["reh_mpa"], out["rel_mpa"], out["upper_yield_index"], out["end_of_yielding_index"],
-     out["work_hardening"], out["yielding"]) = yield_points(
-        force_n, strain, s0_mm2, k_ext, out["highest_force_n"], out["e0_gpa"], out["intercept0_mpa"],
-        out["noise_mpa"], rate_switch_strain, params,
+    highest_force_n, e0_gpa, intercept0_mpa, noise_mpa, provisional = provisional_elastic_line(
+        force_n, strain, s0_mm2, k_ext, params
     )
-    out["e_gpa"], out["strain_origin"], out["reference_force_n"], out["elastic"] = elastic_line(
-        force_n, strain, s0_mm2, k_ext, out["upper_yield_index"], out["highest_force_n"], out["e0_gpa"],
-        out["intercept0_mpa"], params,
+    yield_type, reh_mpa, rel_mpa, upper_yield_index, end_of_yielding_index, work_hardening, yielding = yield_points(
+        force_n, strain, s0_mm2, k_ext, highest_force_n, e0_gpa, intercept0_mpa, noise_mpa, rate_switch_strain, params
     )
-    out["rp02_mpa"], out["proof"] = proof_strength(
-        force_n, strain, s0_mm2, k_ext, out["e_gpa"], out["strain_origin"], out["reference_force_n"],
-        out["upper_yield_index"], out["end_of_yielding_index"], rate_switch_strain, params,
+    e_gpa, strain_origin, reference_force_n, elastic = elastic_line(
+        force_n, strain, s0_mm2, k_ext, upper_yield_index, highest_force_n, e0_gpa, intercept0_mpa, params
     )
-    out["fm_n"], out["rm_mpa"], out["max_force_index"], out["maximum_flags"] = maximum_force(
-        force_n, s0_mm2, out["yield_type"], out["work_hardening"], out["end_of_yielding_index"]
+    rp02_mpa, proof = proof_strength(
+        force_n, strain, s0_mm2, k_ext, e_gpa, strain_origin, reference_force_n, upper_yield_index,
+        end_of_yielding_index, rate_switch_strain, params,
     )
-    out["agt_percent"], out["ag_percent"], out["elongation"] = elongation_at_maximum_force(
-        force_n, strain, s0_mm2, k_ext, out["e_gpa"], out["strain_origin"], out["fm_n"], out["max_force_index"],
-        out["noise_mpa"], params,
+    fm_n, rm_mpa, max_force_index, maximum_flags = maximum_force(
+        force_n, s0_mm2, yield_type, work_hardening, end_of_yielding_index
     )
-    out["e_min_gpa"], out["e_max_gpa"], out["rp02_min_mpa"], out["rp02_max_mpa"], out["sensitivity"] = window_sensitivity(
-        force_n, strain, s0_mm2, k_ext, out["reference_force_n"], out["e_gpa"], out["strain_origin"],
-        out["agt_percent"], out["fm_n"], params,
+    agt_percent, ag_percent, elongation = elongation_at_maximum_force(
+        force_n, strain, s0_mm2, k_ext, e_gpa, strain_origin, fm_n, max_force_index, noise_mpa, params
     )
-    return SpecimenAnalysis.from_outputs(out)
+    e_min_gpa, e_max_gpa, rp02_min_mpa, rp02_max_mpa, sensitivity = window_sensitivity(
+        force_n, strain, s0_mm2, k_ext, reference_force_n, e_gpa, strain_origin, agt_percent, fm_n, params
+    )
+    return SpecimenAnalysis.from_outputs(locals())  # the local names are the field names
