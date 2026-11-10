@@ -99,9 +99,11 @@ from pmd_tensile.profiles.base import (
     CURVE_DIALECT_COLUMNS,
     NOTE_COLUMNS,
     QUANTITY_COLUMNS,
+    RESULT_TARGET_COLUMNS,
     SPECIMEN_COLUMNS,
     CurveLocator,
     OntologyProfile,
+    ResultsMapping,
     SelectQuery,
 )
 from pmd_tensile.profiles.units import QUDT_UNIT
@@ -375,6 +377,38 @@ IRI_LABELS: tuple[tuple[str, str, str], ...] = (
     ("pmdco:PMD_0060011", "percentage extension", "what the strain column is about; not in the released tto-full"),
 )
 
+RESULT_TARGETS = SelectQuery(
+    query=_PREFIXES
+    + """PREFIX csvw:  <http://www.w3.org/ns/csvw#>
+SELECT DISTINCT ?process ?material ?table
+WHERE {
+  ?process a pmdco:PMD_0000974 ;                # tensile testing process
+           obo:OBI_0000293 ?test_piece ;        # has specified input
+           obo:OBI_0000299 ?table .             # has specified output
+  ?test_piece pmdco:PMD_0020005 ?material .
+  ?table a csvw:Table, pmdco:PMD_0000992 .      # the curve table (time series)
+}
+""",
+    columns=RESULT_TARGET_COLUMNS,
+)
+"""Per test, the material that bears its properties and the curve table the analysis read."""
+
+RESULT_QUALITY_CLASSES = {
+    "E": "https://w3id.org/pmd/co/PMD_0000618",       # elastic modulus
+    "ReH": "https://w3id.org/pmd/co/PMD_0080173",     # upper yield strength
+    "ReL": "https://w3id.org/pmd/co/PMD_0080172",     # lower yield strength
+    "Rp0.2": "https://w3id.org/pmd/tto/TTO_0000047",  # proof strength, plastic extension
+    "Rm": "https://w3id.org/pmd/tto/TTO_0000053",     # tensile strength
+    "Fm": "https://w3id.org/pmd/tto/TTO_0000023",     # maximum force
+    "A": "https://w3id.org/pmd/co/PMD_0060004",       # percentage elongation after fracture
+    "Z": "https://w3id.org/pmd/co/PMD_0060018",       # percentage reduction of area
+    "Ag": "https://w3id.org/pmd/tto/TTO_0000037",     # percentage plastic extension at maximum force
+    "Agt": "https://w3id.org/pmd/tto/TTO_0000040",    # percentage total extension at maximum force
+}
+"""Class of a new quality individual per quantity. Where the TTO class that the graph uses is
+deprecated in the TTO source ontology at the pinned commit (ReH, ReL, A, Z), its PMDco
+replacement is used; quality individuals that the graph already has keep their classes."""
+
 PROFILE = OntologyProfile(
     profile_id=PROFILE_ID,
     description=(
@@ -390,4 +424,5 @@ PROFILE = OntologyProfile(
     curve_columns=CURVE_COLUMNS,
     unit_aliases=UNIT_ALIASES,
     accepts_curve_locator=True,
+    results=ResultsMapping(targets=RESULT_TARGETS, quality_classes=RESULT_QUALITY_CLASSES),
 )

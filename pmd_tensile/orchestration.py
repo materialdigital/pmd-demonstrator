@@ -42,6 +42,7 @@ from pmd_tensile.nodes.analysis.maximum_force import (
     maximum_force,
 )
 from pmd_tensile.nodes.analysis.yielding import YieldDiagnostics, yield_points
+from pmd_tensile.nodes.results import results_graph as results_graph_node
 from pmd_tensile.nodes.workflows import (
     GROUP_COLUMN,
     comparison_table,
@@ -90,7 +91,9 @@ def _unique_specimen_ids(specimen_ids: Sequence[str]) -> list[str]:
     return ids
 
 
-def build_batch_workflow(specimen_ids: Sequence[str], label: str = "tensile_batch") -> pwf.Workflow:
+def build_batch_workflow(
+    specimen_ids: Sequence[str], label: str = "tensile_batch", *, results_graph: bool = False
+) -> pwf.Workflow:
     """Stage 2: one per-specimen node per specimen ID, plus aggregation nodes.
 
     The IDs only fix the number of branches; their values are workflow inputs
@@ -99,6 +102,9 @@ def build_batch_workflow(specimen_ids: Sequence[str], label: str = "tensile_batc
     ``curve_locator``, ``parameters`` and ``specimen_id_0`` ... Outputs: ``results``
     (one row per specimen), ``orientation_summary`` (statistics per orientation),
     ``comparison`` (all specimens) and ``rows`` (the gathered rows). A repeated specimen ID raises ``ValueError``.
+    With ``results_graph=True`` the batch ends in the results node
+    (:func:`~pmd_tensile.nodes.results.results_graph`, PMDco 3 profiles only),
+    and has the output ``results_ntriples``.
 
     Every input is required, ``curve_locator`` and ``parameters`` included,
     even where ``None`` means "not used" or "method defaults": in
@@ -142,6 +148,13 @@ def build_batch_workflow(specimen_ids: Sequence[str], label: str = "tensile_batc
     wf.create_output_from(wf.orientation_summary.outputs.summary, "orientation_summary")
     wf.create_output_from(wf.comparison.outputs.table, "comparison")
     wf.create_output_from(gather_rows.outputs.output_0, "rows")
+    if results_graph:
+        wf.results_graph = pwf.node(results_graph_node)
+        wf.connect(wf.inputs.profile_id, wf.results_graph.inputs.profile_id)
+        wf.connect(wf.inputs.source, wf.results_graph.inputs.source)
+        wf.connect(gather_rows.outputs.output_0, wf.results_graph.inputs.rows)
+        wf.connect(wf.inputs.parameters, wf.results_graph.inputs.parameters)
+        wf.create_output_from(wf.results_graph.outputs.results_ntriples, "results_ntriples")
     return wf
 
 
@@ -262,6 +275,7 @@ class TensileAnalysis:
     comparison: pd.DataFrame
     curves: dict[str, Curve]
     specimen_analyses: dict[str, SpecimenAnalysis]
+    results_ntriples: str | None = None
 
 
 def _specimen_data(batch_run, index: int, specimen_id: str):
@@ -322,6 +336,7 @@ def run_tensile_analysis(
     *,
     specimen_ids: Sequence[str] | None = None,
     parameters: Mapping | None = None,
+    results_graph: bool = False,
 ) -> TensileAnalysis:
     """Run both stages: exploration, then the batch over the listed specimens.
 
@@ -330,6 +345,8 @@ def run_tensile_analysis(
     so does a repeated ID (before anything runs).
     ``parameters`` is the dictionary form of the analysis parameters (missing
     keys keep the method defaults); it is validated before anything runs.
+    ``results_graph=True`` ends the batch in the results node (PMDco 3 profiles);
+    its N-Triples are ``results_ntriples`` of the result.
     """
     parameters_from_values(parameters)  # fail early on invalid parameters
     if specimen_ids is not None:
@@ -344,7 +361,7 @@ def run_tensile_analysis(
         unknown = sorted(set(selected) - set(listed))
         if unknown:
             raise LookupError(f"specimen IDs not described in the source: {unknown}; listed: {listed}")
-    batch = build_batch_workflow(selected)
+    batch = build_batch_workflow(selected, results_graph=results_graph)
     batch_run = batch.run(**batch_inputs(profile_id, source, selected, curve_locator, parameters))
     curves, analyses = specimen_analyses(batch_run, selected)
     return TensileAnalysis(
@@ -359,6 +376,7 @@ def run_tensile_analysis(
         comparison=batch_run.outputs.comparison,
         curves=curves,
         specimen_analyses=analyses,
+        results_ntriples=batch_run.outputs.results_ntriples if results_graph else None,
     )
 
 

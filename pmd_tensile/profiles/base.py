@@ -65,6 +65,7 @@ QUANTITY_COLUMNS = ("process", "quantity", "individual", "value", "unit")
 NOTE_COLUMNS = ("process", "note")
 CURVE_COLUMN_COLUMNS = ("process", "url", "role", "column_number", "unit")
 CURVE_DIALECT_COLUMNS = ("delimiter", "header_row_count", "decimal_char")
+RESULT_TARGET_COLUMNS = ("process", "material", "table")
 
 
 @dataclasses.dataclass(frozen=True)
@@ -73,6 +74,21 @@ class SelectQuery:
 
     query: str
     columns: tuple[str, ...]
+
+
+@dataclasses.dataclass(frozen=True)
+class ResultsMapping:
+    """How computed results are written in the vocabulary of a profile's graph.
+
+    ``targets`` finds, for each test, the material that bears its properties and
+    its curve table (binding :data:`RESULT_TARGET_COLUMNS`). ``quality_classes``
+    gives, per quantity name of the quantities query (and ``Ag``, ``Agt``), the
+    class of a new quality individual, used where the graph has no quality for
+    that quantity.
+    """
+
+    targets: SelectQuery
+    quality_classes: Mapping[str, str]
 
 
 @dataclasses.dataclass(frozen=True)
@@ -147,6 +163,7 @@ class OntologyProfile:
     curve_locator: CurveLocator | None = None
     unit_aliases: Mapping[str, str] = dataclasses.field(default_factory=dict)
     accepts_curve_locator: bool = False
+    results: ResultsMapping | None = None
 
     def __post_init__(self) -> None:
         if (self.curve_columns is None) == (self.curve_locator is None):
@@ -168,6 +185,8 @@ class OntologyProfile:
             query = getattr(self, name)
             if query is not None and tuple(query.columns) not in allowed:
                 raise ValueError(f"{name} query must bind {' or '.join(map(str, allowed))}, got {query.columns}")
+        if self.results is not None and tuple(self.results.targets.columns) != RESULT_TARGET_COLUMNS:
+            raise ValueError(f"the results targets query must bind {RESULT_TARGET_COLUMNS}")
 
     @property
     def links_curves_semantically(self) -> bool:

@@ -123,6 +123,9 @@ NODE_MODULES: dict[str, dict[str, str]] = {
         "compare_with_reported": ATOMIC,
         "summarize_by_group": ATOMIC,
     },
+    "pmd_tensile.nodes.results": {
+        "results_graph": ATOMIC,
+    },
     "pmd_tensile.nodes.workflows": {
         "analysis_parameters": ATOMIC,
         "curve_channels": ATOMIC,

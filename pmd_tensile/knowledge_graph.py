@@ -78,7 +78,7 @@ The queries:
 
 (a) ``step_roles``: each function used, its module and its role, from the
     module recorded in the graph (:data:`MODULE_ROLES`): ontology-aware
-    (exploration, acquisition), ontology-agnostic analysis, ontology-agnostic
+    (exploration, acquisition, results), ontology-agnostic analysis, ontology-agnostic
     contract adapters, or flowrep plumbing. A step that has steps of its own
     (the per-specimen and exploration workflows) is a "workflow composition".
 (b) ``analysis_output_units``: the units and QUDT quantity kinds carried by
@@ -124,6 +124,7 @@ TURTLE_PRECISION_NOTE = (
 MODULE_ROLES: dict[str, str] = {
     "pmd_tensile.nodes.exploration": "ontology-aware: exploration",
     "pmd_tensile.nodes.acquisition": "ontology-aware: acquisition",
+    "pmd_tensile.nodes.results": "ontology-aware: results",
     **{
         f"pmd_tensile.nodes.analysis.{topic}": "ontology-agnostic: analysis"
         for topic in ("comparison", "elastic_line", "extensometer", "geometry", "maximum_force", "yielding")
