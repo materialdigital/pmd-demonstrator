@@ -283,7 +283,7 @@ def test_yield_step_figure(steps):
     for sid in ("Zx1", "Zy1"):
         noise = steps["analyses"][sid].noise_mpa
         (label,) = [text for text in texts if text.startswith(f"{sid} (")]
-        assert f"s_n = {noise:.2f} MPa" in label and "required d" in label
+        assert f"s_n = {noise:.4f} MPa" in label and "required d" in label
 
 
 def test_elastic_step_figure(steps):
@@ -313,3 +313,17 @@ def test_step_figures_need_a_colour_for_every_specimen(steps):
     with pytest.raises(ValueError, match="no colour"):
         plotting.maximum_force_step_figure(steps["records"], steps["curves"], steps["analyses"],
                                            colors={"Zx1": "#000000"})
+
+
+def test_plotting_holds_no_method_rule():
+    # The figures draw what the analysis returns; no decision rule of the method is repeated here.
+    import ast
+    import inspect
+
+    source = inspect.getsource(plotting)
+    for node in ast.walk(ast.parse(source)):
+        if isinstance(node, ast.ImportFrom) and (node.module or "").startswith("pmd_tensile"):
+            assert not any(alias.name.startswith("_") for alias in node.names), ast.unparse(node)
+    for parameter in ("drop_rel", "drop_noise_factor", "peak_max_plastic_strain", "min_flow_plastic_strain",
+                      "plateau_min_extent", "band_rel_min", "band_noise_factor", "provisional_fraction_of_rm"):
+        assert f".{parameter}" not in source, parameter

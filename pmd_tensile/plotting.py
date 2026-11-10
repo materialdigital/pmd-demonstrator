@@ -813,53 +813,12 @@ def results_overview_figure(result, *, retrieved=None, colors: Mapping[str, str]
 # ---------------------------------------------------------------------------
 
 
-def _first_branch(stress: np.ndarray, reference: float) -> np.ndarray:
-    """Samples before the stress first reaches ``reference`` (the first loading branch)."""
-    branch = np.zeros(len(stress), dtype=bool)
-    if not _is_value(reference):
-        return branch
-    reached = np.flatnonzero(np.isfinite(stress) & (stress >= reference))
-    branch[: reached[0] if len(reached) else len(stress)] = True
-    return branch
-
-
-def _provisional_window(view: _View, analysis: SpecimenAnalysis, params: AnalysisParameters):
-    """Mask, line and window of the provisional fit (M5 step 2), in stress units."""
-    reference = params.provisional_fraction_of_rm * analysis.highest_force_n / view.s0_mm2
-    lo, hi = params.f_lo * reference, params.f_hi * reference
+def _branch_window(view: _View, branch_end_index: int, window_mpa: tuple[float, float]) -> np.ndarray:
+    """Samples a fit used: valid strain, before the end of the first loading branch, inside the window."""
+    lo, hi = window_mpa
     stress = view.stress_mpa
     with np.errstate(invalid="ignore"):
-        mask = view.valid & _first_branch(stress, reference) & (stress >= lo) & (stress <= hi)
-    slope = 1000.0 * analysis.e0_gpa
-    intercept = analysis.intercept0_mpa
-    return mask, slope, intercept, (lo, hi)
-
-
-def _drawdown(view: _View, analysis: SpecimenAnalysis, params: AnalysisParameters):
-    """M7 on the finite-force samples: running maximum M and threshold M - d, in MPa.
-
-    Also the largest drop below M before the extensometer end where the search
-    applies (sigma > 0.5*Rm, Rm from force alone), and the required d there.
-    """
-    stress = view.stress_mpa
-    finite = np.flatnonzero(np.isfinite(stress))
-    running = np.full(len(stress), NAN)
-    running[finite] = np.maximum.accumulate(stress[finite])
-    noise = analysis.noise_mpa if _is_value(analysis.noise_mpa) else 0.0
-    required = np.maximum(params.drop_rel * running, params.drop_noise_factor * noise)
-    rm = analysis.highest_force_n / view.s0_mm2
-    searched = np.zeros(len(stress), dtype=bool)
-    searched[finite] = stress[finite] > 0.5 * rm
-    before_end = np.zeros(len(stress), dtype=bool)
-    before_end[: max(view.end_index + 1, 0)] = True
-    candidates = np.flatnonzero(searched & before_end)
-    if len(candidates):
-        drops = running[candidates] - stress[candidates]
-        k = int(np.argmax(drops))
-        largest, needed = float(drops[k]), float(required[candidates[k]])
-    else:
-        largest, needed = NAN, NAN
-    return running, running - required, largest, needed
+        return view.valid & (np.arange(len(stress)) < branch_end_index) & (stress >= lo) & (stress <= hi)
 
 
 def yield_step_figure(
@@ -876,15 +835,17 @@ def yield_step_figure(
     - (a) strain against crosshead travel with the extensometer end
       (``extensometer_validity``);
     - (b) the low-stress part with the provisional window and line
-      (``bootstrap_fit``);
-    - (c) residuals of the provisional fit with the noise level ± s_n;
-    - (d) the yield search: stress, running maximum M and the threshold
-      M − d with d = max(0.005·M, 5·s_n), up to the extensometer end, with
-      ReH and ReL (``yield_analysis``).
+      (``provisional_elastic_line``);
+    - (c) residuals of the provisional line with ± their scatter; the noise
+      level s_n of the second differences is given in the legend;
+    - (d) the yield search up to the extensometer end: the stress, ReH − d
+      over the yield range (a drop below it marks yielding) and ReH, ReL
+      (``yield_points``); the legend gives the largest drop with valid strain
+      and d.
 
-    All inputs map specimen IDs to the node outputs of that specimen.
+    ``analyses`` maps specimen IDs to their :class:`SpecimenAnalysis`;
     ``params`` are the parameters the nodes ran with (default: the method
-    defaults). Returns the Figure.
+    defaults; used for the notes only). Returns the Figure.
     """
     p = DEFAULT_PARAMETERS if params is None else params
     views = _record_views(records, curves, analyses, colors)
@@ -901,9 +862,12 @@ def yield_step_figure(
             ax_a.plot(travel[end], 100 * strain[end], PROPERTY_MARKERS["extensometer end"], color="k",
                       markersize=16, markeredgewidth=2)
 
-        mask, slope, intercept, (lo, hi) = _provisional_window(view, analysis, p)
+        provisional = analysis.provisional
+        lo, hi = provisional.window_mpa
+        mask = _branch_window(view, provisional.branch_end_index, provisional.window_mpa)
+        slope, intercept = 1000.0 * analysis.e0_gpa, analysis.intercept0_mpa
         stress = view.stress_mpa
-        low = view.valid & _first_branch(stress, 1.2 * hi)
+        low = _branch_window(view, provisional.branch_end_index, (-np.inf, 1.2 * hi))
         ax_b.plot(100 * strain[low], stress[low], color=view.color, linestyle=view.linestyle, linewidth=1.0)
         if _is_value(slope):
             sigma = np.array([0.0, 1.2 * hi])
@@ -913,22 +877,27 @@ def yield_step_figure(
         residual = stress[mask] - (slope * strain[mask] + intercept)
         ax_c.plot(stress[mask], residual, view.marker, color=view.color, markersize=3, alpha=0.6,
                   linestyle="none")
-        if _is_value(analysis.noise_mpa):
+        if _is_value(provisional.residual_scatter_mpa):
             for sign in (-1, 1):
-                ax_c.axhline(sign * analysis.noise_mpa, color=view.color, linestyle=view.linestyle, linewidth=1.2)
+                ax_c.axhline(sign * provisional.residual_scatter_mpa, color=view.color, linestyle=view.linestyle,
+                             linewidth=1.2)
 
-        running, threshold, largest, needed = _drawdown(view, analysis, p)
         valid = view.valid
         ax_d.plot(100 * strain[valid], stress[valid], color=view.color, linestyle=view.linestyle, linewidth=1.0)
-        ax_d.plot(100 * strain[valid], threshold[valid], color=view.color, linewidth=0.9, dashes=(2, 2),
-                  alpha=0.9)
+        yielding = analysis.yielding
+        if analysis.upper_yield_index >= 0 and _is_value(yielding.drop_threshold_mpa):
+            span = np.arange(analysis.upper_yield_index, min(analysis.end_of_yielding_index, len(stress) - 1) + 1)
+            span = span[valid[span]]
+            ax_d.plot(100 * strain[span], np.full(len(span), view.reh_mpa - yielding.drop_threshold_mpa),
+                      color=view.color, linewidth=0.9, dashes=(2, 2), alpha=0.9)
         labels[view.specimen_id] = specimen_label(
             view.specimen_id,
             view.orientation,
             [("ext. end at e", 100 * strain[end] if end >= 0 else NAN, "%", 2),
-             ("s_n", analysis.noise_mpa, "MPa", 2), ("ReH", view.reh_mpa, "MPa", 1),
+             ("s_n", analysis.noise_mpa, "MPa", 4), ("ReH", view.reh_mpa, "MPa", 1),
              ("ReL", view.rel_mpa, "MPa", 1)],
-        ) + f"\nlargest drop before ext. end {format_value(largest, 1, 'MPa')}, required d {format_value(needed, 1, 'MPa')}"
+        ) + (f"\nlargest drop with valid strain {format_value(yielding.largest_valid_drop_mpa, 1, 'MPa')}, "
+             f"required d at ReH {format_value(yielding.drop_threshold_mpa, 1, 'MPa')}")
     _mark_yield_points(ax_d, views, p.offset_plastic_strain, shifted=False)
 
     ax_a.set_title("(a) extensometer validity: strain against crosshead travel")
@@ -939,20 +908,19 @@ def yield_step_figure(
     _note(ax_a, "strain is evaluated only before the end found by the method;\n"
           "the recorded strain may continue a little beyond it", loc="upper left")
 
-    ax_b.set_title("(b) provisional fit (bootstrap): window and line")
+    ax_b.set_title("(b) provisional line: window and fit")
     ax_b.set_xlabel("strain (extensometer, not shifted) / %")
     ax_b.set_ylabel("engineering stress / MPa")
-    _note(ax_b, f"shaded: provisional window {100 * p.f_lo:.0f}–{100 * p.f_hi:.0f} % of "
-                f"{p.provisional_fraction_of_rm:g}·Rm (Rm from force alone)\ndashed: provisional line E₀, b₀",
-          loc="lower right")
+    _note(ax_b, f"shaded: provisional window, {100 * p.f_lo:.0f}–{100 * p.f_hi:.0f} % of a reference\n"
+                "below the highest force; dashed: provisional line E₀, b₀", loc="lower right")
 
-    ax_c.set_title("(c) residuals of the provisional fit and noise level s_n")
+    ax_c.set_title("(c) residuals of the provisional line")
     ax_c.set_xlabel("engineering stress / MPa")
     ax_c.set_ylabel("stress − provisional line / MPa")
-    _note(ax_c, "lines: ± s_n = 1.4826 · MAD of the residuals\n(fixed here; used by the yield search)",
-          loc="lower right")
+    _note(ax_c, "lines: ± residual scatter (1.4826 · MAD); a bend of the curve\nraises it, so the yield search "
+          "uses s_n of the second differences", loc="lower right")
 
-    ax_d.set_title("(d) yield search: drop below the running maximum")
+    ax_d.set_title("(d) yield search: drop below ReH − d")
     ax_d.set_xlabel("strain (extensometer, not shifted) / %")
     ax_d.set_ylabel("engineering stress / MPa")
     (_, _), (y_lo, y_hi) = _yield_zoom_limits(views, p.offset_plastic_strain)
@@ -964,7 +932,7 @@ def yield_step_figure(
         Line2D([], [], marker=PROPERTY_MARKERS["ReH"], color="0.6", markeredgecolor="k", linestyle="none"),
         Line2D([], [], marker=PROPERTY_MARKERS["ReL"], color="0.6", markeredgecolor="k", linestyle="none"),
     ]
-    ax_d.legend(handles, ["threshold M − d (a drop below it marks yielding)", "ReH", "ReL"],
+    ax_d.legend(handles, ["ReH − d (a drop below it marks yielding)", "ReH", "ReL"],
                 loc="lower right", fontsize=9)
     _note(ax_d, f"zoom: stress {y_lo:g}–{y_hi:g} MPa, up to the extensometer end"
           + (f"\n{_missing_note(views, ['ReH', 'ReL'])}" if _missing_note(views, ["ReH", "ReL"]) else ""),
@@ -1012,11 +980,8 @@ def elastic_step_figure(
     grid_labels = []
     for view in views:
         analysis = analyses[view.specimen_id]
-        lo, hi = view.e_window_mpa
         stress, strain = view.stress_mpa, view.strain
-        with np.errstate(invalid="ignore"):
-            mask = (view.valid & _first_branch(stress, view.e_reference_mpa)
-                    & (stress >= lo) & (stress <= hi))
+        mask = _branch_window(view, analysis.elastic.branch_end_index, analysis.elastic.window_mpa)
         if _is_value(view.e_gpa):
             residual = stress[mask] - (1000.0 * view.e_gpa * strain[mask] + view.intercept_mpa)
             ax_b.plot(stress[mask], residual, view.marker, color=view.color, markersize=3.5, linestyle="none",

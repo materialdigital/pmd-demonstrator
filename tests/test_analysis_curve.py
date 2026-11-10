@@ -393,7 +393,7 @@ IDENTICAL_FIELDS = (
     "yield_type", "k_ext", "upper_yield_index", "end_of_yielding_index", "work_hardening", "max_force_index",
     "maximum_flags", "flags", "dropped.force", "dropped.strain", "dropped.crosshead", "extensometer.n_windows",
     "extensometer.flags", "provisional.n", "provisional.branch_end_index", "yielding.rel_index",
-    "yielding.first_drop_index", "yielding.flags", "elastic.n", "elastic.iterations", "elastic.flags", "proof.index",
+    "yielding.first_drop_index", "yielding.flags", "elastic.n", "elastic.branch_end_index", "elastic.iterations", "elastic.flags", "proof.index",
     "proof.flags", "elongation.band", "elongation.flags", "sensitivity.flags",
 )
 

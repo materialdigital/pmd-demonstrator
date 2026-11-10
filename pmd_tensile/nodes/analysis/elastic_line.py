@@ -64,12 +64,14 @@ class ProvisionalLine:
 
 @dataclasses.dataclass(frozen=True)
 class ElasticLineDiagnostics:
-    """The fit of :func:`elastic_line`: window (MPa), sample count, R², standard
+    """The fit of :func:`elastic_line`: window (MPa), end of the first loading branch (sample
+    index: the first sample at the reference force), sample count, R², standard
     error of E (GPa, conditional on the window and on independent residuals, not an
     uncertainty), lag-1 autocorrelation of the residuals and the effective sample count
     n(1 - rho)/(1 + rho), iterations of the window, residual scatter (MPa), flags."""
 
     window_mpa: tuple[float, float]
+    branch_end_index: int
     n: int
     r2: float
     stderr_gpa: float
@@ -256,8 +258,10 @@ def elastic_line(
     e_gpa = ols.slope / s0 / 1000.0
     strain_origin = -ols.intercept / ols.slope if math.isfinite(ols.slope) else NAN
     reference_force_n = reference
+    reached = _first(np.isfinite(force) & (force >= reference))
     diagnostics = ElasticLineDiagnostics(
         window_mpa=(lo / s0, hi / s0),
+        branch_end_index=len(force) if reached < 0 else reached,
         n=ols.n,
         r2=ols.r2,
         stderr_gpa=ols.stderr / s0 / 1000.0,
