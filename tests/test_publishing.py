@@ -1,0 +1,157 @@
+"""Tests of the publishing nodes and workflow against stand-ins for Ontodocker and the Dataportal (offline).
+
+The stand-ins record every call; no request leaves the machine. A dummy token
+checks that tokens are read from the environment and appear in no input,
+output or knowledge graph.
+"""
+
+from __future__ import annotations
+
+import hashlib
+import types
+
+import pyiron_workflow as pwf
+import pytest
+from praeco.exceptions import HttpError
+
+from pmd_tensile import sources
+from pmd_tensile.nodes import publishing
+
+DUMMY_TOKEN = "dummy-token-4f1c9e"
+RECORD = {
+    "name": "pmd-demonstrator-results", "title": "Computed tensile properties", "description": "Results.",
+    "creators": ["A Person"], "license": "CC-BY-4.0", "keywords": ["tensile test"], "publication_date": "2026-11-10",
+    "owner_org": "pmd", "private": False, "extras": {"pmd_profile": "pmdco3-tto"},
+}
+CONTENTS = {"results.nt": "<urn:a> <urn:b> <urn:c> .\n", "results.csv": "specimen_id;e_gpa\nZx3;200.08\n"}
+
+
+class FakeOntodocker:
+    def __init__(self, existing=()):
+        self.existing, self.calls = list(existing), []
+        self.datasets = types.SimpleNamespace(list=lambda: list(self.existing), create=self._create, upload_turtlefile=self._upload)
+
+    def _create(self, name):
+        self.calls.append(("create", name))
+        self.existing.append(name)
+
+    def _upload(self, name, path):
+        self.calls.append(("upload", name, str(path)))
+
+
+class FakeDataportal:
+    def __init__(self, state=None, error_status=404):
+        self.state, self.error_status, self.calls = state, error_status, []
+        self.datasets = types.SimpleNamespace(show=self._show, create=self._create)
+        self.assets = types.SimpleNamespace(upload_rdf=self._upload_rdf, upload=self._upload)
+
+    def _show(self, name):
+        if self.state is None:
+            raise HttpError(method="GET", url=f"package_show?id={name}", status_code=self.error_status)
+        return types.SimpleNamespace(raw={"state": self.state})
+
+    def _create(self, metadata):
+        self.calls.append(("create", metadata.to_payload()))
+        return types.SimpleNamespace(name=metadata.name)
+
+    def _upload_rdf(self, dataset, path, *, format, content_type):
+        self.calls.append(("upload_rdf", dataset.name, path, format, content_type))
+
+    def _upload(self, dataset, path, *, format):
+        self.calls.append(("upload", dataset.name, path, format))
+
+
+@pytest.fixture
+def services(monkeypatch):
+    ontodocker, dataportal = FakeOntodocker(), FakeDataportal()
+    monkeypatch.setattr(sources, "ontodocker_client", lambda: ontodocker)
+    monkeypatch.setattr(publishing, "DataportalClient", lambda api_token: dataportal if api_token == DUMMY_TOKEN else None)
+    monkeypatch.setenv(publishing.DATAPORTAL_TOKEN_ENV, DUMMY_TOKEN)
+    return ontodocker, dataportal
+
+
+def test_files_are_written_once_and_never_overwritten(tmp_path):
+    paths = publishing.write_publication_files(CONTENTS, str(tmp_path))
+    assert [p.rsplit("/", 1)[-1] for p in paths] == sorted(CONTENTS)
+    assert (tmp_path / "results.nt").read_text(encoding="utf-8") == CONTENTS["results.nt"]
+    with pytest.raises(FileExistsError):
+        publishing.write_publication_files(CONTENTS, str(tmp_path))
+    with pytest.raises(ValueError, match="not a path"):
+        publishing.write_publication_files({"../x.nt": ""}, str(tmp_path))
+    with pytest.raises(FileNotFoundError):
+        publishing.write_publication_files(CONTENTS, str(tmp_path / "missing"))
+
+
+def test_ontodocker_dataset_is_created_and_never_merged(tmp_path, services):
+    ontodocker, _ = services
+    paths = publishing.write_publication_files(CONTENTS, str(tmp_path))
+    assert publishing.publish_to_ontodocker("pmd_results", paths, "results.nt") == "pmd_results"
+    assert ontodocker.calls == [("create", "pmd_results"), ("upload", "pmd_results", str(tmp_path / "results.nt"))]
+    with pytest.raises(FileExistsError, match="merge"):
+        publishing.publish_to_ontodocker("pmd_results", paths, "results.nt")
+    with pytest.raises(LookupError):
+        publishing.publish_to_ontodocker("other", paths, "missing.nt")
+
+
+def test_dataportal_record_carries_the_reviewed_metadata_and_checksums(tmp_path, services):
+    _, dataportal = services
+    paths = publishing.write_publication_files(CONTENTS, str(tmp_path))
+    assert publishing.publish_to_dataportal(RECORD, paths) == RECORD["name"]
+    (kind, payload), *uploads = dataportal.calls
+    assert kind == "create"
+    assert (payload["name"], payload["title"], payload["license_id"], payload["owner_org"], payload["private"]) == (
+        RECORD["name"], RECORD["title"], "CC-BY-4.0", "pmd", False)
+    extras = {item["key"]: item["value"] for item in payload["extras"]}
+    assert extras["pmd_profile"] == "pmdco3-tto"
+    for path in paths:
+        name = path.rsplit("/", 1)[-1]
+        assert extras[f"sha256:{name}"] == hashlib.sha256((tmp_path / name).read_bytes()).hexdigest()
+    assert sorted(call[0] for call in uploads) == ["upload", "upload_rdf"]
+    assert ("upload_rdf", RECORD["name"], str(tmp_path / "results.nt"), "nt", "application/n-triples") in uploads
+
+
+@pytest.mark.parametrize("state", ["active", "draft"])
+def test_dataportal_record_is_not_overwritten(tmp_path, services, state):
+    _, dataportal = services
+    dataportal.state = state
+    with pytest.raises(FileExistsError, match=state):
+        publishing.publish_to_dataportal(RECORD, [])
+    assert dataportal.calls == []
+
+
+def test_dataportal_name_of_a_deleted_record_is_reused(services):
+    _, dataportal = services
+    dataportal.state = "deleted"
+    assert publishing.publish_to_dataportal(RECORD, []) == RECORD["name"]
+
+
+def test_dataportal_errors_other_than_not_found_stop(services):
+    _, dataportal = services
+    dataportal.error_status = 403
+    with pytest.raises(HttpError):
+        publishing.publish_to_dataportal(RECORD, [])
+    assert dataportal.calls == []
+
+
+def test_dataportal_needs_a_token_and_a_complete_description(monkeypatch, services):
+    with pytest.raises(ValueError, match="lacks"):
+        publishing.publish_to_dataportal({"name": "x"}, [])
+    monkeypatch.delenv(publishing.DATAPORTAL_TOKEN_ENV)
+    with pytest.raises(RuntimeError, match=publishing.DATAPORTAL_TOKEN_ENV):
+        publishing.publish_to_dataportal(RECORD, [])
+
+
+@pytest.mark.slow
+@pytest.mark.filterwarnings("ignore:The hashes produced for directed graphs:UserWarning")
+def test_publishing_workflow_runs_and_its_graph_holds_no_token(tmp_path, services):
+    from pmd_tensile.knowledge_graph import run_knowledge_graph, validate_knowledge_graph
+
+    ontodocker, dataportal = services
+    run = pwf.node(publishing.publishing_workflow).run(
+        contents=CONTENTS, directory=str(tmp_path), ontodocker_dataset="pmd_results", graph_file="results.nt", record=RECORD
+    )
+    assert run.outputs.dataset == "pmd_results" and run.outputs.record_name == RECORD["name"]
+    assert [call[0] for call in ontodocker.calls] == ["create", "upload"]
+    graph = run_knowledge_graph(run)
+    assert validate_knowledge_graph(graph)[0]
+    assert DUMMY_TOKEN not in graph.serialize(format="nt")

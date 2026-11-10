@@ -123,6 +123,12 @@ NODE_MODULES: dict[str, dict[str, str]] = {
         "compare_with_reported": ATOMIC,
         "summarize_by_group": ATOMIC,
     },
+    "pmd_tensile.nodes.publishing": {
+        "write_publication_files": ATOMIC,
+        "publish_to_ontodocker": ATOMIC,
+        "publish_to_dataportal": ATOMIC,
+        "publishing_workflow": MACRO,
+    },
     "pmd_tensile.nodes.results": {
         "results_graph": ATOMIC,
     },
