@@ -21,7 +21,7 @@ import synthetic as sy
 
 import pmd_tensile.nodes.analysis as analysis_package
 from pmd_tensile.contract import ReportedProperties
-from pmd_tensile.curve_math import _ols
+from pmd_tensile.curve_math import _ols, _strain_valid, _window_mask, _window_ols
 from pmd_tensile.nodes.analysis.comparison import (
     compare_with_reported,
     summarize_by_group,
@@ -72,10 +72,13 @@ def test_elastic_fit_exact_line():
     assert fit["stderr_gpa"] == pytest.approx(0.0, abs=1e-9)
 
 
-def test_elastic_fit_window_bounds_are_inclusive():
-    s = np.arange(0.0, 201.0, 1.0)
-    fit = elastic_fit(s, E0 + s / E, 40.0, 160.0)
-    assert fit["n"] == 121
+def test_elastic_window_bounds_are_inclusive_on_the_first_loading_branch():
+    # Forces 0..200 N in 1 N steps, then an unloading back through the window;
+    # reference 200 N, window [0.2, 0.8] * reference = [40, 160] N.
+    force = np.concatenate([np.arange(0.0, 201.0, 1.0), np.arange(199.0, 0.0, -1.0)])
+    valid = np.ones(len(force), dtype=bool)
+    mask = _window_mask(force, valid, 200.0, 0.2, 0.8)
+    assert np.flatnonzero(mask).tolist() == list(range(40, 161))  # both bounds in, no unloading sample
 
 
 def test_elastic_fit_needs_ten_points():
@@ -89,15 +92,21 @@ def test_elastic_fit_needs_ten_points():
     assert elastic_fit(s, e, 40.0, 130.0)["e_gpa"] == pytest.approx(205.0, rel=1e-12)
 
 
-def test_elastic_fit_ignores_non_finite_samples():
-    s = np.arange(3.0, 200.0, 2.0)
-    e = E0 + s / E
-    e[30] = np.nan
-    s2 = s.copy()
-    s2[31] = np.inf
-    fit = elastic_fit(s2, e, 40.0, 160.0)
-    assert fit["n"] == 58
-    assert fit["e_gpa"] == pytest.approx(205.0, rel=1e-12)
+def test_elastic_window_skips_samples_without_valid_strain():
+    # A line F = slope * (e - E0) with one undefined strain inside the window and
+    # the extensometer end (k_ext) inside it: only the samples before k_ext with
+    # finite channels are fitted, and the slope stays exact.
+    slope = E * 100.0  # N per unit strain for S0 = 100 mm^2
+    force = np.arange(0.0, 20001.0, 100.0)
+    eps = E0 + force / slope
+    eps[60] = np.nan
+    k_ext = 150
+    valid = _strain_valid(force, eps, k_ext)
+    ols, lo, hi = _window_ols(force, eps, valid, 20000.0, 0.2, 0.8, 10)
+    assert (lo, hi) == (4000.0, 16000.0)
+    assert ols.n == len(range(40, 150)) - 1  # 4000 N .. 14900 N, without sample 60
+    assert ols.slope == pytest.approx(slope, rel=1e-12)
+    assert ols.intercept == pytest.approx(-slope * E0, rel=1e-9)
 
 
 def test_elastic_fit_analytic_slope_of_a_quadratic_law():
