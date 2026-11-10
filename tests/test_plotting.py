@@ -30,20 +30,7 @@ from workflow_helpers import (  # noqa: E402
 
 from pmd_tensile import plotting
 from pmd_tensile.nodes import acquisition
-from pmd_tensile.nodes.analysis.elastic_line import (
-    bootstrap_fit,
-    final_elastic_fit,
-    proof_strength,
-    window_sensitivity,
-)
-from pmd_tensile.nodes.analysis.extensometer import extensometer_validity
-from pmd_tensile.nodes.analysis.geometry import elongation_after_fracture, s0_scatter
-from pmd_tensile.nodes.analysis.maximum_force import (
-    elongation_at_maximum_force,
-    maximum_force,
-)
-from pmd_tensile.nodes.analysis.yielding import yield_analysis
-from pmd_tensile.parameters import DEFAULT_PARAMETERS
+from pmd_tensile.nodes.analysis.geometry import s0_scatter
 
 SPECIMENS = ("Zx1", "Zx2", "Zy1", "Zd2")  # the IDs with synthetic curves; all three orientations
 STAMP = pd.Timestamp("2026-11-09 12:34:56.789", tz="Europe/Berlin")
@@ -84,18 +71,18 @@ def _texts(ax) -> str:
 
 def _with_undefined_values(result):
     """A copy of the result in which Zy1 has no ReH/ReL and Zd2 no E (hence no strain origin)."""
-    analyses = dict(result.curve_analyses)
-    indices = dict(analyses["Zy1"].indices, reh=-1, rel=-1)
-    analyses["Zy1"] = dataclasses.replace(analyses["Zy1"], reh_mpa=NAN, rel_mpa=NAN, indices=indices)
+    analyses = dict(result.specimen_analyses)
+    yielding = dataclasses.replace(analyses["Zy1"].yielding, rel_index=-1)
+    analyses["Zy1"] = dataclasses.replace(analyses["Zy1"], reh_mpa=NAN, rel_mpa=NAN, upper_yield_index=-1, yielding=yielding)
     analyses["Zd2"] = dataclasses.replace(analyses["Zd2"], e_gpa=NAN, strain_origin=NAN, rp02_mpa=NAN)
     results = result.results.copy()
     results.loc[results["specimen_id"] == "Zy1", ["reh_mpa", "rel_mpa"]] = NAN
     results.loc[results["specimen_id"] == "Zd2", ["e_gpa", "rp02_mpa", "strain_origin"]] = NAN
     comparison = result.comparison.copy()
     undefined = (comparison["specimen_id"] == "Zy1") & (comparison["quantity"] == "reh_mpa")
-    comparison.loc[undefined, ["computed", "rel_deviation"]] = NAN
+    comparison.loc[undefined, ["computed", "deviation", "deviation_in_resolution", "deviation_in_tolerance"]] = NAN
     comparison.loc[undefined, "outcome"] = "not_comparable"
-    return dataclasses.replace(result, results=results, comparison=comparison, curve_analyses=analyses)
+    return dataclasses.replace(result, results=results, comparison=comparison, specimen_analyses=analyses)
 
 
 # ---------------------------------------------------------------------------
@@ -180,7 +167,7 @@ def test_curves_overview_draws_exactly_the_arrays_the_run_used(result):
     table = result.results.set_index("specimen_id")
     for sid in SPECIMENS:
         (line,) = [line for line in ax_a.get_lines() if line.get_color() == colors[sid]]
-        curve, curve_analysis = result.curves[sid], result.curve_analyses[sid]
+        curve, curve_analysis = result.curves[sid], result.specimen_analyses[sid]
         k = curve_analysis.k_ext
         valid = np.isfinite(curve.force_n[:k]) & np.isfinite(curve.strain[:k])
         x, y = line.get_data()
@@ -275,78 +262,48 @@ def test_undefined_values_are_labelled_and_no_specimen_is_dropped(result):
 
 @pytest.fixture(scope="module")
 def steps(result):
-    """The node outputs of notebook 02 for two specimens, on the curves of the stubbed run."""
+    """The inputs of the step figures of notebook 02 for two specimens, from the stubbed run."""
     ids = ("Zx1", "Zy1")
-    out = {name: {} for name in ("records", "reported", "extensometer", "bootstrap", "yielding", "elastic",
-                                 "proof", "maximum", "elongation", "scatter")}
-    windows, comparisons = [], []
-    for sid in ids:
-        record = acquisition.get_specimen_record(PMDCO2, PMDCO2_SOURCE, sid)
-        curve = result.curves[sid]
-        out["records"][sid] = record
-        out["reported"][sid] = acquisition.get_reported_properties(PMDCO2, PMDCO2_SOURCE, sid)
-        a = elongation_after_fracture(record.l0_mm, record.lu_mm)
-        ext, k, _ = extensometer_validity(curve.strain, curve.crosshead_mm, record.l0_mm, a.value,
-                                                   record.rate_switch_strain)
-        boot, _ = bootstrap_fit(curve.force_n, curve.strain, record.s0_mm2, k)
-        yielding, *_ = yield_analysis(curve.force_n, curve.strain, record.s0_mm2, k, boot,
-                                               record.rate_switch_strain)
-        elastic, *_ = final_elastic_fit(curve.force_n, curve.strain, record.s0_mm2, k, boot, yielding)
-        proof, _ = proof_strength(curve.force_n, curve.strain, record.s0_mm2, k, elastic, yielding)
-        maximum, *_ = maximum_force(curve.force_n, record.s0_mm2, yielding)
-        elongation, *_ = elongation_at_maximum_force(curve.force_n, curve.strain, k, boot, elastic,
-                                                              maximum)
-        for name, value in (("extensometer", ext), ("bootstrap", boot), ("yielding", yielding),
-                            ("elastic", elastic), ("proof", proof), ("maximum", maximum),
-                            ("elongation", elongation)):
-            out[name][sid] = value
-        out["scatter"][sid] = s0_scatter(record.s0_mm2, record.cross_section_measurements_mm2)
-        for f_lo in (0.05, 0.10):
-            one = dataclasses.replace(DEFAULT_PARAMETERS, window_grid_lo=(f_lo,), window_grid_hi=(0.4,))
-            sens = window_sensitivity(curve.force_n, curve.strain, record.s0_mm2, k, elastic, maximum,
-                                               elongation, one)
-            windows.append({"specimen_id": sid, "f_lo": f_lo, "f_hi": 0.4, "e_gpa": sens.e_range_gpa[0]})
-        comparisons.append(
-            result.comparison[result.comparison["specimen_id"] == sid].drop(columns="orientation")
-        )
-    out["window_moduli"] = pd.DataFrame(windows)
-    out["comparison"] = pd.concat(comparisons, ignore_index=True)
-    out["curves"] = {sid: result.curves[sid] for sid in ids}
-    return out
+    records = {sid: acquisition.get_specimen_record(PMDCO2, PMDCO2_SOURCE, sid) for sid in ids}
+    comparison = result.comparison[result.comparison["specimen_id"].isin(ids)].drop(columns="orientation")
+    return {
+        "records": records,
+        "reported": {sid: acquisition.get_reported_properties(PMDCO2, PMDCO2_SOURCE, sid) for sid in ids},
+        "curves": {sid: result.curves[sid] for sid in ids},
+        "analyses": {sid: result.specimen_analyses[sid] for sid in ids},
+        "s0_u_rel": {sid: s0_scatter(r.s0_mm2, r.cross_section_measurements_mm2)[0] for sid, r in records.items()},
+        "comparison": comparison.reset_index(drop=True),
+    }
 
 
 def test_yield_step_figure(steps):
-    fig = plotting.yield_step_figure(steps["records"], steps["curves"], steps["extensometer"], steps["bootstrap"],
-                                 steps["yielding"], retrieved=STAMP)
+    fig = plotting.yield_step_figure(steps["records"], steps["curves"], steps["analyses"], retrieved=STAMP)
     assert [title[:3] for title in _titles(fig)] == ["(a)", "(b)", "(c)", "(d)"]
     texts = _legend_texts(fig)
     for sid in ("Zx1", "Zy1"):
-        noise = steps["bootstrap"][sid].noise_mpa
+        noise = steps["analyses"][sid].noise_mpa
         (label,) = [text for text in texts if text.startswith(f"{sid} (")]
         assert f"s_n = {noise:.2f} MPa" in label and "required d" in label
 
 
 def test_elastic_step_figure(steps):
     fig = plotting.elastic_step_figure(
-        steps["records"], steps["curves"], steps["extensometer"], steps["yielding"], steps["elastic"],
-        steps["proof"], steps["window_moduli"], steps["reported"], method_specimen="Zy1", retrieved=STAMP,
+        steps["records"], steps["curves"], steps["analyses"], steps["reported"], method_specimen="Zy1", retrieved=STAMP,
     )
     assert [title[:3] for title in _titles(fig)] == ["(a)", "(b)", "(c)", "(d)"]
-    assert [tick.get_text() for tick in _panel(fig, "(c)").get_xticklabels()] == ["5–40", "10–40"]
+    assert [tick.get_text() for tick in _panel(fig, "(c)").get_xticklabels()] == [
+        "5–30", "5–40", "5–50", "10–30", "10–40", "10–50", "15–30", "15–40", "15–50"
+    ]
     with pytest.raises(KeyError, match="Zx3"):
-        plotting.elastic_step_figure(
-            steps["records"], steps["curves"], steps["extensometer"], steps["yielding"], steps["elastic"],
-            steps["proof"], steps["window_moduli"], steps["reported"],
-        )
+        plotting.elastic_step_figure(steps["records"], steps["curves"], steps["analyses"], steps["reported"])
 
 
 def test_maximum_force_and_lab_comparison_step_figures(steps):
-    fig = plotting.maximum_force_step_figure(steps["records"], steps["curves"], steps["extensometer"],
-                                         steps["maximum"], retrieved=STAMP)
+    fig = plotting.maximum_force_step_figure(steps["records"], steps["curves"], steps["analyses"], retrieved=STAMP)
     assert [title[:3] for title in _titles(fig)] == ["(a)", "(b)"]
     assert sum(text.startswith(("Zx1 (", "Zy1 (")) for text in _legend_texts(fig)) == 2
 
-    fig = plotting.lab_comparison_step_figure(steps["records"], steps["scatter"], steps["comparison"],
+    fig = plotting.lab_comparison_step_figure(steps["records"], steps["s0_u_rel"], steps["comparison"],
                                           retrieved=STAMP)
     assert [title[:3] for title in _titles(fig)] == ["(a)", "(b)"]
     assert [tick.get_text() for tick in _panel(fig, "(a)").get_xticklabels()] == ["Zx1", "Zy1"]
@@ -354,5 +311,5 @@ def test_maximum_force_and_lab_comparison_step_figures(steps):
 
 def test_step_figures_need_a_colour_for_every_specimen(steps):
     with pytest.raises(ValueError, match="no colour"):
-        plotting.maximum_force_step_figure(steps["records"], steps["curves"], steps["extensometer"],
-                                       steps["maximum"], colors={"Zx1": "#000000"})
+        plotting.maximum_force_step_figure(steps["records"], steps["curves"], steps["analyses"],
+                                           colors={"Zx1": "#000000"})

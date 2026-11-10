@@ -26,10 +26,9 @@ import pytest
 import synthetic as sy
 
 from pmd_tensile.curve_math import _second_difference_noise
-from pmd_tensile.nodes.analysis.elastic_line import bootstrap_fit
-from pmd_tensile.nodes.analysis.yielding import yield_analysis
-from pmd_tensile.nodes.workflows import CurveAnalysis
-from pmd_tensile.orchestration import analyse_curve
+from pmd_tensile.nodes.analysis.elastic_line import provisional_elastic_line
+from pmd_tensile.nodes.analysis.yielding import yield_points
+from pmd_tensile.orchestration import SpecimenAnalysis, analyse_curve
 from pmd_tensile.parameters import AnalysisParameters
 
 EXACT = 1e-12
@@ -90,11 +89,11 @@ def curve(name: str) -> sy.SyntheticCurve:
 
 
 @functools.lru_cache(maxsize=None)
-def result(name: str) -> CurveAnalysis:
+def result(name: str) -> SpecimenAnalysis:
     return analyse_curve(*curve(name).args())
 
 
-def run(c: sy.SyntheticCurve, **kwargs) -> CurveAnalysis:
+def run(c: sy.SyntheticCurve, **kwargs) -> SpecimenAnalysis:
     return analyse_curve(*c.args(), **kwargs)
 
 
@@ -102,8 +101,20 @@ def assert_nan(value) -> None:
     assert isinstance(value, float) and math.isnan(value), value
 
 
-def flag_set(r: CurveAnalysis) -> set[str]:
+def flag_set(r: SpecimenAnalysis) -> set[str]:
     return set(r.flags)
+
+
+def flat(r: SpecimenAnalysis) -> dict:
+    """Every value of an analysis by name; values of a diagnostics object as ``<object>.<field>``."""
+    values = {}
+    for field in dataclasses.fields(r):
+        value = getattr(r, field.name)
+        if dataclasses.is_dataclass(value):
+            values.update({f"{field.name}.{inner.name}": getattr(value, inner.name) for inner in dataclasses.fields(value)})
+        else:
+            values[field.name] = value
+    return values
 
 
 def ag_tolerance_pp(truth: sy.Truth, stress_sd: float) -> float:
@@ -116,7 +127,7 @@ def ag_tolerance_pp(truth: sy.Truth, stress_sd: float) -> float:
     return 100.0 * math.sqrt(2.0 * truth.hardening_n * delta)
 
 
-def assert_k_ext_within_one_window(r: CurveAnalysis, c: sy.SyntheticCurve, expected: int) -> None:
+def assert_k_ext_within_one_window(r: SpecimenAnalysis, c: sy.SyntheticCurve, expected: int) -> None:
     """k_ext within one crosshead window (0.1 mm; a sampled window ends at the
     first sample at or beyond 0.1 mm, so it spans < 0.1 mm + one sample)."""
     cross = c.crosshead_mm
@@ -137,15 +148,15 @@ def test_reference_a_values():
     assert r.e_gpa == pytest.approx(t.e_gpa, rel=E_REL_TOL)
     assert r.strain_origin == pytest.approx(t.strain_origin, abs=1e-9)
     assert r.reh_mpa == pytest.approx(t.reh_mpa, rel=EXACT)
-    assert r.reh_sample_increment_mpa == pytest.approx(t.reh_sample_increment_mpa, rel=1e-6)
+    assert r.yielding.reh_sample_increment_mpa == pytest.approx(t.reh_sample_increment_mpa, rel=1e-6)
     assert r.rel_mpa == pytest.approx(t.rel_mpa, abs=REL_TOL_MPA)
-    assert r.rel_incl_transient_mpa == pytest.approx(t.rel_incl_transient_mpa, rel=EXACT)
+    assert r.yielding.rel_incl_transient_mpa == pytest.approx(t.rel_incl_transient_mpa, rel=EXACT)
     assert r.rp02_mpa == pytest.approx(t.rp02_mpa, abs=RP02_TOL_MPA)
     assert r.fm_n == pytest.approx(t.fm_n, rel=EXACT)
     assert r.rm_mpa == pytest.approx(t.rm_mpa, rel=EXACT)
     assert r.ag_percent == pytest.approx(t.ag_percent, abs=AG_TOL_PP)
     assert r.agt_percent == pytest.approx(t.agt_percent, abs=AG_TOL_PP)
-    assert r.ag_location_halfwidth_percent == pytest.approx(t.ag_halfwidth_percent, abs=AG_TOL_PP)
+    assert r.elongation.halfwidth_percent == pytest.approx(t.ag_halfwidth_percent, abs=AG_TOL_PP)
     assert r.k_ext == len(c)
 
 
@@ -157,22 +168,22 @@ def test_reference_a_flags():
 def test_reference_a_elastic_fit_details():
     r = result("a")
     # M4: window [0.10, 0.40] * ReH = [40, 160] MPa; odd stresses 41..159.
-    assert r.e_window_mpa == pytest.approx((40.0, 160.0), rel=EXACT)
-    assert r.e_n == 60
-    assert r.e_r2 == pytest.approx(1.0, abs=1e-12)
+    assert r.elastic.window_mpa == pytest.approx((40.0, 160.0), rel=EXACT)
+    assert r.elastic.n == 60
+    assert r.elastic.r2 == pytest.approx(1.0, abs=1e-12)
     assert r.noise_mpa == pytest.approx(0.0, abs=1e-9)  # M5: s_n of an exact line
-    assert r.e_intercept_mpa == pytest.approx(-sy.E_MPA * curve("a").e0, rel=1e-9)
+    assert -1000.0 * r.e_gpa * r.strain_origin == pytest.approx(-sy.E_MPA * curve("a").e0, rel=1e-9)
 
 
 def test_window_sensitivity_is_zero_on_an_exactly_linear_curve():
     # Acceptance criterion 5 / M15: every window gives the same E.
     r = result("a")
-    lo, hi = r.e_window_range_gpa
+    lo, hi = r.e_min_gpa, r.e_max_gpa
     assert lo == pytest.approx(205.0, rel=1e-9) and hi == pytest.approx(205.0, rel=1e-9)
     assert hi - lo <= 1e-9 * 205.0
-    for rng in (r.rp02_window_range_mpa, r.ag_window_range_percent, r.agt_window_range_percent):
+    for rng in ((r.rp02_min_mpa, r.rp02_max_mpa), r.sensitivity.ag_range_percent, r.sensitivity.agt_range_percent):
         assert rng[1] - rng[0] == pytest.approx(0.0, abs=1e-9)
-    assert r.e_linearity_rel_diff == pytest.approx(0.0, abs=1e-9)
+    assert r.sensitivity.linearity_rel_diff == pytest.approx(0.0, abs=1e-9)
 
 
 # ---------------------------------------------------------------------------
@@ -193,7 +204,7 @@ def test_m9_rel_cases(name, expected_rel, single_minimum):
     assert curve(name).truth.rel_mpa == expected_rel
     assert r.yield_type == "discontinuous"
     assert r.rel_mpa == pytest.approx(expected_rel, abs=REL_TOL_MPA)
-    assert r.rel_incl_transient_mpa == pytest.approx(372.0, rel=EXACT)
+    assert r.yielding.rel_incl_transient_mpa == pytest.approx(372.0, rel=EXACT)
     assert ("rel:single_minimum" in r.flags) is single_minimum
 
 
@@ -259,7 +270,7 @@ def test_too_few_elastic_points():
     c, r = curve("too-few-elastic"), result("too-few-elastic")
     assert_nan(r.e_gpa)
     assert "e:insufficient_elastic_points" in r.flags
-    assert r.e_n < 10
+    assert r.elastic.n < 10
     # Everything that needs E or the strain origin is undefined (M6, M10, M12).
     for value in (r.rp02_mpa, r.ag_percent, r.agt_percent, r.strain_origin):
         assert_nan(value)
@@ -311,15 +322,21 @@ def test_noisy_ramberg_osgood_within_the_noisy_tolerances(seed):
 # VP-1 bootstrap independence
 
 
-def _assert_identical(r1: CurveAnalysis, r2: CurveAnalysis) -> None:
-    for field in dataclasses.fields(CurveAnalysis):
-        v1, v2 = getattr(r1, field.name), getattr(r2, field.name)
+PROVISIONAL = ("e0_gpa", "intercept0_mpa", "provisional.window_mpa", "provisional.n",
+               "provisional.branch_end_index", "provisional.residual_scatter_mpa")
+"""The provisional line: an intermediate that depends on the provisional window by construction."""
+
+
+def _assert_identical(r1: SpecimenAnalysis, r2: SpecimenAnalysis, *, tolerant=()) -> None:
+    v1s, v2s = flat(r1), flat(r2)
+    for name in v1s.keys() - set(PROVISIONAL) - set(tolerant):
+        v1, v2 = v1s[name], v2s[name]
         if isinstance(v1, float):
-            assert (math.isnan(v1) and math.isnan(v2)) or v1 == v2, field.name
-        elif isinstance(v1, tuple) and v1 and isinstance(v1[0], float):
-            np.testing.assert_array_equal(v1, v2, err_msg=field.name)
+            assert (math.isnan(v1) and math.isnan(v2)) or v1 == v2, name
+        elif isinstance(v1, tuple) and v1 and isinstance(v1[0], (float, tuple)):
+            np.testing.assert_array_equal(v1, v2, err_msg=name)
         else:
-            assert v1 == v2, field.name
+            assert v1 == v2, name
 
 
 @pytest.mark.parametrize("name", ["a", "iv"])
@@ -338,11 +355,10 @@ def test_vp1_continuous_fixed_point_is_independent_of_the_start(fraction):
     # identical.
     base = result("ro15")
     r = run(curve("ro15"), params=AnalysisParameters(provisional_fraction_of_rm=fraction))
-    np.testing.assert_allclose(r.e_window_mpa, base.e_window_mpa, rtol=1e-6)
-    assert r.e_reference_stress_mpa == pytest.approx(base.e_reference_stress_mpa, rel=1e-6)
-    tolerant = {"noise_mpa", "e_window_mpa", "e_reference_stress_mpa"}
-    stripped = {name: getattr(base, name) for name in tolerant}
-    _assert_identical(dataclasses.replace(r, **stripped), base)
+    tolerant = ("elastic.window_mpa", "reference_force_n")
+    for name in tolerant:
+        assert flat(r)[name] == pytest.approx(flat(base)[name], rel=1e-6), name
+    _assert_identical(r, base, tolerant=(*tolerant, "noise_mpa"))
 
 
 @pytest.mark.parametrize("fraction", [0.4, 0.6])
@@ -360,43 +376,25 @@ def test_vp1_noisy_property_values_do_not_depend_on_the_provisional_window(fract
 # VP-4 S0 scaling (M14 exact propagation)
 
 STRESS_FIELDS = (
-    "noise_mpa",
-    "e_gpa",
-    "e_intercept_mpa",
-    "e_stderr_gpa",
-    "reh_mpa",
-    "reh_sample_increment_mpa",
-    "rel_mpa",
-    "rel_incl_transient_mpa",
-    "rp02_mpa",
-    "rm_mpa",
-    "e_reference_stress_mpa",
-    "e_residual_noise_mpa",
-    "rel_plateau_level_mpa",
+    "noise_mpa", "e_gpa", "reh_mpa", "rel_mpa", "rp02_mpa", "rm_mpa", "e0_gpa", "intercept0_mpa",
+    "e_min_gpa", "e_max_gpa", "rp02_min_mpa", "rp02_max_mpa",
+    "provisional.residual_scatter_mpa", "yielding.rel_incl_transient_mpa", "yielding.plateau_level_mpa",
+    "yielding.drop_threshold_mpa", "yielding.largest_valid_drop_mpa", "yielding.reh_sample_increment_mpa",
+    "elastic.stderr_gpa", "elastic.residual_scatter_mpa",
 )
-STRESS_PAIRS = ("e_window_mpa", "e_window_range_gpa", "rp02_window_range_mpa")
+STRESS_PAIRS = ("provisional.window_mpa", "elastic.window_mpa", "sensitivity.grid_e_gpa")
 INVARIANT_FIELDS = (
-    "e_r2",
-    "e_lag1_rho",
-    "e_n_eff",
-    "strain_origin",
-    "fm_n",
-    "agt_percent",
-    "ag_percent",
-    "ag_location_halfwidth_percent",
-    "extensometer_max_valid_strain",
-    "e_linearity_rel_diff",
-    "rel_plateau_extent",
+    "strain_origin", "fm_n", "agt_percent", "ag_percent", "max_valid_strain", "highest_force_n", "reference_force_n",
+    "yielding.plateau_extent", "elastic.r2", "elastic.lag1_rho", "elastic.n_eff", "elongation.halfwidth_percent",
+    "sensitivity.linearity_rel_diff",
 )
-INVARIANT_PAIRS = ("ag_window_range_percent", "agt_window_range_percent")
+INVARIANT_PAIRS = ("sensitivity.ag_range_percent", "sensitivity.agt_range_percent")
 IDENTICAL_FIELDS = (
-    "yield_type",
-    "k_ext",
-    "e_n",
-    "e_window_iterations",
-    "dropped_samples",
-    "flags",
-    "indices",
+    "yield_type", "k_ext", "upper_yield_index", "end_of_yielding_index", "work_hardening", "max_force_index",
+    "maximum_flags", "flags", "dropped.force", "dropped.strain", "dropped.crosshead", "extensometer.n_windows",
+    "extensometer.flags", "provisional.n", "provisional.branch_end_index", "yielding.rel_index",
+    "yielding.first_drop_index", "yielding.flags", "elastic.n", "elastic.iterations", "elastic.flags", "proof.index",
+    "proof.flags", "elongation.band", "elongation.flags", "sensitivity.flags",
 )
 
 
@@ -404,7 +402,7 @@ def test_vp4_field_classification_covers_every_output():
     classified = set(
         STRESS_FIELDS + STRESS_PAIRS + INVARIANT_FIELDS + INVARIANT_PAIRS + IDENTICAL_FIELDS
     )
-    assert classified == {f.name for f in dataclasses.fields(CurveAnalysis)}
+    assert classified == set(flat(result("a")))
 
 
 def _scaled_pair(c: sy.SyntheticCurve, delta: float):
@@ -421,21 +419,22 @@ def test_vp4_stresses_scale_exactly_with_s0(which, delta):
     c = sy.noisy(curve("a"), 0) if which == "a-noisy" else curve(which)
     base, scaled = _scaled_pair(c, delta)
     factor = 1.0 / (1.0 + delta)
+    base, scaled = flat(base), flat(scaled)
     for name in STRESS_FIELDS:
         np.testing.assert_allclose(
-            getattr(scaled, name), getattr(base, name) * factor, rtol=EXACT, atol=1e-9, err_msg=name
+            scaled[name], base[name] * factor, rtol=EXACT, atol=1e-9, err_msg=name
         )
     for name in STRESS_PAIRS:
         np.testing.assert_allclose(
-            getattr(scaled, name), np.asarray(getattr(base, name)) * factor, rtol=EXACT, atol=1e-9,
+            scaled[name], np.asarray(base[name]) * factor, rtol=EXACT, atol=1e-9,
             err_msg=name,
         )
     for name in INVARIANT_FIELDS + INVARIANT_PAIRS:
         np.testing.assert_allclose(
-            getattr(scaled, name), getattr(base, name), rtol=EXACT, atol=1e-14, err_msg=name
+            scaled[name], base[name], rtol=EXACT, atol=1e-14, err_msg=name
         )
     for name in IDENTICAL_FIELDS:
-        assert getattr(scaled, name) == getattr(base, name), name
+        assert scaled[name] == base[name], name
 
 
 # ---------------------------------------------------------------------------
@@ -480,8 +479,8 @@ def test_vp6_window_grid_range_matches_the_analytic_slopes():
         for hi in (0.30, 0.40, 0.50)
     ]
     assert (max(slopes) - min(slopes)) / min(slopes) > 1e-3  # discriminating
-    assert r.e_window_range_gpa[0] == pytest.approx(min(slopes), rel=1e-9)
-    assert r.e_window_range_gpa[1] == pytest.approx(max(slopes), rel=1e-9)
+    assert r.e_min_gpa == pytest.approx(min(slopes), rel=1e-9)
+    assert r.e_max_gpa == pytest.approx(max(slopes), rel=1e-9)
 
 
 def test_vp6_linearity_diagnostic_matches_the_analytic_slopes():
@@ -491,8 +490,8 @@ def test_vp6_linearity_diagnostic_matches_the_analytic_slopes():
     diff = abs(e1 - e2)
     # The spec does not fix the denominator of the "relative difference";
     # any of E1, E2 or an E between them gives a value in this interval.
-    assert diff / max(e1, e2) * (1 - 1e-9) <= abs(r.e_linearity_rel_diff)
-    assert abs(r.e_linearity_rel_diff) <= diff / min(e1, e2) * (1 + 1e-9)
+    assert diff / max(e1, e2) * (1 - 1e-9) <= abs(r.sensitivity.linearity_rel_diff)
+    assert abs(r.sensitivity.linearity_rel_diff) <= diff / min(e1, e2) * (1 + 1e-9)
 
 
 # ---------------------------------------------------------------------------
@@ -532,8 +531,8 @@ def test_vp7_extensometer_removal_is_detected(mode, speed):
 def test_vp7_nan_tail_is_counted_as_dropped_strain(speed):
     c = sy.extensometer_end(speed_base(speed), "nan")
     r = run(c)
-    assert r.dropped_samples["strain"] == len(c) - c.truth.k_ext
-    assert r.dropped_samples["force"] == 0
+    assert r.dropped.strain == len(c) - c.truth.k_ext
+    assert r.dropped.force == 0
     assert r.k_ext <= c.truth.k_ext  # M1: the first non-finite strain ends it
 
 
@@ -641,7 +640,7 @@ def test_m1_non_finite_forces_do_not_change_fm():
     idx = [c0.index_at_plastic_strain(p) for p in (0.03, 0.05, 0.2)]
     force[idx] = np.nan
     r = run(dataclasses.replace(c0, force_n=force))
-    assert r.dropped_samples["force"] == 3
+    assert r.dropped.force == 3
     assert r.fm_n == pytest.approx(c0.truth.fm_n, rel=EXACT)
     assert r.rel_mpa == pytest.approx(c0.truth.rel_mpa, abs=REL_TOL_MPA)
 
@@ -659,7 +658,7 @@ def test_vp8_exact_flat_maximum_gives_its_midpoint():
     c, r = curve("flat-top"), result("flat-top")
     p1, p2 = 0.12, 0.16
     assert r.ag_percent == pytest.approx(100.0 * (p1 + p2) / 2, abs=AG_TOL_PP)
-    assert r.ag_location_halfwidth_percent == pytest.approx(100.0 * (p2 - p1) / 2, abs=AG_TOL_PP)
+    assert r.elongation.halfwidth_percent == pytest.approx(100.0 * (p2 - p1) / 2, abs=AG_TOL_PP)
     assert r.fm_n == pytest.approx(c.truth.fm_n, rel=EXACT)
 
 
@@ -689,7 +688,7 @@ def test_m11_rise_above_the_band_with_off_vertex_serrations(phase):
 # §8 edge cases: no work hardening
 
 
-def _assert_no_work_hardening(c: sy.SyntheticCurve, r: CurveAnalysis) -> None:
+def _assert_no_work_hardening(c: sy.SyntheticCurve, r: SpecimenAnalysis) -> None:
     assert r.yield_type == "discontinuous"
     assert_nan(r.fm_n)
     assert_nan(r.rm_mpa)
@@ -725,18 +724,20 @@ def test_no_work_hardening_after_transient_dip_and_flat_serrated_plateau():
 # abrupt drop has no sample between that threshold and the plateau.
 
 
-def _assert_same_values(with_tail: CurveAnalysis, without_tail: CurveAnalysis) -> None:
+def _assert_same_values(with_tail: SpecimenAnalysis, without_tail: SpecimenAnalysis) -> None:
     names = (
-        "yield_type", "noise_mpa", "e_gpa", "reh_mpa", "rel_mpa", "rel_incl_transient_mpa",
-        "rel_plateau_level_mpa", "rel_plateau_extent", "rp02_mpa", "fm_n", "rm_mpa",
-        "agt_percent", "ag_percent", "ag_location_halfwidth_percent", "flags", "indices",
+        "yield_type", "noise_mpa", "e_gpa", "reh_mpa", "rel_mpa", "yielding.rel_incl_transient_mpa",
+        "yielding.plateau_level_mpa", "yielding.plateau_extent", "rp02_mpa", "fm_n", "rm_mpa",
+        "agt_percent", "ag_percent", "elongation.halfwidth_percent", "flags", "upper_yield_index",
+        "yielding.rel_index", "end_of_yielding_index", "proof.index", "max_force_index", "elongation.band",
     )
+    with_values, without_values = flat(with_tail), flat(without_tail)
     for name in names:
-        expected = getattr(without_tail, name)
+        expected = without_values[name]
         if isinstance(expected, float) and math.isnan(expected):
-            assert_nan(getattr(with_tail, name))
+            assert_nan(with_values[name])
         else:
-            assert getattr(with_tail, name) == expected, name
+            assert with_values[name] == expected, name
 
 
 @pytest.mark.parametrize("phase", [0.0, 0.5])
@@ -782,7 +783,7 @@ def test_v2_5_remainder_ends_at_the_last_sample_above_the_threshold():
     # 5 MPa sample after it does not.
     c = sy.discontinuous(rm=395.0, ag_p=0.06, p_end=0.12)
     r = run(sy.with_terminal_drop(c, first_mpa=205.0, to_mpa=5.0, n=2))
-    assert r.rel_incl_transient_mpa == pytest.approx(205.0, rel=EXACT)
+    assert r.yielding.rel_incl_transient_mpa == pytest.approx(205.0, rel=EXACT)
 
 
 def test_terminal_drop_does_not_change_a_curve_that_returns_to_reh():
@@ -860,7 +861,7 @@ def _dip_strain(c: sy.SyntheticCurve) -> float:
 def test_vp9_rel_is_the_dip_minimum():
     c, r = curve("rate-step"), result("rate-step")
     assert r.rel_mpa == pytest.approx(377.0, abs=REL_TOL_MPA)
-    assert r.rel_incl_transient_mpa == pytest.approx(372.0, rel=EXACT)
+    assert r.yielding.rel_incl_transient_mpa == pytest.approx(372.0, rel=EXACT)
     assert not any(f.endswith(":near_rate_switch") for f in r.flags)
     assert r.fm_n == pytest.approx(c.truth.fm_n, rel=EXACT)
 
@@ -1033,12 +1034,10 @@ def _walk(value, path):
 
 def test_undefined_values_are_nan_never_none():
     for name, r in _all_results():
-        for field in dataclasses.fields(CurveAnalysis):
-            if field.name == "indices":  # T4 addition; integer indices, not values
-                continue
-            _walk(getattr(r, field.name), f"{name}.{field.name}")
+        for key, value in flat(r).items():
+            _walk(value, f"{name}.{key}")
     r = result("iv")
-    for value in (r.reh_mpa, r.rel_mpa, r.reh_sample_increment_mpa, r.rel_incl_transient_mpa):
+    for value in (r.reh_mpa, r.rel_mpa, r.yielding.reh_sample_increment_mpa, r.yielding.rel_incl_transient_mpa):
         assert_nan(value)
 
 
@@ -1101,8 +1100,7 @@ def test_no_drop_in_valid_strain_when_the_only_large_drop_is_after_the_extensome
     force = np.concatenate([a.force_n, np.linspace(a.force_n[-1], 0.0, 20)[1:]])
     strain = np.concatenate([strain, np.full(19, np.nan)])
     k_ext = int(np.flatnonzero(np.isfinite(strain))[-1]) + 1
-    bootstrap, _ = bootstrap_fit(force, strain, a.s0_mm2, k_ext)
-    loud = dataclasses.replace(bootstrap, noise_n=10.0 * a.s0_mm2, noise_mpa=10.0)
-    yielding, *_ = yield_analysis(force, strain, a.s0_mm2, k_ext, loud)
-    assert yielding.yield_type == "continuous"
-    assert set(yielding.flags) == {"reh:no_drop_in_valid_strain", "reh:no_upper_yield", "rel:no_upper_yield"}
+    highest, e0, b0, _, _ = provisional_elastic_line(force, strain, a.s0_mm2, k_ext)
+    yield_type, *_, diagnostics = yield_points(force, strain, a.s0_mm2, k_ext, highest, e0, b0, 10.0)
+    assert yield_type == "continuous"
+    assert set(diagnostics.flags) == {"reh:no_drop_in_valid_strain", "reh:no_upper_yield", "rel:no_upper_yield"}

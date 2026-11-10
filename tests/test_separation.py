@@ -230,7 +230,7 @@ def test_query_step_roles(graphs, name):
     analysis_modules = {m for m in by_module if m.startswith("pmd_tensile.nodes.analysis.")}
     assert analysis_modules and all(by_module[m] == {"ontology-agnostic: analysis"} for m in analysis_modules)
     analysis_functions = set(roles.loc[roles["module"].isin(analysis_modules), "function"])
-    assert {"yield_analysis", "final_elastic_fit", "maximum_force", "summarize_by_group"} <= analysis_functions
+    assert {"yield_points", "elastic_line", "maximum_force", "summarize_by_group"} <= analysis_functions
     assert ("pmd_tensile.nodes.workflows", "specimen_workflow", "workflow composition") in set(
         roles.itertuples(index=False, name=None)
     )
@@ -243,17 +243,28 @@ def test_query_step_roles_exploration(graphs):
 
 
 EXPECTED_OUTPUT_UNITS = {
-    ("yield_analysis", "reh_mpa"): ("MegaPA", "Stress"),
-    ("yield_analysis", "rel_mpa"): ("MegaPA", "Stress"),
+    ("extensometer_validity", "max_valid_strain"): ("UNITLESS", "Strain"),
+    ("provisional_elastic_line", "highest_force_n"): ("N", "Force"),
+    ("provisional_elastic_line", "e0_gpa"): ("GigaPA", "ModulusOfElasticity"),
+    ("provisional_elastic_line", "intercept0_mpa"): ("MegaPA", "Stress"),
+    ("provisional_elastic_line", "noise_mpa"): ("MegaPA", "Stress"),
+    ("yield_points", "reh_mpa"): ("MegaPA", "Stress"),
+    ("yield_points", "rel_mpa"): ("MegaPA", "Stress"),
+    ("elastic_line", "e_gpa"): ("GigaPA", "ModulusOfElasticity"),
+    ("elastic_line", "strain_origin"): ("UNITLESS", "Strain"),
+    ("elastic_line", "reference_force_n"): ("N", "Force"),
     ("proof_strength", "rp02_mpa"): ("MegaPA", "Stress"),
-    ("maximum_force", "rm_mpa"): ("MegaPA", "Stress"),
     ("maximum_force", "fm_n"): ("N", "Force"),
-    ("final_elastic_fit", "e_gpa"): ("GigaPA", "ModulusOfElasticity"),
-    ("final_elastic_fit", "strain_origin"): ("UNITLESS", "Strain"),
-    ("elongation_at_maximum_force", "ag_percent"): ("PERCENT", "Strain"),
+    ("maximum_force", "rm_mpa"): ("MegaPA", "Stress"),
     ("elongation_at_maximum_force", "agt_percent"): ("PERCENT", "Strain"),
-    ("extensometer_validity", "extensometer_max_valid_strain"): ("UNITLESS", "Strain"),
-    ("bootstrap_fit", "noise_mpa"): ("MegaPA", "Stress"),
+    ("elongation_at_maximum_force", "ag_percent"): ("PERCENT", "Strain"),
+    ("window_sensitivity", "e_min_gpa"): ("GigaPA", "ModulusOfElasticity"),
+    ("window_sensitivity", "e_max_gpa"): ("GigaPA", "ModulusOfElasticity"),
+    ("window_sensitivity", "rp02_min_mpa"): ("MegaPA", "Stress"),
+    ("window_sensitivity", "rp02_max_mpa"): ("MegaPA", "Stress"),
+    ("elongation_after_fracture", "a_percent"): ("PERCENT", "Strain"),
+    ("reduction_of_area", "z_percent"): ("PERCENT", None),
+    ("s0_scatter", "s0_u_rel"): ("UNITLESS", None),
 }
 
 
@@ -261,11 +272,11 @@ EXPECTED_OUTPUT_UNITS = {
 def test_query_analysis_output_units(graphs, name):
     units = kg.run_example_query(graphs[name], "analysis_output_units")
     found = {
-        (f, o): (u.removeprefix(UNIT), q.removeprefix(QK) if q else None)
+        (f, o): (u.removeprefix(UNIT), q.removeprefix(QK) if isinstance(q, str) else None)
         for f, o, u, q in units.itertuples(index=False)
     }
     assert found == EXPECTED_OUTPUT_UNITS
-    assert {QK + kind for _, kind in found.values()} <= set(QUANTITY_KIND_IRIS)
+    assert {QK + kind for _, kind in found.values() if kind} <= set(QUANTITY_KIND_IRIS)
 
 
 def test_query_run_inputs(graphs):

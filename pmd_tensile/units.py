@@ -5,10 +5,6 @@ from __future__ import annotations
 import numpy as np
 from semantikon import SemantikonURI, u
 
-# ---------------------------------------------------------------------------
-# Annotated types (generic QUDT quantity kinds only)
-# ---------------------------------------------------------------------------
-
 QUDT_QUANTITY_KIND = "http://qudt.org/vocab/quantitykind/"
 
 
@@ -67,3 +63,9 @@ LengthMM = u(float, units="mm", uri=QK_LENGTH)
 OptionalLengthMM = u(float | None, units="mm", uri=QK_LENGTH)
 
 OptionalCrossheadArray = u(np.ndarray | None, units="mm", uri=QK_LENGTH)
+
+Percent = u(float, units="percent")
+"""A percentage without a quantity kind (reduction of area Z)."""
+
+RelativeValue = u(float, units="Unitless")
+"""A ratio without a quantity kind (relative uncertainty)."""

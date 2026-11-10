@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import math
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 
 import flowrep as fr
 import numpy as np
@@ -11,113 +11,82 @@ import pandas as pd
 
 from pmd_tensile.contract import ReportedProperties
 from pmd_tensile.curve_math import NAN, _is_number
+from pmd_tensile.units import ForceN, ModulusGPa, Percent, StrainPercent, StressMPa
 
-# ---------------------------------------------------------------------------
-# Labels for outputs and reports (method-spec §1, §11)
-# ---------------------------------------------------------------------------
-
-METHOD_LABEL = "method-defined, ISO 6892-1-inspired"
-
-E_LABEL = "E: regression slope of the elastic part (mE-type), not Annex-G-conformant"
-
-E_STDERR_LABEL = "OLS standard error (conditional on window and independence; not an uncertainty)"
-
-S0_SCATTER_LABEL = (
-    "within-specimen dimensional scatter of the mean (nu = 2); excludes instrument bias"
+# (quantity, unit, lab resolution, tolerance kind, relative part, absolute part, rule as text).
+# The lab resolution is the step of the lab's reported values; the ten S355 lab values are
+# multiples of it. ReL has no lab values and no row.
+COMPARISON_RULES: tuple[tuple[str, str, float, str, float, float, str], ...] = (
+    ("fm_n", "N", 1.0, "relative", 0.001, 0.0, "±0.1 %"),
+    ("rm_mpa", "MPa", 1.0, "relative", 0.001, 0.5, "±(0.1 % + 0.5 MPa)"),
+    ("reh_mpa", "MPa", 1.0, "relative", 0.02, 0.0, "±2 %"),
+    ("rp02_mpa", "MPa", 1.0, "relative", 0.02, 0.0, "±2 %"),
+    ("e_gpa", "GPa", 1.0, "relative", 0.10, 0.0, "±10 %"),
+    ("a_percent", "%", 0.5, "rounding", 0.0, 0.5, "rounding-aware: ±0.5 pp (for an integer lab value: the computed value rounds to it, ties within)"),
+    ("z_percent", "%", 1.0, "rounding", 0.0, 0.5, "rounding-aware: ±0.5 pp (for an integer lab value: the computed value rounds to it, ties within)"),
 )
 
-OMITTED_UNCERTAINTY: tuple[str, ...] = (
-    "force class (ISO 7500-1) and extensometer class (ISO 9513, unknown here)",
-    "instrument calibration",
-    "uncertainty in Lu and Su",
-    "ReH sampling resolution (reported as a diagnostic instead)",
-    "min/max noise bias of ReL, ReH and Fm",
-    "rate effects",
-    "material variability (shown only through the group statistics)",
+COMPARISON_COLUMNS = (
+    "quantity", "unit", "computed", "reported", "deviation", "lab_resolution", "deviation_in_resolution",
+    "allowed_deviation", "deviation_in_tolerance", "outcome", "tolerance",
 )
-
-RESIDUAL_RISKS: tuple[str, ...] = (
-    "A strain channel that vendor software continues from the crosshead after "
-    "extensometer removal cannot be detected (M3).",
-)
-
-
-
-# ---------------------------------------------------------------------------
-# §13: comparison with lab-reported values; §12: aggregation
-# ---------------------------------------------------------------------------
-
-# (computed key, ReportedProperties field, tolerance kind, relative part, absolute part, text)
-_COMPARISONS: tuple[tuple[str, str, str, float, float, str], ...] = (
-    ("fm_n", "fm_n", "relative", 0.001, 0.0, "±0.1 %"),
-    ("rm_mpa", "rm_mpa", "relative", 0.001, 0.5, "±(0.1 % + 0.5 MPa)"),
-    ("reh_mpa", "reh_mpa", "relative", 0.02, 0.0, "±2 %"),
-    ("rp02_mpa", "rp02_mpa", "relative", 0.02, 0.0, "±2 %"),
-    ("e_gpa", "e_gpa", "relative", 0.10, 0.0, "±10 %"),
-    ("a_percent", "a_percent", "rounding", 0.0, 0.5, "rounding-aware: ±0.5 pp (for an integer lab value: the computed value rounds to it, ties within)"),
-    ("z_percent", "z_percent", "rounding", 0.0, 0.5, "rounding-aware: ±0.5 pp (for an integer lab value: the computed value rounds to it, ties within)"),
-)
-"""Tolerances fixed at G1 (method-spec §13). ReL has no lab values and no row."""
-
 
 
 @fr.atomic
 def compare_with_reported(
-    computed: Mapping[str, float | None], reported: ReportedProperties
+    fm_n: ForceN,
+    rm_mpa: StressMPa,
+    reh_mpa: StressMPa,
+    rp02_mpa: StressMPa,
+    e_gpa: ModulusGPa,
+    a_percent: StrainPercent,
+    z_percent: Percent,
+    reported: ReportedProperties,
 ) -> pd.DataFrame:
-    """Consistency check of computed against lab-reported values (method-spec §13).
+    """Computed values next to the lab-reported ones: a consistency check, not a validation.
 
-    One row per quantity (``fm_n``, ``rm_mpa``, ``reh_mpa``, ``rp02_mpa``,
-    ``e_gpa``, ``a_percent``, ``z_percent``) with columns ``quantity``,
-    ``computed``, ``reported``, ``rel_deviation``, ``outcome`` and
-    ``tolerance``. ``outcome`` is ``"not_comparable"`` if either value is
-    missing or NaN. A and Z are ``"within"`` if the computed value rounds to
-    the lab's integer value, which with ties counted as within is
-    ``|computed - reported| <= 0.5``. This is a consistency check with the
-    lab's software, not a validation.
+    The lab's values come from its own software with unknown settings, so close
+    agreement shows that the two evaluations construct the quantities alike.
+    For each of Fm, Rm, ReH, Rp0.2, E, A and Z the table gives the deviation
+    computed - reported, the deviation in steps of the lab's resolution, the
+    allowed deviation of the comparison rule and the deviation in units of it.
+    The rule is relative for Fm, Rm, ReH, Rp0.2 and E; for A and Z the computed
+    value must round to the lab's integer value (|deviation| <= 0.5 pp, ties within).
+
+    Inputs: the computed Fm (N), Rm, ReH, Rp0.2 (MPa), E (GPa), A, Z (%), and the
+    lab-reported values.
+    Output: ``comparison``, one row per quantity with the columns
+    :data:`COMPARISON_COLUMNS`; ``outcome`` is ``within``, ``outside`` or
+    ``not_comparable`` (either value missing).
     """
+    computed = {"fm_n": fm_n, "rm_mpa": rm_mpa, "reh_mpa": reh_mpa, "rp02_mpa": rp02_mpa, "e_gpa": e_gpa,
+                "a_percent": a_percent, "z_percent": z_percent}
     rows = []
-    for key, field, kind, rel, abs_, text in _COMPARISONS:
-        value = computed.get(key)
-        lab = getattr(reported, field)
-        value = float(value) if _is_number(value) else NAN
-        lab = float(lab) if _is_number(lab) else NAN
-        if math.isnan(value) or math.isnan(lab):
-            outcome, deviation = "not_comparable", NAN
+    for key, unit, resolution, kind, rel, abs_, text in COMPARISON_RULES:
+        value = float(computed[key]) if _is_number(computed[key]) else NAN
+        lab = float(getattr(reported, key)) if _is_number(getattr(reported, key)) else NAN
+        allowed = rel * abs(lab) + abs_ if kind == "relative" else abs_
+        deviation = value - lab
+        if math.isnan(deviation):
+            outcome = "not_comparable"
         else:
-            deviation = (value - lab) / lab if lab != 0.0 else NAN
-            if kind == "relative":
-                allowed = rel * abs(lab) + abs_
-            else:
-                allowed = abs_
-            outcome = "within" if abs(value - lab) <= allowed else "outside"
-        rows.append(
-            {
-                "quantity": key,
-                "computed": value,
-                "reported": lab,
-                "rel_deviation": deviation,
-                "outcome": outcome,
-                "tolerance": text,
-            }
-        )
-    comparison = pd.DataFrame(
-        rows, columns=["quantity", "computed", "reported", "rel_deviation", "outcome", "tolerance"]
-    )
+            outcome = "within" if abs(deviation) <= allowed else "outside"
+        rows.append((key, unit, value, lab, deviation, resolution, deviation / resolution, allowed,
+                     deviation / allowed if allowed > 0 else NAN, outcome, text))
+    comparison = pd.DataFrame(rows, columns=list(COMPARISON_COLUMNS))
     return comparison
-
 
 
 @fr.atomic
 def summarize_by_group(
     table: pd.DataFrame, group_column: str, quantities: Sequence[str]
 ) -> pd.DataFrame:
-    """Descriptive statistics per group and quantity (method-spec §12).
+    """Descriptive statistics per group and quantity, without hypothesis tests or exclusions.
 
-    Long format with columns ``group_column``, ``quantity``, ``n`` (non-NaN
-    count), ``mean``, ``sd`` (ddof = 1; NaN for n < 2), ``min`` and ``max``.
-    Groups appear in sorted order, quantities in the given order. No
-    hypothesis tests and no exclusions.
+    Output ``summary``, long format with the columns ``group_column``,
+    ``quantity``, ``n`` (count of defined values), ``mean``, ``sd`` (n - 1 in the
+    denominator; undefined for n < 2), ``min`` and ``max``. Groups appear sorted,
+    quantities in the given order.
     """
     rows = []
     for group, frame in table.groupby(group_column, sort=True):

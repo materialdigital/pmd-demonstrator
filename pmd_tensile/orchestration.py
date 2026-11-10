@@ -22,24 +22,29 @@ from pmd_tensile.curve_math import _check_s0
 from pmd_tensile.nodes.acquisition import fetch_curve
 from pmd_tensile.nodes.analysis.comparison import summarize_by_group
 from pmd_tensile.nodes.analysis.elastic_line import (
-    bootstrap_fit,
-    final_elastic_fit,
+    ElasticLineDiagnostics,
+    ProofStrengthDiagnostics,
+    ProvisionalLine,
+    WindowSensitivityDiagnostics,
+    elastic_line,
     proof_strength,
+    provisional_elastic_line,
     window_sensitivity,
 )
 from pmd_tensile.nodes.analysis.extensometer import (
+    DroppedSamples,
+    ExtensometerDiagnostics,
     count_dropped_samples,
     extensometer_validity,
 )
 from pmd_tensile.nodes.analysis.maximum_force import (
+    ElongationDiagnostics,
     elongation_at_maximum_force,
     maximum_force,
 )
-from pmd_tensile.nodes.analysis.yielding import yield_analysis
+from pmd_tensile.nodes.analysis.yielding import YieldDiagnostics, yield_points
 from pmd_tensile.nodes.workflows import (
     GROUP_COLUMN,
-    CurveAnalysis,
-    assemble_curve_analysis,
     comparison_table,
     exploration_workflow,
     results_table,
@@ -94,8 +99,7 @@ def build_batch_workflow(specimen_ids: Sequence[str], label: str = "tensile_batc
     data-specific values. Inputs: ``profile_id``, ``source``,
     ``curve_locator``, ``parameters`` and ``specimen_id_0`` ... Outputs: ``results``
     (one row per specimen), ``orientation_summary`` (method-spec §12),
-    ``comparison`` (all specimens, method-spec §13) and ``summaries`` (the
-    gathered rows). A repeated specimen ID raises ``ValueError``.
+    ``comparison`` (all specimens) and ``rows`` (the gathered rows). A repeated specimen ID raises ``ValueError``.
 
     Every input is required, ``curve_locator`` and ``parameters`` included,
     even where ``None`` means "not used" or "method defaults": in
@@ -112,9 +116,9 @@ def build_batch_workflow(specimen_ids: Sequence[str], label: str = "tensile_batc
     wf.create_input("source", type_hint=dict)
     wf.create_input("curve_locator")
     wf.create_input("parameters")
-    gather_summaries = pwf.node(fr.schemas.TransformNto1(n).recipe, "gather_summaries")
+    gather_rows = pwf.node(fr.schemas.TransformNto1(n).recipe, "gather_rows")
     gather_comparisons = pwf.node(fr.schemas.TransformNto1(n).recipe, "gather_comparisons")
-    wf.add_node(gather_summaries, gather_comparisons)
+    wf.add_node(gather_rows, gather_comparisons)
     for i in range(n):
         node = pwf.node(specimen_workflow, _specimen_node_label(i))
         wf.add_node(node)
@@ -124,21 +128,21 @@ def build_batch_workflow(specimen_ids: Sequence[str], label: str = "tensile_batc
         wf.connect(wf.inputs.curve_locator, node.inputs.curve_locator)
         wf.connect(wf.inputs.parameters, node.inputs.parameters)
         item = fr.schemas.TransformNto1.input_label(i)
-        wf.connect(node.outputs.summary, gather_summaries.inputs[item])
+        wf.connect(node.outputs.row, gather_rows.inputs[item])
         wf.connect(node.outputs.comparison, gather_comparisons.inputs[item])
     wf.results = pwf.node(results_table)
-    wf.connect(gather_summaries.outputs.output_0, wf.results.inputs.summaries)
+    wf.connect(gather_rows.outputs.output_0, wf.results.inputs.rows)
     wf.summary_quantities = pwf.node(summary_quantities)
     wf.orientation_summary = pwf.node(summarize_by_group, group_column=GROUP_COLUMN)
     wf.connect(wf.results.outputs.table, wf.orientation_summary.inputs.table)
     wf.connect(wf.summary_quantities.outputs.quantities, wf.orientation_summary.inputs.quantities)
     wf.comparison = pwf.node(comparison_table)
-    wf.connect(gather_summaries.outputs.output_0, wf.comparison.inputs.summaries)
+    wf.connect(gather_rows.outputs.output_0, wf.comparison.inputs.rows)
     wf.connect(gather_comparisons.outputs.output_0, wf.comparison.inputs.comparisons)
     wf.create_output_from(wf.results.outputs.table, "results")
     wf.create_output_from(wf.orientation_summary.outputs.summary, "orientation_summary")
     wf.create_output_from(wf.comparison.outputs.table, "comparison")
-    wf.create_output_from(gather_summaries.outputs.output_0, "summaries")
+    wf.create_output_from(gather_rows.outputs.output_0, "rows")
     return wf
 
 
@@ -176,20 +180,75 @@ def batch_inputs(
 
 
 @dataclasses.dataclass(frozen=True, eq=False)
+class SpecimenAnalysis:
+    """The analysis of one curve: the primary values of the analysis nodes and their diagnostics.
+
+    Built from direct node calls (:func:`analyse_curve`) or from the node outputs of a
+    run (:func:`specimen_analyses`), with the same field names; figures and notebooks
+    read it. ``flags`` joins the flags of every step in the order of the steps.
+    """
+
+    yield_type: str
+    e_gpa: float
+    strain_origin: float
+    reh_mpa: float
+    rel_mpa: float
+    rp02_mpa: float
+    fm_n: float
+    rm_mpa: float
+    agt_percent: float
+    ag_percent: float
+    noise_mpa: float
+    k_ext: int
+    max_valid_strain: float
+    highest_force_n: float
+    e0_gpa: float
+    intercept0_mpa: float
+    reference_force_n: float
+    upper_yield_index: int
+    end_of_yielding_index: int
+    work_hardening: bool
+    max_force_index: int
+    e_min_gpa: float
+    e_max_gpa: float
+    rp02_min_mpa: float
+    rp02_max_mpa: float
+    dropped: DroppedSamples
+    extensometer: ExtensometerDiagnostics
+    provisional: ProvisionalLine
+    yielding: YieldDiagnostics
+    elastic: ElasticLineDiagnostics
+    proof: ProofStrengthDiagnostics
+    maximum_flags: tuple[str, ...]
+    elongation: ElongationDiagnostics
+    sensitivity: WindowSensitivityDiagnostics
+    flags: tuple[str, ...] = ()
+
+    @classmethod
+    def from_outputs(cls, outputs: dict) -> SpecimenAnalysis:
+        """From a mapping of node output names to values (the names of the macro's variables)."""
+        fields = {f.name for f in dataclasses.fields(cls)} - {"flags"}
+        values = {name: outputs[name] for name in fields}
+        steps = ("extensometer", "elastic", "yielding", "proof", "elongation", "sensitivity")
+        flags = [flag for step in steps[:4] for flag in values[step].flags]
+        flags += [*values["maximum_flags"], *values["elongation"].flags, *values["sensitivity"].flags]
+        return cls(**values, flags=tuple(dict.fromkeys(flags)))
+
+
+@dataclasses.dataclass(frozen=True, eq=False)
 class TensileAnalysis:
     """Runs and result tables of :func:`run_tensile_analysis`.
 
     ``exploration_run`` and ``batch_run`` are pyiron_workflow runs; their
     ``.result`` is the flowrep run data that
-    :func:`pmd_tensile._knowledge_graph.run_knowledge_graph` exports.
+    :func:`pmd_tensile.knowledge_graph.run_knowledge_graph` exports.
 
-    ``curves`` and ``curve_analyses`` map each specimen ID (in the order of
+    ``curves`` and ``specimen_analyses`` map each specimen ID (in the order of
     ``specimen_ids``) to the neutral :class:`~pmd_tensile.contract.Curve`
     that the specimen's ``fetch_curve`` step returned and to the
-    :class:`~pmd_tensile.analysis.CurveAnalysis` computed from it. Both are
-    the objects of the batch run's own data, not a second download, so a
-    figure drawn from them shows exactly the arrays the analysis used
-    (decision D12.1).
+    :class:`SpecimenAnalysis` of its node outputs. Both come from the batch
+    run's own data, not from a second download, so a figure drawn from them
+    shows exactly the arrays the analysis used.
     """
 
     profile_id: str
@@ -202,7 +261,7 @@ class TensileAnalysis:
     orientation_summary: pd.DataFrame
     comparison: pd.DataFrame
     curves: dict[str, Curve]
-    curve_analyses: dict[str, CurveAnalysis]
+    specimen_analyses: dict[str, SpecimenAnalysis]
 
 
 def _specimen_data(batch_run, index: int, specimen_id: str):
@@ -214,16 +273,35 @@ def _specimen_data(batch_run, index: int, specimen_id: str):
     return data
 
 
-def _fetched_curve(specimen_data) -> Curve:
-    """The output of the one ``fetch_curve`` step in a per-specimen run."""
-    steps = [node for node in specimen_data.nodes.values() if getattr(node, "function", None) is fetch_curve]
-    if len(steps) != 1:
-        raise RuntimeError(f"expected one fetch_curve step in the specimen run, found {len(steps)}")
-    return steps[0].output_ports["curve"].value
+_STEP_OUTPUTS = {
+    fetch_curve: {},
+    count_dropped_samples: {},
+    extensometer_validity: {"diagnostics": "extensometer"},
+    provisional_elastic_line: {"diagnostics": "provisional"},
+    yield_points: {"diagnostics": "yielding"},
+    elastic_line: {"diagnostics": "elastic"},
+    proof_strength: {"diagnostics": "proof"},
+    maximum_force: {"flags": "maximum_flags"},
+    elongation_at_maximum_force: {"diagnostics": "elongation"},
+    window_sensitivity: {"diagnostics": "sensitivity"},
+}
+"""The steps whose outputs make up a :class:`SpecimenAnalysis`, and the field name of each
+output whose name is shared by several steps."""
 
 
-def specimen_curves(batch_run, specimen_ids: Sequence[str]) -> tuple[dict[str, Curve], dict[str, CurveAnalysis]]:
-    """Curves and curve analyses per specimen ID from a finished batch run (no download).
+def _step_outputs(specimen_data) -> dict:
+    """The outputs of the analysis steps of a per-specimen run, by field name of :class:`SpecimenAnalysis`."""
+    outputs = {}
+    for node in specimen_data.nodes.values():
+        renames = _STEP_OUTPUTS.get(getattr(node, "function", None))
+        if renames is not None:
+            for name, port in node.output_ports.items():
+                outputs[renames.get(name, name)] = port.value
+    return outputs
+
+
+def specimen_analyses(batch_run, specimen_ids: Sequence[str]) -> tuple[dict[str, Curve], dict[str, SpecimenAnalysis]]:
+    """Curves and specimen analyses per specimen ID from a finished batch run (no download).
 
     ``specimen_ids`` are the IDs in batch order, as passed to
     :func:`build_batch_workflow` and :func:`batch_inputs`; a repeated ID raises
@@ -231,9 +309,9 @@ def specimen_curves(batch_run, specimen_ids: Sequence[str]) -> tuple[dict[str, C
     """
     curves, analyses = {}, {}
     for index, specimen_id in enumerate(_unique_specimen_ids(specimen_ids)):
-        data = _specimen_data(batch_run, index, specimen_id)
-        curves[specimen_id] = _fetched_curve(data)
-        analyses[specimen_id] = data.output_ports["analysis"].value
+        outputs = _step_outputs(_specimen_data(batch_run, index, specimen_id))
+        curves[specimen_id] = outputs["curve"]
+        analyses[specimen_id] = SpecimenAnalysis.from_outputs(outputs)
     return curves, analyses
 
 
@@ -268,7 +346,7 @@ def run_tensile_analysis(
             raise LookupError(f"specimen IDs not described in the source: {unknown}; listed: {listed}")
     batch = build_batch_workflow(selected)
     batch_run = batch.run(**batch_inputs(profile_id, source, selected, curve_locator, parameters))
-    curves, curve_analyses = specimen_curves(batch_run, selected)
+    curves, analyses = specimen_analyses(batch_run, selected)
     return TensileAnalysis(
         profile_id=str(profile_id),
         specimen_ids=tuple(selected),
@@ -280,8 +358,9 @@ def run_tensile_analysis(
         orientation_summary=batch_run.outputs.orientation_summary,
         comparison=batch_run.outputs.comparison,
         curves=curves,
-        curve_analyses=curve_analyses,
+        specimen_analyses=analyses,
     )
+
 
 
 
@@ -295,27 +374,45 @@ def analyse_curve(
     a_percent: float | None = None,
     rate_switch_strain: float | None = None,
     params: AnalysisParameters | None = None,
-) -> CurveAnalysis:
-    """Analyse one curve (M1-M12, M15-M16) in the M5 bootstrap order.
+) -> SpecimenAnalysis:
+    """Analyse one curve by calling the analysis nodes directly, in the order of :func:`specimen_workflow`.
 
-    Arrays may contain NaN (per-channel handling, M1). ``a_percent`` (A from
-    metadata) enables the M3 end check; ``rate_switch_strain`` (ratio) only
-    sets ``near_rate_switch`` flags. This is a plain composition of the step
-    nodes listed in the docstring of :mod:`pmd_tensile.analysis`.
+    Force (N), strain (ratio) and crosshead (mm) arrays may contain NaN.
+    ``a_percent`` (A from the test record) enables the check whether the
+    extensometer ended early; ``rate_switch_strain`` (ratio) only sets
+    ``near_rate_switch`` flags. The numbers equal those of the workflow on the
+    same arrays.
     """
     _check_s0(s0_mm2)
-    dropped_samples = count_dropped_samples(force_n, strain, crosshead_mm)
-    extensometer, k_ext, _ = extensometer_validity(
+    out = {"dropped": count_dropped_samples(force_n, strain, crosshead_mm)}
+    out["k_ext"], out["max_valid_strain"], out["extensometer"] = extensometer_validity(
         strain, crosshead_mm, l0_mm, a_percent, rate_switch_strain, params
     )
-    bootstrap, _ = bootstrap_fit(force_n, strain, s0_mm2, k_ext, params)
-    yielding, _, _, _ = yield_analysis(force_n, strain, s0_mm2, k_ext, bootstrap, rate_switch_strain, params)
-    elastic, _, _ = final_elastic_fit(force_n, strain, s0_mm2, k_ext, bootstrap, yielding, params)
-    proof, _ = proof_strength(force_n, strain, s0_mm2, k_ext, elastic, yielding, rate_switch_strain, params)
-    maximum, _, _ = maximum_force(force_n, s0_mm2, yielding)
-    elongation, _, _ = elongation_at_maximum_force(force_n, strain, k_ext, bootstrap, elastic, maximum, params)
-    sensitivity = window_sensitivity(force_n, strain, s0_mm2, k_ext, elastic, maximum, elongation, params)
-    analysis = assemble_curve_analysis(
-        dropped_samples, extensometer, bootstrap, yielding, elastic, proof, maximum, elongation, sensitivity
+    k_ext = out["k_ext"]
+    (out["highest_force_n"], out["e0_gpa"], out["intercept0_mpa"], out["noise_mpa"],
+     out["provisional"]) = provisional_elastic_line(force_n, strain, s0_mm2, k_ext, params)
+    (out["yield_type"], out["reh_mpa"], out["rel_mpa"], out["upper_yield_index"], out["end_of_yielding_index"],
+     out["work_hardening"], out["yielding"]) = yield_points(
+        force_n, strain, s0_mm2, k_ext, out["highest_force_n"], out["e0_gpa"], out["intercept0_mpa"],
+        out["noise_mpa"], rate_switch_strain, params,
     )
-    return analysis
+    out["e_gpa"], out["strain_origin"], out["reference_force_n"], out["elastic"] = elastic_line(
+        force_n, strain, s0_mm2, k_ext, out["upper_yield_index"], out["highest_force_n"], out["e0_gpa"],
+        out["intercept0_mpa"], params,
+    )
+    out["rp02_mpa"], out["proof"] = proof_strength(
+        force_n, strain, s0_mm2, k_ext, out["e_gpa"], out["strain_origin"], out["reference_force_n"],
+        out["upper_yield_index"], out["end_of_yielding_index"], rate_switch_strain, params,
+    )
+    out["fm_n"], out["rm_mpa"], out["max_force_index"], out["maximum_flags"] = maximum_force(
+        force_n, s0_mm2, out["yield_type"], out["work_hardening"], out["end_of_yielding_index"]
+    )
+    out["agt_percent"], out["ag_percent"], out["elongation"] = elongation_at_maximum_force(
+        force_n, strain, s0_mm2, k_ext, out["e_gpa"], out["strain_origin"], out["fm_n"], out["max_force_index"],
+        out["noise_mpa"], params,
+    )
+    out["e_min_gpa"], out["e_max_gpa"], out["rp02_min_mpa"], out["rp02_max_mpa"], out["sensitivity"] = window_sensitivity(
+        force_n, strain, s0_mm2, k_ext, out["reference_force_n"], out["e_gpa"], out["strain_origin"],
+        out["agt_percent"], out["fm_n"], params,
+    )
+    return SpecimenAnalysis.from_outputs(out)

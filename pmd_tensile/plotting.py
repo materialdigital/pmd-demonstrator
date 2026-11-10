@@ -42,13 +42,8 @@ import pandas as pd
 from matplotlib.lines import Line2D
 
 from pmd_tensile.contract import Curve, ReportedProperties, SpecimenRecord
-from pmd_tensile.nodes.analysis.comparison import _COMPARISONS
-from pmd_tensile.nodes.analysis.elastic_line import ElasticResult, ProofStrength
-from pmd_tensile.nodes.analysis.extensometer import ExtensometerValidity
-from pmd_tensile.nodes.analysis.geometry import S0Scatter
-from pmd_tensile.nodes.analysis.maximum_force import MaximumForce
-from pmd_tensile.nodes.analysis.yielding import Bootstrap, Yielding
-from pmd_tensile.nodes.workflows import CurveAnalysis
+from pmd_tensile.nodes.analysis.comparison import COMPARISON_RULES
+from pmd_tensile.orchestration import SpecimenAnalysis
 from pmd_tensile.parameters import (
     DEFAULT_PARAMETERS,
     AnalysisParameters,
@@ -260,17 +255,17 @@ def _styles(orientations: Mapping[str, str], colors: Mapping[str, str] | None):
     return colors, orientation_styles(orientations.values())
 
 
-def _views_from_analyses(
-    specimen_ids: Sequence[str],
+def _views(
     orientations: Mapping[str, str],
     s0: Mapping[str, float],
     curves: Mapping[str, Curve],
-    analyses: Mapping[str, CurveAnalysis],
+    analyses: Mapping[str, SpecimenAnalysis],
     colors: Mapping[str, str] | None,
 ) -> list[_View]:
+    """One view per specimen of ``orientations``, in :func:`specimen_order`."""
     colors, styles = _styles(orientations, colors)
     views = []
-    for sid in specimen_order({sid: orientations[sid] for sid in specimen_ids}):
+    for sid in specimen_order(orientations):
         a = analyses[sid]
         linestyle, marker = styles[orientations[sid]]
         views.append(
@@ -285,75 +280,27 @@ def _views_from_analyses(
                 k_ext=int(a.k_ext),
                 noise_mpa=a.noise_mpa,
                 e_gpa=a.e_gpa,
-                intercept_mpa=a.e_intercept_mpa,
+                intercept_mpa=-a.strain_origin * 1000.0 * a.e_gpa,
                 strain_origin=a.strain_origin,
-                e_window_mpa=tuple(a.e_window_mpa),
-                e_reference_mpa=a.e_reference_stress_mpa,
+                e_window_mpa=a.elastic.window_mpa,
+                e_reference_mpa=a.reference_force_n / float(s0[sid]),
                 reh_mpa=a.reh_mpa,
                 rel_mpa=a.rel_mpa,
                 rp02_mpa=a.rp02_mpa,
                 fm_n=a.fm_n,
                 rm_mpa=a.rm_mpa,
-                i_reh=int(a.indices.get("reh", -1)),
-                i_rel=int(a.indices.get("rel", -1)),
-                i_fm=int(a.indices.get("fm", -1)),
+                i_reh=a.upper_yield_index,
+                i_rel=a.yielding.rel_index,
+                i_fm=a.max_force_index,
             )
         )
     return views
 
 
-def _views_from_steps(
-    records: Mapping[str, SpecimenRecord],
-    curves: Mapping[str, Curve],
-    extensometers: Mapping[str, ExtensometerValidity],
-    colors: Mapping[str, str] | None,
-    *,
-    bootstraps: Mapping[str, Bootstrap] | None = None,
-    yieldings: Mapping[str, Yielding] | None = None,
-    elastics: Mapping[str, ElasticResult] | None = None,
-    proofs: Mapping[str, ProofStrength] | None = None,
-    maxima: Mapping[str, MaximumForce] | None = None,
-) -> list[_View]:
+def _record_views(records: Mapping[str, SpecimenRecord], curves, analyses, colors) -> list[_View]:
     orientations = {sid: record.orientation for sid, record in records.items()}
-    colors, styles = _styles(orientations, colors)
-    views = []
-    for sid in specimen_order(orientations):
-        record = records[sid]
-        linestyle, marker = styles[record.orientation]
-        values: dict = {}
-        if bootstraps is not None:
-            values["noise_mpa"] = bootstraps[sid].noise_mpa
-        if yieldings is not None:
-            y = yieldings[sid]
-            values.update(reh_mpa=y.reh_mpa, rel_mpa=y.rel_mpa, i_reh=y.i_p, i_rel=y.i_rel)
-        if elastics is not None:
-            e = elastics[sid]
-            values.update(
-                e_gpa=e.fit.e_gpa,
-                intercept_mpa=e.fit.intercept_mpa,
-                strain_origin=e.strain_origin,
-                e_window_mpa=(e.fit.lo_mpa, e.fit.hi_mpa),
-                e_reference_mpa=e.reference_mpa,
-            )
-        if proofs is not None:
-            values["rp02_mpa"] = proofs[sid].rp02_mpa
-        if maxima is not None:
-            m = maxima[sid]
-            values.update(fm_n=m.fm_n, rm_mpa=m.rm_mpa, i_fm=m.i_m)
-        views.append(
-            _View(
-                specimen_id=sid,
-                orientation=record.orientation,
-                s0_mm2=float(record.s0_mm2),
-                curve=curves[sid],
-                color=colors[sid],
-                linestyle=linestyle,
-                marker=marker,
-                k_ext=int(extensometers[sid].k_ext),
-                **values,
-            )
-        )
-    return views
+    s0 = {sid: float(record.s0_mm2) for sid, record in records.items()}
+    return _views(orientations, s0, curves, analyses, colors)
 
 
 def _result_views(result, colors: Mapping[str, str] | None) -> list[_View]:
@@ -361,7 +308,7 @@ def _result_views(result, colors: Mapping[str, str] | None) -> list[_View]:
     ids = list(result.specimen_ids)
     orientations = {sid: str(table.loc[sid, "orientation"]) for sid in ids}
     s0 = {sid: float(table.loc[sid, "s0_mm2"]) for sid in ids}
-    return _views_from_analyses(ids, orientations, s0, result.curves, result.curve_analyses, colors)
+    return _views(orientations, s0, result.curves, result.specimen_analyses, colors)
 
 
 def _result_parameters(result) -> AnalysisParameters:
@@ -636,7 +583,7 @@ def curves_overview_figure(
     - (d) stress against crosshead travel to fracture with Fm marked.
 
     The curves and analyses are ``result.curves`` and
-    ``result.curve_analyses`` (the arrays the run used), S0 and the
+    ``result.specimen_analyses`` (the arrays the run used), S0 and the
     orientation come from ``result.results``. ``retrieved`` (a timestamp or
     text) is shown as the "data retrieved" legend entry. ``colors`` maps
     specimen IDs to colours (default: :func:`specimen_colors`). Returns the
@@ -686,16 +633,8 @@ def curves_overview_figure(
 # ---------------------------------------------------------------------------
 
 
-def _allowed_deviation(quantity: str, reported: float) -> float:
-    """Allowed |computed - reported| of method-spec §13 (the tolerances of compare_with_reported)."""
-    for key, _, kind, rel, abs_, _ in _COMPARISONS:
-        if key == quantity:
-            return rel * abs(reported) + abs_ if kind == "relative" else abs_
-    raise KeyError(quantity)
-
-
 def _tolerance_text(quantity: str) -> str:
-    for key, _, kind, _, _, text in _COMPARISONS:
+    for key, _, _, kind, _, _, text in COMPARISON_RULES:
         if key == quantity:
             return text if kind == "relative" else "±0.5 pp, rounding"
     raise KeyError(quantity)
@@ -703,7 +642,7 @@ def _tolerance_text(quantity: str) -> str:
 
 def _lab_deviation_panel(ax, comparison: pd.DataFrame, views: Sequence[_View]) -> None:
     """(computed - lab) / tolerance per specimen and quantity; the band [-1, 1] is 'within'."""
-    quantities = [key for key, *_ in _COMPARISONS if key in set(comparison["quantity"])]
+    quantities = [key for key, *_ in COMPARISON_RULES if key in set(comparison["quantity"])]
     order = [view.specimen_id for view in views if view.specimen_id in set(comparison["specimen_id"])]
     style = {view.specimen_id: view for view in views}
     spread = np.linspace(-0.3, 0.3, len(order)) if len(order) > 1 else np.zeros(1)
@@ -716,11 +655,10 @@ def _lab_deviation_panel(ax, comparison: pd.DataFrame, views: Sequence[_View]) -
             if match.empty:
                 continue
             entry = match.iloc[0]
-            computed, reported = entry["computed"], entry["reported"]
-            if not (_is_value(computed) and _is_value(reported)):
+            x = entry["deviation_in_tolerance"]
+            if not _is_value(x):
                 not_comparable.setdefault(_QUANTITY_LABELS[quantity], []).append(sid)
                 continue
-            x = (computed - reported) / _allowed_deviation(quantity, reported)
             largest = max(largest, abs(x))
             view = style[sid]
             ax.plot(x, row + spread[k], view.marker, color=view.color, markersize=8,
@@ -885,19 +823,19 @@ def _first_branch(stress: np.ndarray, reference: float) -> np.ndarray:
     return branch
 
 
-def _provisional_window(view: _View, bootstrap: Bootstrap, params: AnalysisParameters):
+def _provisional_window(view: _View, analysis: SpecimenAnalysis, params: AnalysisParameters):
     """Mask, line and window of the provisional fit (M5 step 2), in stress units."""
-    reference = params.provisional_fraction_of_rm * bootstrap.fm_n / view.s0_mm2
+    reference = params.provisional_fraction_of_rm * analysis.highest_force_n / view.s0_mm2
     lo, hi = params.f_lo * reference, params.f_hi * reference
     stress = view.stress_mpa
     with np.errstate(invalid="ignore"):
         mask = view.valid & _first_branch(stress, reference) & (stress >= lo) & (stress <= hi)
-    slope = bootstrap.slope_n / view.s0_mm2
-    intercept = bootstrap.intercept_n / view.s0_mm2
+    slope = 1000.0 * analysis.e0_gpa
+    intercept = analysis.intercept0_mpa
     return mask, slope, intercept, (lo, hi)
 
 
-def _drawdown(view: _View, bootstrap: Bootstrap, params: AnalysisParameters):
+def _drawdown(view: _View, analysis: SpecimenAnalysis, params: AnalysisParameters):
     """M7 on the finite-force samples: running maximum M and threshold M - d, in MPa.
 
     Also the largest drop below M before the extensometer end where the search
@@ -907,9 +845,9 @@ def _drawdown(view: _View, bootstrap: Bootstrap, params: AnalysisParameters):
     finite = np.flatnonzero(np.isfinite(stress))
     running = np.full(len(stress), NAN)
     running[finite] = np.maximum.accumulate(stress[finite])
-    noise = bootstrap.noise_mpa if _is_value(bootstrap.noise_mpa) else 0.0
+    noise = analysis.noise_mpa if _is_value(analysis.noise_mpa) else 0.0
     required = np.maximum(params.drop_rel * running, params.drop_noise_factor * noise)
-    rm = bootstrap.fm_n / view.s0_mm2
+    rm = analysis.highest_force_n / view.s0_mm2
     searched = np.zeros(len(stress), dtype=bool)
     searched[finite] = stress[finite] > 0.5 * rm
     before_end = np.zeros(len(stress), dtype=bool)
@@ -927,9 +865,7 @@ def _drawdown(view: _View, bootstrap: Bootstrap, params: AnalysisParameters):
 def yield_step_figure(
     records: Mapping[str, SpecimenRecord],
     curves: Mapping[str, Curve],
-    extensometers: Mapping[str, ExtensometerValidity],
-    bootstraps: Mapping[str, Bootstrap],
-    yieldings: Mapping[str, Yielding],
+    analyses: Mapping[str, SpecimenAnalysis],
     *,
     params: AnalysisParameters | None = None,
     colors: Mapping[str, str] | None = None,
@@ -951,12 +887,12 @@ def yield_step_figure(
     defaults). Returns the Figure.
     """
     p = DEFAULT_PARAMETERS if params is None else params
-    views = _views_from_steps(records, curves, extensometers, colors, bootstraps=bootstraps, yieldings=yieldings)
+    views = _record_views(records, curves, analyses, colors)
     fig, axes = plt.subplots(2, 2, figsize=FIGURE_SIZE, layout="constrained")
     ax_a, ax_b, ax_c, ax_d = axes.flat
     labels = {}
     for view in views:
-        bootstrap = bootstraps[view.specimen_id]
+        analysis = analyses[view.specimen_id]
         travel, strain = view.crosshead_travel_mm, view.strain
         finite = np.isfinite(travel) & np.isfinite(strain)
         ax_a.plot(travel[finite], 100 * strain[finite], color=view.color, linestyle=view.linestyle)
@@ -965,7 +901,7 @@ def yield_step_figure(
             ax_a.plot(travel[end], 100 * strain[end], PROPERTY_MARKERS["extensometer end"], color="k",
                       markersize=16, markeredgewidth=2)
 
-        mask, slope, intercept, (lo, hi) = _provisional_window(view, bootstrap, p)
+        mask, slope, intercept, (lo, hi) = _provisional_window(view, analysis, p)
         stress = view.stress_mpa
         low = view.valid & _first_branch(stress, 1.2 * hi)
         ax_b.plot(100 * strain[low], stress[low], color=view.color, linestyle=view.linestyle, linewidth=1.0)
@@ -977,11 +913,11 @@ def yield_step_figure(
         residual = stress[mask] - (slope * strain[mask] + intercept)
         ax_c.plot(stress[mask], residual, view.marker, color=view.color, markersize=3, alpha=0.6,
                   linestyle="none")
-        if _is_value(bootstrap.noise_mpa):
+        if _is_value(analysis.noise_mpa):
             for sign in (-1, 1):
-                ax_c.axhline(sign * bootstrap.noise_mpa, color=view.color, linestyle=view.linestyle, linewidth=1.2)
+                ax_c.axhline(sign * analysis.noise_mpa, color=view.color, linestyle=view.linestyle, linewidth=1.2)
 
-        running, threshold, largest, needed = _drawdown(view, bootstrap, p)
+        running, threshold, largest, needed = _drawdown(view, analysis, p)
         valid = view.valid
         ax_d.plot(100 * strain[valid], stress[valid], color=view.color, linestyle=view.linestyle, linewidth=1.0)
         ax_d.plot(100 * strain[valid], threshold[valid], color=view.color, linewidth=0.9, dashes=(2, 2),
@@ -990,7 +926,7 @@ def yield_step_figure(
             view.specimen_id,
             view.orientation,
             [("ext. end at e", 100 * strain[end] if end >= 0 else NAN, "%", 2),
-             ("s_n", bootstrap.noise_mpa, "MPa", 2), ("ReH", view.reh_mpa, "MPa", 1),
+             ("s_n", analysis.noise_mpa, "MPa", 2), ("ReH", view.reh_mpa, "MPa", 1),
              ("ReL", view.rel_mpa, "MPa", 1)],
         ) + f"\nlargest drop before ext. end {format_value(largest, 1, 'MPa')}, required d {format_value(needed, 1, 'MPa')}"
     _mark_yield_points(ax_d, views, p.offset_plastic_strain, shifted=False)
@@ -1041,11 +977,7 @@ def yield_step_figure(
 def elastic_step_figure(
     records: Mapping[str, SpecimenRecord],
     curves: Mapping[str, Curve],
-    extensometers: Mapping[str, ExtensometerValidity],
-    yieldings: Mapping[str, Yielding],
-    elastics: Mapping[str, ElasticResult],
-    proofs: Mapping[str, ProofStrength],
-    window_moduli: pd.DataFrame,
+    analyses: Mapping[str, SpecimenAnalysis],
     reported: Mapping[str, ReportedProperties],
     *,
     method_specimen: str = "Zx3",
@@ -1058,8 +990,7 @@ def elastic_step_figure(
     - (a) the method on ``method_specimen`` (``final_elastic_fit``,
       ``proof_strength``), with an inset;
     - (b) residuals of the final E fit in its window (is the segment straight?);
-    - (c) E for each window of the M15 grid (``window_moduli``: columns
-      ``specimen_id``, ``f_lo``, ``f_hi``, ``e_gpa``), with the lab E;
+    - (c) E for each window of the sensitivity grid, with the lab E;
     - (d) the 0.2 % offset construction of all specimens: strain − e0 with the
       offset lines, Rp0.2 and ReH.
 
@@ -1067,8 +998,7 @@ def elastic_step_figure(
     Returns the Figure.
     """
     p = DEFAULT_PARAMETERS if params is None else params
-    views = _views_from_steps(records, curves, extensometers, colors, yieldings=yieldings, elastics=elastics,
-                              proofs=proofs)
+    views = _record_views(records, curves, analyses, colors)
     by_id = {view.specimen_id: view for view in views}
     if method_specimen not in by_id:
         raise KeyError(f"method_specimen {method_specimen!r} is not among {sorted(by_id)}")
@@ -1081,23 +1011,24 @@ def elastic_step_figure(
     labels = {}
     grid_labels = []
     for view in views:
-        elastic = elastics[view.specimen_id]
-        fit = elastic.fit
+        analysis = analyses[view.specimen_id]
+        lo, hi = view.e_window_mpa
         stress, strain = view.stress_mpa, view.strain
         with np.errstate(invalid="ignore"):
-            mask = (view.valid & _first_branch(stress, elastic.reference_mpa)
-                    & (stress >= fit.lo_mpa) & (stress <= fit.hi_mpa))
-        if _is_value(fit.e_gpa):
-            residual = stress[mask] - (1000.0 * fit.e_gpa * strain[mask] + fit.intercept_mpa)
+            mask = (view.valid & _first_branch(stress, view.e_reference_mpa)
+                    & (stress >= lo) & (stress <= hi))
+        if _is_value(view.e_gpa):
+            residual = stress[mask] - (1000.0 * view.e_gpa * strain[mask] + view.intercept_mpa)
             ax_b.plot(stress[mask], residual, view.marker, color=view.color, markersize=3.5, linestyle="none",
                       alpha=0.8)
 
-        rows = window_moduli[window_moduli["specimen_id"] == view.specimen_id]
-        for k, (_, row) in enumerate(rows.sort_values(["f_lo", "f_hi"]).iterrows()):
-            ax_c.plot(k, row["e_gpa"], view.marker, color=view.color, markersize=8,
+        windows = [(f_lo, f_hi) for f_lo in p.window_grid_lo for f_hi in p.window_grid_hi]
+        moduli = [e for row in analysis.sensitivity.grid_e_gpa for e in row]
+        for k, ((f_lo, f_hi), e_gpa) in enumerate(zip(windows, moduli, strict=True)):
+            ax_c.plot(k, e_gpa, view.marker, color=view.color, markersize=8,
                       markeredgecolor=view.color if view.marker == "x" else "k")
             if view is views[0]:
-                grid_labels.append(f"{100 * row['f_lo']:.0f}–{100 * row['f_hi']:.0f}")
+                grid_labels.append(f"{100 * f_lo:.0f}–{100 * f_hi:.0f}")
         lab = reported[view.specimen_id].e_gpa
         if _is_value(lab):
             ax_c.axhline(lab, color=view.color, linestyle=view.linestyle, linewidth=1.2)
@@ -1112,7 +1043,7 @@ def elastic_step_figure(
         labels[view.specimen_id] = specimen_label(
             view.specimen_id,
             view.orientation,
-            [("E", fit.e_gpa, "GPa", 1), ("lab", lab, "GPa", 0), ("R²", fit.r2, "", 4),
+            [("E", view.e_gpa, "GPa", 1), ("lab", lab, "GPa", 0), ("R²", analysis.elastic.r2, "", 4),
              ("Rp0.2", view.rp02_mpa, "MPa", 1)],
         )
     _mark_yield_points(ax_d, views, p.offset_plastic_strain, shifted=True)
@@ -1157,8 +1088,7 @@ def elastic_step_figure(
 def maximum_force_step_figure(
     records: Mapping[str, SpecimenRecord],
     curves: Mapping[str, Curve],
-    extensometers: Mapping[str, ExtensometerValidity],
-    maxima: Mapping[str, MaximumForce],
+    analyses: Mapping[str, SpecimenAnalysis],
     *,
     colors: Mapping[str, str] | None = None,
     retrieved=None,
@@ -1171,7 +1101,7 @@ def maximum_force_step_figure(
 
     Returns the Figure.
     """
-    views = _views_from_steps(records, curves, extensometers, colors, maxima=maxima)
+    views = _record_views(records, curves, analyses, colors)
     fig, (ax_a, ax_b) = plt.subplots(1, 2, figsize=(FIGURE_SIZE[0], 6.0), layout="constrained")
     _crosshead_panel(ax_a, views)
     ax_a.set_title("(a) maximum force from the force channel")
@@ -1207,7 +1137,7 @@ def maximum_force_step_figure(
 
 def lab_comparison_step_figure(
     records: Mapping[str, SpecimenRecord],
-    scatters: Mapping[str, S0Scatter],
+    s0_u_rel: Mapping[str, float],
     comparison: pd.DataFrame,
     *,
     colors: Mapping[str, str] | None = None,
@@ -1232,8 +1162,8 @@ def lab_comparison_step_figure(
         linestyle, marker = styles[record.orientation]
         views.append(_View(sid, record.orientation, float(record.s0_mm2), None, colors[sid], linestyle, marker, -1))
         measurements = np.asarray(record.cross_section_measurements_mm2, dtype=float)
-        scatter = scatters[sid]
-        u = abs(scatter.u_rel * record.s0_mm2) if _is_value(scatter.u_rel) else NAN
+        u_rel = s0_u_rel[sid]
+        u = abs(u_rel * record.s0_mm2) if _is_value(u_rel) else NAN
         ax_a.plot(np.full(len(measurements), position), measurements - record.s0_mm2, marker, color=colors[sid],
                   markersize=8, linestyle="none", markeredgecolor=colors[sid] if marker == "x" else "k")
         ax_a.hlines(0.0, position - 0.25, position + 0.25, color="k", linewidth=2)
@@ -1242,7 +1172,7 @@ def lab_comparison_step_figure(
                                          linewidth=0))
         labels[sid] = specimen_label(
             sid, record.orientation,
-            [("S0", record.s0_mm2, "mm²", 3), ("u(S0)/S0", 1e4 * scatter.u_rel if _is_value(scatter.u_rel) else NAN,
+            [("S0", record.s0_mm2, "mm²", 3), ("u(S0)/S0", 1e4 * u_rel if _is_value(u_rel) else NAN,
                                                "·10⁻⁴", 1)],
         )
     order = specimen_order(orientations)

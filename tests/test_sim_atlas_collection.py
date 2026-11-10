@@ -77,18 +77,6 @@ CLASS = "other class"
 PARSABLE = (ATOMIC, MACRO, DATACLASS)
 """The kinds a sim_atlas parser accepts (FUNCTION would be mistaken for a node)."""
 
-STEP_DATACLASSES = (
-    "Bootstrap",
-    "ElasticFit",
-    "ElasticResult",
-    "Elongation",
-    "ExtensometerValidity",
-    "MaximumForce",
-    "ProofStrength",
-    "WindowSensitivity",
-    "Yielding",
-)
-
 NODE_MODULES: dict[str, dict[str, str]] = {
     "pmd_tensile.nodes.exploration": {
         "check_conformance": ATOMIC,
@@ -103,43 +91,43 @@ NODE_MODULES: dict[str, dict[str, str]] = {
         "check_time_order": ATOMIC,
         "count_dropped_samples": ATOMIC,
         "extensometer_validity": ATOMIC,
+        "DroppedSamples": DATACLASS,
+        "ExtensometerDiagnostics": DATACLASS,
     },
     "pmd_tensile.nodes.analysis.elastic_line": {
         "engineering_stress": ATOMIC,
-        "elastic_fit": ATOMIC,
-        "bootstrap_fit": ATOMIC,
-        "final_elastic_fit": ATOMIC,
+        "provisional_elastic_line": ATOMIC,
+        "elastic_line": ATOMIC,
         "proof_strength": ATOMIC,
         "window_sensitivity": ATOMIC,
+        "ProvisionalLine": DATACLASS,
+        "ElasticLineDiagnostics": DATACLASS,
+        "ProofStrengthDiagnostics": DATACLASS,
+        "WindowSensitivityDiagnostics": DATACLASS,
     },
     "pmd_tensile.nodes.analysis.yielding": {
-        "yield_analysis": ATOMIC,
+        "yield_points": ATOMIC,
+        "YieldDiagnostics": DATACLASS,
     },
     "pmd_tensile.nodes.analysis.maximum_force": {
         "maximum_force": ATOMIC,
         "elongation_at_maximum_force": ATOMIC,
+        "ElongationDiagnostics": DATACLASS,
     },
     "pmd_tensile.nodes.analysis.geometry": {
         "s0_scatter": ATOMIC,
         "elongation_after_fracture": ATOMIC,
         "reduction_of_area": ATOMIC,
-        "S0Scatter": DATACLASS,
-        "ScalarResult": DATACLASS,
     },
     "pmd_tensile.nodes.analysis.comparison": {
         "compare_with_reported": ATOMIC,
         "summarize_by_group": ATOMIC,
     },
-    "pmd_tensile.nodes.analysis.steps": dict.fromkeys(STEP_DATACLASSES, DATACLASS),
     "pmd_tensile.nodes.workflows": {
-        "CurveAnalysis": DATACLASS,
-        "assemble_curve_analysis": ATOMIC,
         "analysis_parameters": ATOMIC,
         "curve_channels": ATOMIC,
         "specimen_geometry": ATOMIC,
-        "percent_value": ATOMIC,
-        "computed_properties": ATOMIC,
-        "specimen_summary": ATOMIC,
+        "specimen_row": ATOMIC,
         "summary_quantities": ATOMIC,
         "results_table": ATOMIC,
         "comparison_table": ATOMIC,

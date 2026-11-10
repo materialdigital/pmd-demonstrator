@@ -1,6 +1,6 @@
 """Specification-based tests of the non-curve analysis functions (T5).
 
-elastic_fit (M4, M16, VP-6), s0_scatter (M14), A and Z (M13),
+the least-squares fit of the elastic line (M4, M16, VP-6), s0_scatter (M14), A and Z (M13),
 compare_with_reported (§13), summarize_by_group (§12), check_time_order (M1)
 and the module boundary of acceptance criterion 2. Expected values are
 analytic.
@@ -22,11 +22,11 @@ import synthetic as sy
 
 import pmd_tensile.nodes.analysis as analysis_package
 from pmd_tensile.contract import ReportedProperties
+from pmd_tensile.curve_math import _ols
 from pmd_tensile.nodes.analysis.comparison import (
     compare_with_reported,
     summarize_by_group,
 )
-from pmd_tensile.nodes.analysis.elastic_line import elastic_fit
 from pmd_tensile.nodes.analysis.extensometer import check_time_order
 from pmd_tensile.nodes.analysis.geometry import (
     elongation_after_fracture,
@@ -50,36 +50,44 @@ def _ols_reference(stress, strain):
 
 
 # ---------------------------------------------------------------------------
-# elastic_fit
+# Least squares of the elastic line
+
+
+def elastic_fit(stress, strain, lo, hi, min_points=10):
+    """The fit the elastic line uses, on the samples with lo <= stress <= hi (MPa, GPa)."""
+    stress, strain = np.asarray(stress, float), np.asarray(strain, float)
+    keep = np.isfinite(stress) & np.isfinite(strain) & (stress >= lo) & (stress <= hi)
+    ols = _ols(strain[keep], stress[keep], min_points)
+    return dict(e_gpa=ols.slope / 1000.0, intercept_mpa=ols.intercept, n=ols.n, r2=ols.r2,
+                stderr_gpa=ols.stderr / 1000.0, lag1_rho=ols.lag1_rho, n_eff=ols.n_eff)
 
 
 def test_elastic_fit_exact_line():
     s = np.arange(3.0, 200.0, 2.0)
     e = E0 + s / E
     fit = elastic_fit(s, e, 40.0, 160.0)
-    assert fit.e_gpa == pytest.approx(205.0, rel=1e-12)
-    assert fit.intercept_mpa == pytest.approx(-E * E0, rel=1e-9)
-    assert fit.n == 60  # odd stresses 41..159
-    assert fit.r2 == pytest.approx(1.0, abs=1e-12)
-    assert fit.stderr_gpa == pytest.approx(0.0, abs=1e-9)
-    assert (fit.lo_mpa, fit.hi_mpa) == (40.0, 160.0)
+    assert fit["e_gpa"] == pytest.approx(205.0, rel=1e-12)
+    assert fit["intercept_mpa"] == pytest.approx(-E * E0, rel=1e-9)
+    assert fit["n"] == 60  # odd stresses 41..159
+    assert fit["r2"] == pytest.approx(1.0, abs=1e-12)
+    assert fit["stderr_gpa"] == pytest.approx(0.0, abs=1e-9)
 
 
 def test_elastic_fit_window_bounds_are_inclusive():
     s = np.arange(0.0, 201.0, 1.0)
     fit = elastic_fit(s, E0 + s / E, 40.0, 160.0)
-    assert fit.n == 121
+    assert fit["n"] == 121
 
 
 def test_elastic_fit_needs_ten_points():
     s = np.arange(0.0, 201.0, 10.0)
     e = E0 + s / E
     fit = elastic_fit(s, e, 41.0, 139.0)  # 50, 60, ..., 130: nine samples
-    assert fit.n == 9
-    for value in (fit.e_gpa, fit.intercept_mpa, fit.r2):
+    assert fit["n"] == 9
+    for value in (fit["e_gpa"], fit["intercept_mpa"], fit["r2"]):
         assert_nan(value)
-    assert elastic_fit(s, e, 40.0, 130.0).n == 10
-    assert elastic_fit(s, e, 40.0, 130.0).e_gpa == pytest.approx(205.0, rel=1e-12)
+    assert elastic_fit(s, e, 40.0, 130.0)["n"] == 10
+    assert elastic_fit(s, e, 40.0, 130.0)["e_gpa"] == pytest.approx(205.0, rel=1e-12)
 
 
 def test_elastic_fit_ignores_non_finite_samples():
@@ -89,8 +97,8 @@ def test_elastic_fit_ignores_non_finite_samples():
     s2 = s.copy()
     s2[31] = np.inf
     fit = elastic_fit(s2, e, 40.0, 160.0)
-    assert fit.n == 58
-    assert fit.e_gpa == pytest.approx(205.0, rel=1e-12)
+    assert fit["n"] == 58
+    assert fit["e_gpa"] == pytest.approx(205.0, rel=1e-12)
 
 
 def test_elastic_fit_vp6_analytic_slope_of_a_quadratic_law():
@@ -101,8 +109,8 @@ def test_elastic_fit_vp6_analytic_slope_of_a_quadratic_law():
         keep = (s >= lo) & (s <= hi)
         slope, intercept, _ = _ols_reference(s[keep], e[keep])
         fit = elastic_fit(s, e, lo, hi)
-        assert fit.e_gpa == pytest.approx(slope / 1000.0, rel=1e-9)
-        assert fit.intercept_mpa == pytest.approx(intercept, rel=1e-9)
+        assert fit["e_gpa"] == pytest.approx(slope / 1000.0, rel=1e-9)
+        assert fit["intercept_mpa"] == pytest.approx(intercept, rel=1e-9)
 
 
 def test_elastic_fit_m16_standard_error():
@@ -114,12 +122,12 @@ def test_elastic_fit_m16_standard_error():
     n = s.size
     se = math.sqrt(math.fsum(resid**2) / (n - 2) / math.fsum((e - e.mean()) ** 2))
     fit = elastic_fit(s, e, 0.0, 1e9)
-    assert fit.n == n
-    assert fit.e_gpa == pytest.approx(slope / 1000.0, rel=1e-12)
-    assert fit.stderr_gpa == pytest.approx(se / 1000.0, rel=1e-9)
+    assert fit["n"] == n
+    assert fit["e_gpa"] == pytest.approx(slope / 1000.0, rel=1e-12)
+    assert fit["stderr_gpa"] == pytest.approx(se / 1000.0, rel=1e-9)
     ss_res = math.fsum(resid**2)
     ss_tot = math.fsum((s - s.mean()) ** 2)
-    assert fit.r2 == pytest.approx(1.0 - ss_res / ss_tot, rel=1e-9)
+    assert fit["r2"] == pytest.approx(1.0 - ss_res / ss_tot, rel=1e-9)
 
 
 @pytest.mark.parametrize("pattern", ["alternating", "slow"])
@@ -132,10 +140,10 @@ def test_elastic_fit_m16_lag1_autocorrelation_and_n_eff(pattern):
     rho_ref = math.fsum(resid[:-1] * resid[1:]) / math.fsum(resid**2)
     fit = elastic_fit(s, e, 0.0, 1e9)
     # Lag-1 estimators differ by O(1/n); the sign and size must match.
-    assert fit.lag1_rho == pytest.approx(rho_ref, abs=0.03)
-    assert (fit.lag1_rho < -0.9) if pattern == "alternating" else (fit.lag1_rho > 0.9)
-    rho = fit.lag1_rho
-    assert fit.n_eff == pytest.approx(fit.n * (1 - rho) / (1 + rho), rel=1e-9)
+    assert fit["lag1_rho"] == pytest.approx(rho_ref, abs=0.03)
+    assert (fit["lag1_rho"] < -0.9) if pattern == "alternating" else (fit["lag1_rho"] > 0.9)
+    rho = fit["lag1_rho"]
+    assert fit["n_eff"] == pytest.approx(fit["n"] * (1 - rho) / (1 + rho), rel=1e-9)
 
 
 # ---------------------------------------------------------------------------
@@ -143,29 +151,29 @@ def test_elastic_fit_m16_lag1_autocorrelation_and_n_eff(pattern):
 
 
 def test_s0_scatter_three_measurements():
-    result = s0_scatter(100.0, [99.0, 100.0, 101.0])
-    assert result.u_rel == pytest.approx(1.0 / math.sqrt(3.0) / 100.0, rel=1e-12)
-    assert result.dof == 2
-    assert result.flags == ()
+    u_rel, dof, flags = s0_scatter(100.0, [99.0, 100.0, 101.0])
+    assert u_rel == pytest.approx(1.0 / math.sqrt(3.0) / 100.0, rel=1e-12)
+    assert dof == 2
+    assert flags == ()
 
 
 def test_s0_scatter_two_measurements():
-    result = s0_scatter(100.0, [99.0, 101.0])
-    assert result.u_rel == pytest.approx(math.sqrt(2.0) / math.sqrt(2.0) / 100.0, rel=1e-12)
-    assert result.dof == 1
+    u_rel, dof, _ = s0_scatter(100.0, [99.0, 101.0])
+    assert u_rel == pytest.approx(math.sqrt(2.0) / math.sqrt(2.0) / 100.0, rel=1e-12)
+    assert dof == 1
 
 
 @pytest.mark.parametrize("measurements", [[], [80.0]])
 def test_s0_scatter_needs_two_measurements(measurements):
-    result = s0_scatter(80.0, measurements)
-    assert_nan(result.u_rel)
-    assert result.flags == ("s0:no_s0_spread",)
+    u_rel, _, flags = s0_scatter(80.0, measurements)
+    assert_nan(u_rel)
+    assert flags == ("s0:no_s0_spread",)
 
 
 def test_s0_spread_propagates_to_the_relative_stress_uncertainty():
     # M14: u_rel(X) = u_rel(S0) for every stress-based X, strains unaffected.
     c = sy.reference_a()
-    u = s0_scatter(c.s0_mm2, [79.9, 80.0, 80.1]).u_rel
+    u, _, _ = s0_scatter(c.s0_mm2, [79.9, 80.0, 80.1])
     base = analyse_curve(*c.args())
     shifted = analyse_curve(c.force_n, c.strain, c.crosshead_mm, c.s0_mm2 * (1.0 + u), c.l0_mm)
     for name in ("rm_mpa", "reh_mpa", "rel_mpa", "rp02_mpa", "e_gpa"):
@@ -180,29 +188,29 @@ def test_s0_spread_propagates_to_the_relative_stress_uncertainty():
 
 
 def test_elongation_after_fracture():
-    result = elongation_after_fracture(50.0, 62.5)
-    assert result.value == pytest.approx(25.0, rel=1e-12)
-    assert result.flags == ()
+    a_percent, flags = elongation_after_fracture(50.0, 62.5)
+    assert a_percent == pytest.approx(25.0, rel=1e-12)
+    assert flags == ()
 
 
 @pytest.mark.parametrize("l0, lu", [(50.0, None), (None, 62.5), (None, None)])
 def test_elongation_after_fracture_missing_input(l0, lu):
-    result = elongation_after_fracture(l0, lu)
-    assert_nan(result.value)
-    assert result.flags == ("a:missing_input",)
+    a_percent, flags = elongation_after_fracture(l0, lu)
+    assert_nan(a_percent)
+    assert flags == ("a:missing_input",)
 
 
 def test_reduction_of_area():
-    result = reduction_of_area(80.0, 30.0)
-    assert result.value == pytest.approx(62.5, rel=1e-12)
-    assert result.flags == ()
+    z_percent, flags = reduction_of_area(80.0, 30.0)
+    assert z_percent == pytest.approx(62.5, rel=1e-12)
+    assert flags == ()
 
 
 @pytest.mark.parametrize("s0, su", [(80.0, None), (None, 30.0)])
 def test_reduction_of_area_missing_input(s0, su):
-    result = reduction_of_area(s0, su)
-    assert_nan(result.value)
-    assert result.flags == ("z:missing_input",)
+    z_percent, flags = reduction_of_area(s0, su)
+    assert_nan(z_percent)
+    assert flags == ("z:missing_input",)
 
 
 # ---------------------------------------------------------------------------
@@ -222,17 +230,21 @@ LAB = ReportedProperties(
 )
 
 
+def _compare(computed: dict, lab: ReportedProperties = LAB):
+    return compare_with_reported(**{q: computed.get(q) for q in QUANTITIES}, reported=lab)
+
+
 def _outcomes(computed: dict) -> dict:
-    table = compare_with_reported(computed, LAB)
+    table = _compare(computed)
     assert list(table.columns) == [
-        "quantity", "computed", "reported", "rel_deviation", "outcome", "tolerance"
+        "quantity", "unit", "computed", "reported", "deviation", "lab_resolution", "deviation_in_resolution",
+        "allowed_deviation", "deviation_in_tolerance", "outcome", "tolerance",
     ]
     return dict(zip(table["quantity"], table["outcome"]))
 
 
 def test_compare_has_one_row_per_quantity_and_no_rel_row():
-    computed = dict.fromkeys(QUANTITIES, 1.0) | {"rel_mpa": 379.0}
-    table = compare_with_reported(computed, LAB)
+    table = _compare(dict.fromkeys(QUANTITIES, 1.0))
     assert tuple(table["quantity"]) == QUANTITIES
     assert not any("rel" in q.lower() for q in table["quantity"])
     assert all(isinstance(t, str) and t for t in table["tolerance"])
@@ -280,18 +292,39 @@ def test_compare_missing_computed_value_is_not_comparable(value):
 
 def test_compare_missing_reported_value_is_not_comparable():
     lab = ReportedProperties("Zx9", rm_mpa=None, fm_n=40800.0)
-    table = compare_with_reported({"rm_mpa": 510.0, "fm_n": 40800.0}, lab)
+    table = _compare({"rm_mpa": 510.0, "fm_n": 40800.0}, lab)
     outcomes = dict(zip(table["quantity"], table["outcome"]))
     assert outcomes["rm_mpa"] == "not_comparable"
     assert outcomes["fm_n"] == "within"
     assert outcomes["e_gpa"] == "not_comparable"  # neither value given
 
 
-def test_compare_relative_deviation():
-    table = compare_with_reported({"fm_n": 40830.0}, LAB).set_index("quantity")
-    assert abs(table.loc["fm_n", "rel_deviation"]) == pytest.approx(30.0 / 40800.0, rel=1e-12)
+def test_compare_deviation_in_resolution_and_tolerance():
+    table = _compare({"fm_n": 40830.0, "a_percent": 25.25}).set_index("quantity")
     assert table.loc["fm_n", "computed"] == 40830.0
     assert table.loc["fm_n", "reported"] == 40800.0
+    assert table.loc["fm_n", "deviation"] == pytest.approx(30.0, rel=1e-12)
+    assert table.loc["fm_n", "deviation_in_resolution"] == pytest.approx(30.0, rel=1e-12)  # 1 N steps
+    assert table.loc["fm_n", "allowed_deviation"] == pytest.approx(40.8, rel=1e-12)
+    assert table.loc["fm_n", "deviation_in_tolerance"] == pytest.approx(30.0 / 40.8, rel=1e-12)
+    assert table.loc["a_percent", "deviation_in_resolution"] == pytest.approx(0.5, rel=1e-12)  # 0.5 % steps
+    assert table.loc["a_percent", "unit"] == "%"
+
+
+def test_lab_resolutions_fit_the_s355_lab_values(pmdco2_source):
+    # Every lab value of the ten S355 tests is a multiple of the declared step.
+    from pmd_tensile.nodes.acquisition import get_reported_properties
+    from pmd_tensile.nodes.analysis.comparison import COMPARISON_RULES
+    from pmd_tensile.profiles import specimen_table
+
+    ids = list(specimen_table("pmdco2-tto", pmdco2_source)["specimen_id"])
+    reported = [get_reported_properties("pmdco2-tto", pmdco2_source, sid) for sid in ids]
+    for quantity, _, resolution, *_ in COMPARISON_RULES:
+        values = [getattr(r, quantity) for r in reported if getattr(r, quantity) is not None]
+        assert values, quantity
+        for value in values:
+            steps = value / resolution
+            assert steps == pytest.approx(round(steps), abs=1e-9), (quantity, value)
 
 
 # ---------------------------------------------------------------------------

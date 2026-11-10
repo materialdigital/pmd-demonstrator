@@ -28,7 +28,6 @@ from pmd_tensile import knowledge_graph as kg
 from pmd_tensile import orchestration, sources
 from pmd_tensile.nodes import acquisition, workflows
 from pmd_tensile.nodes.analysis.geometry import elongation_after_fracture
-from pmd_tensile.nodes.workflows import CurveAnalysis
 from pmd_tensile.orchestration import analyse_curve
 from pmd_tensile.parameters import (
     DEFAULT_PARAMETERS,
@@ -125,13 +124,12 @@ def test_default_run_equals_analyse_curve_with_default_parameters(curves, defaul
     for sid in SPECIMENS:
         record = acquisition.get_specimen_record(PMDCO2, PMDCO2_SOURCE, sid)
         curve = sources.parse_curve_csv(curves[sid], record.curve_columns, source_url=record.curve_url)
-        a_percent = elongation_after_fracture(record.l0_mm, record.lu_mm).value
+        a_percent, _ = elongation_after_fracture(record.l0_mm, record.lu_mm)
         args = (curve.force_n, curve.strain, curve.crosshead_mm, record.s0_mm2, record.l0_mm)
         kwargs = dict(a_percent=a_percent, rate_switch_strain=record.rate_switch_strain)
         implicit = analyse_curve(*args, **kwargs)
         explicit = analyse_curve(*args, **kwargs, params=DEFAULT_PARAMETERS)
-        for field in dataclasses.fields(CurveAnalysis):
-            assert repr(getattr(implicit, field.name)) == repr(getattr(explicit, field.name)), field.name
+        assert repr(implicit) == repr(explicit)
         for column in ("e_gpa", "reh_mpa", "rel_mpa", "rp02_mpa", "fm_n", "rm_mpa", "strain_origin"):
             assert repr(float(rows.loc[sid, column])) == repr(float(getattr(implicit, column))), (sid, column)
 
@@ -168,13 +166,13 @@ def test_changed_offset_equals_analyse_curve_with_the_same_parameters(curves, ch
             curve.crosshead_mm,
             record.s0_mm2,
             record.l0_mm,
-            a_percent=elongation_after_fracture(record.l0_mm, record.lu_mm).value,
+            a_percent=elongation_after_fracture(record.l0_mm, record.lu_mm)[0],
             rate_switch_strain=record.rate_switch_strain,
             params=params,
         )
         assert rows.loc[sid, "rp02_mpa"] == expected.rp02_mpa
         assert (rows.loc[sid, "rp02_window_min_mpa"], rows.loc[sid, "rp02_window_max_mpa"]) == (
-            expected.rp02_window_range_mpa
+            expected.rp02_min_mpa, expected.rp02_max_mpa
         )
         assert math.isfinite(expected.rp02_mpa)
 

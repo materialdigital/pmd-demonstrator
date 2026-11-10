@@ -2,98 +2,122 @@
 
 from __future__ import annotations
 
+import dataclasses
 import math
 
 import flowrep as fr
 import numpy as np
 
 from pmd_tensile.curve_math import NAN, _channels, _check_s0, _params
-from pmd_tensile.nodes.analysis.steps import (
-    Bootstrap,
-    ElasticResult,
-    Elongation,
-    MaximumForce,
-    Yielding,
-)
 from pmd_tensile.nodes.analysis.yielding import DISCONTINUOUS
 from pmd_tensile.parameters import AnalysisParameters
 from pmd_tensile.units import (
     AreaMM2,
     ForceArray,
     ForceN,
+    ModulusGPa,
     StrainArray,
     StrainPercent,
+    StrainRatio,
     StressMPa,
 )
 
 
+@dataclasses.dataclass(frozen=True)
+class ElongationDiagnostics:
+    """The near-maximum band of :func:`elongation_at_maximum_force`: first and last sample
+    index ((-1, -1) if none), half its strain width (percentage points), and flags."""
+
+    band: tuple[int, int]
+    halfwidth_percent: float
+    flags: tuple[str, ...] = ()
+
+
 @fr.atomic
 def maximum_force(
-    force_n: ForceArray, s0_mm2: AreaMM2, yielding: Yielding
-) -> tuple[MaximumForce, ForceN, StressMPa]:
-    """M11: Fm and Rm = Fm/S0.
+    force_n: ForceArray,
+    s0_mm2: AreaMM2,
+    yield_type: str,
+    work_hardening: bool,
+    end_of_yielding_index: int,
+) -> tuple[ForceN, StressMPa, int, tuple[str, ...]]:
+    """Maximum force Fm and tensile strength Rm = Fm/S0.
 
-    Continuous yielding: maximum over all finite forces. Discontinuous: the
-    maximum from i_h on (work hardening); without work hardening, NaN with
-    flag ``fm:no_work_hardening``.
+    For continuous yielding Fm is the largest finite force. For discontinuous
+    yielding it is the largest force after the end of yielding, during work
+    hardening, so that an upper yield peak above the later maximum is not taken.
+
+    Inputs: force (N), S0 (mm²), the yield type, whether work hardening was
+    reached, and the sample index of the end of yielding.
+    Outputs: ``fm_n`` (N), ``rm_mpa`` (MPa), ``max_force_index`` (sample index,
+    -1 if undefined), ``flags``:
+    ``fm:no_work_hardening`` (discontinuous yielding without work
+    hardening: Fm and Rm are undefined).
     """
     s0 = _check_s0(s0_mm2)
     force = np.asarray(force_n, dtype=float)
     candidates = np.flatnonzero(np.isfinite(force))
-    flags = []
-    if yielding.yield_type == DISCONTINUOUS:
-        if yielding.work_hardening:
-            candidates = candidates[candidates >= yielding.i_h]
+    found = []
+    if yield_type == DISCONTINUOUS:
+        if work_hardening:
+            candidates = candidates[candidates >= end_of_yielding_index]
         else:
             candidates = candidates[:0]
-            flags.append("fm:no_work_hardening")
+            found.append("fm:no_work_hardening")
     if len(candidates):
-        i_m = int(candidates[int(np.argmax(force[candidates]))])
-        fm = float(force[i_m])
+        max_force_index = int(candidates[int(np.argmax(force[candidates]))])
+        fm_n = float(force[max_force_index])
     else:
-        i_m, fm = -1, NAN
-    maximum = MaximumForce(fm_n=fm, rm_mpa=fm / s0, i_m=i_m, flags=tuple(flags))
-    fm_n = maximum.fm_n
-    rm_mpa = maximum.rm_mpa
-    return maximum, fm_n, rm_mpa
-
+        max_force_index, fm_n = -1, NAN
+    rm_mpa = fm_n / s0
+    flags = tuple(found)
+    return fm_n, rm_mpa, max_force_index, flags
 
 
 @fr.atomic
 def elongation_at_maximum_force(
     force_n: ForceArray,
     strain: StrainArray,
+    s0_mm2: AreaMM2,
     k_ext: int,
-    bootstrap: Bootstrap,
-    elastic: ElasticResult,
-    maximum: MaximumForce,
+    e_gpa: ModulusGPa,
+    strain_origin: StrainRatio,
+    fm_n: ForceN,
+    max_force_index: int,
+    noise_mpa: StressMPa,
     params: AnalysisParameters | None = None,
-) -> tuple[Elongation, StrainPercent, StrainPercent]:
-    """M12: Agt and Ag at the strain mid-point of the near-maximum band.
+) -> tuple[StrainPercent, StrainPercent, ElongationDiagnostics]:
+    """Total and plastic extension at maximum force, Agt and Ag.
 
-    The band is the contiguous run of finite-force samples around i_m with
-    F >= Fm*(1 - delta_F), delta_F = max(band_rel_min, 3*s_F/Fm). Agt =
-    (e_mid - e0)*100 %, Ag = Agt - Rm/E*100 %. If any band sample is at or
-    beyond ``k_ext`` (or has no finite strain), both are NaN with flags
-    ``ag:extensometer_invalid`` and ``agt:extensometer_invalid``. Without
-    Fm or E both are NaN with the ``ag:`` and ``agt:`` flags
-    ``no_maximum_force`` or ``no_elastic_modulus``.
+    Near the maximum the force is flat and noisy, so the strain at Fm is taken as
+    the mid-point of the near-maximum band: the contiguous samples around the
+    maximum with F >= Fm (1 - delta), delta = max(``band_rel_min``,
+    ``band_noise_factor`` * s_F/Fm). Agt = (e_mid - e0) * 100 %, Ag = Agt - Rm/E * 100 %.
+
+    Inputs: force (N), strain (ratio), S0 (mm²), ``k_ext``, E (GPa), e0 (ratio),
+    Fm (N), the sample index of Fm, the noise level s_n (MPa), ``params``.
+    Outputs: ``agt_percent``, ``ag_percent`` (%), ``diagnostics``.
+    Flags (on ``ag:`` and ``agt:``): ``extensometer_invalid`` (a band sample has
+    no valid strain), ``no_maximum_force``, ``no_elastic_modulus``.
+    Limits: undefined whenever the extensometer is removed before the maximum.
     """
     p = _params(params)
+    s0 = _check_s0(s0_mm2)
     force, eps, _ = _channels(force_n, strain)
+    slope = e_gpa * 1000.0 * s0
     flags = []
-    agt = ag = halfwidth = strain_mid = NAN
+    agt_percent = ag_percent = halfwidth = NAN
     band = (-1, -1)
-    if maximum.i_m < 0:
+    if max_force_index < 0:
         flags += ["ag:no_maximum_force", "agt:no_maximum_force"]
-    if not math.isfinite(elastic.slope_n):
+    if not math.isfinite(slope):
         flags += ["ag:no_elastic_modulus", "agt:no_elastic_modulus"]
-    if maximum.i_m >= 0:
-        noise = bootstrap.noise_n if math.isfinite(bootstrap.noise_n) else 0.0
-        delta = max(p.band_rel_min, p.band_noise_factor * noise / maximum.fm_n)
-        threshold = maximum.fm_n * (1.0 - delta)
+    if max_force_index >= 0:
+        noise = noise_mpa * s0 if math.isfinite(noise_mpa) else 0.0
+        delta = max(p.band_rel_min, p.band_noise_factor * noise / fm_n)
+        threshold = fm_n * (1.0 - delta)
         finite_idx = np.flatnonzero(np.isfinite(force))
-        centre = int(np.searchsorted(finite_idx, maximum.i_m))
+        centre = int(np.searchsorted(finite_idx, max_force_index))
         lo = centre
         while lo > 0 and force[finite_idx[lo - 1]] >= threshold:
             lo -= 1
@@ -108,17 +132,8 @@ def elongation_at_maximum_force(
         else:
             strain_mid = 0.5 * (float(band_strain.min()) + float(band_strain.max()))
             halfwidth = 0.5 * (float(band_strain.max()) - float(band_strain.min())) * 100.0
-            if math.isfinite(elastic.slope_n):
-                agt = (strain_mid - elastic.strain_origin) * 100.0
-                ag = agt - maximum.fm_n / elastic.slope_n * 100.0
-    elongation = Elongation(
-        agt_percent=agt,
-        ag_percent=ag,
-        ag_location_halfwidth_percent=halfwidth,
-        band=band,
-        strain_mid=strain_mid,
-        flags=tuple(flags),
-    )
-    agt_percent = elongation.agt_percent
-    ag_percent = elongation.ag_percent
-    return elongation, agt_percent, ag_percent
+            if math.isfinite(slope):
+                agt_percent = (strain_mid - strain_origin) * 100.0
+                ag_percent = agt_percent - fm_n / slope * 100.0
+    diagnostics = ElongationDiagnostics(band=band, halfwidth_percent=halfwidth, flags=tuple(flags))
+    return agt_percent, ag_percent, diagnostics

@@ -137,11 +137,6 @@ MODULE_ROLES: dict[str, str] = {
 }
 """Role of each Python module whose functions appear as workflow steps."""
 
-ONTOLOGY_AWARE_MODULES: tuple[str, ...] = (
-    "pmd_tensile.nodes.exploration",
-    "pmd_tensile.nodes.acquisition",
-)
-ANALYSIS_MODULE = "pmd_tensile.nodes.analysis"
 
 _PREFIXES = """\
 PREFIX bfo:   <http://purl.obolibrary.org/obo/BFO_>
