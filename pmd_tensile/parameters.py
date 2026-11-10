@@ -67,6 +67,7 @@ class AnalysisParameters:
     rate_switch_proximity: float = 0.002  # strain distance for flag near_rate_switch
     max_window_iterations: int = 20  # M5
     window_rel_tol: float = 1e-4
+    e_window_range_max: float = 0.05  # flag e:window_sensitive above this relative range of E
 
 
 DEFAULT_PARAMETERS = AnalysisParameters()

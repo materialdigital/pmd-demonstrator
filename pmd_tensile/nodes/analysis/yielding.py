@@ -104,6 +104,16 @@ def _lower_yield(
 
 
 
+def _no_valid_peak_cause(drop_has_valid_strain: bool) -> str:
+    """Flag for a yield peak without usable strain.
+
+    If even the first qualifying drop lies beyond the valid strain record,
+    no drop was found while the extensometer measured, which the flag says;
+    otherwise the drop was found but its peak lies outside the valid record.
+    """
+    return "reh:extensometer_invalid" if drop_has_valid_strain else "reh:no_drop_in_valid_strain"
+
+
 def _yield_points(
     force: np.ndarray,
     eps: np.ndarray,
@@ -141,7 +151,7 @@ def _yield_points(
         result["flags"] = ["reh:insufficient_elastic_points", *no_upper]
         return result
     if not valid[i_p]:
-        result["flags"] = ["reh:extensometer_invalid", *no_upper]
+        result["flags"] = [_no_valid_peak_cause(valid[finite_idx[j_star]]), *no_upper]
         return result
     plastic = eps - (force - intercept) / slope
     if plastic[i_p] > p.peak_max_plastic_strain:
@@ -152,7 +162,7 @@ def _yield_points(
     flow = np.arange(i_p + 1, stop)
     flow = flow[valid[flow]]
     if len(flow) == 0:
-        result["flags"] = ["reh:extensometer_invalid", *no_upper]
+        result["flags"] = [_no_valid_peak_cause(valid[finite_idx[j_star]]), *no_upper]
         return result
     if plastic[flow].max() - plastic[i_p] < p.min_flow_plastic_strain:
         result["flags"] = no_upper

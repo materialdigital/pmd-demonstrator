@@ -20,9 +20,11 @@ from pmd_tensile.curve_math import (
     _ols,
     _params,
     _proof_crossing,
+    _second_difference_noise,
     _strain_at,
     _strain_valid,
     _value_range,
+    _window_mask,
     _window_ols,
 )
 from pmd_tensile.nodes.analysis.steps import (
@@ -121,13 +123,14 @@ def bootstrap_fit(
     valid = _strain_valid(force, eps, k_ext)
     reference = p.provisional_fraction_of_rm * fm
     ols, _, _ = _window_ols(force, eps, valid, reference, p.f_lo, p.f_hi, _PROVISIONAL_MIN_POINTS)
+    noise = _second_difference_noise(force[_window_mask(force, valid, reference, p.f_lo, p.f_hi)])
     bootstrap = Bootstrap(
         fm_n=fm,
         slope_n=ols.slope,
         intercept_n=ols.intercept,
-        noise_n=ols.residual_noise,
+        noise_n=noise,
         n=ols.n,
-        noise_mpa=ols.residual_noise / s0,
+        noise_mpa=noise / s0,
     )
     noise_mpa = bootstrap.noise_mpa
     return bootstrap, noise_mpa
@@ -330,12 +333,15 @@ def window_sensitivity(
         short = short or (math.isfinite(reference) and not math.isfinite(ols.slope))
         moduli.append(ols.slope)
     linearity = (moduli[1] - moduli[0]) / moduli[0] if len(moduli) == 2 else NAN
+    flags = ["window:insufficient_elastic_points"] if short else []
+    if len(e_values) > 1 and (max(e_values) - min(e_values)) / elastic.fit.e_gpa > p.e_window_range_max:
+        flags.append("e:window_sensitive")
     sensitivity = WindowSensitivity(
         e_range_gpa=_value_range(e_values),
         rp02_range_mpa=_value_range(rp_values),
         ag_range_percent=_value_range(ag_values),
         agt_range_percent=_value_range(agt_values),
         linearity_rel_diff=float(linearity),
-        flags=("window:insufficient_elastic_points",) if short else (),
+        flags=tuple(flags),
     )
     return sensitivity

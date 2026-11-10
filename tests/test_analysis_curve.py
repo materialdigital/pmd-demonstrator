@@ -25,6 +25,9 @@ import numpy as np
 import pytest
 import synthetic as sy
 
+from pmd_tensile.curve_math import _second_difference_noise
+from pmd_tensile.nodes.analysis.elastic_line import bootstrap_fit
+from pmd_tensile.nodes.analysis.yielding import yield_analysis
 from pmd_tensile.nodes.workflows import CurveAnalysis
 from pmd_tensile.orchestration import analyse_curve
 from pmd_tensile.parameters import AnalysisParameters
@@ -58,6 +61,9 @@ FLAG_NAMES = (
     "no_complete_window",
     # Spec v2.6, analysis-api.md amendment of 2026-11-03, 23:30 CET.
     "no_return_to_reh",
+    # Method version 3.
+    "window_sensitive",
+    "no_drop_in_valid_strain",
 )
 FLAG_PATTERN = re.compile(rf"^({'|'.join(FLAG_PROPERTIES)}):({'|'.join(FLAG_NAMES)})$")
 
@@ -215,6 +221,8 @@ def test_m9_case_v_noise_free_and_noisy_rel_agree(seed):
 
 @pytest.mark.parametrize("name", ["ro15", "ro20", "ro5"])
 def test_ramberg_osgood_e_and_rp02_from_the_analytic_window_slope(name):
+    # n = 5 bends so early that E changes by about 9 % across the window grid.
+    window_flag = {"e:window_sensitive"} if name == "ro5" else set()
     c, r = curve(name), result(name)
     t = c.truth
     assert r.yield_type == "continuous"
@@ -224,7 +232,7 @@ def test_ramberg_osgood_e_and_rp02_from_the_analytic_window_slope(name):
     assert r.rm_mpa == pytest.approx(t.rm_mpa, rel=EXACT)
     assert_nan(r.reh_mpa)
     assert_nan(r.rel_mpa)
-    assert flag_set(r) == {"reh:no_upper_yield", "rel:no_upper_yield"}
+    assert flag_set(r) == {"reh:no_upper_yield", "rel:no_upper_yield", *window_flag}
     assert r.k_ext == len(c)
 
 
@@ -1032,3 +1040,69 @@ def test_undefined_values_are_nan_never_none():
     r = result("iv")
     for value in (r.reh_mpa, r.rel_mpa, r.reh_sample_increment_mpa, r.rel_incl_transient_mpa):
         assert_nan(value)
+
+
+# ---------------------------------------------------------------------------
+# Method version 3: noise level, window sensitivity, cause of a missing yield drop
+
+
+def _straight_line(n: int = 400) -> np.ndarray:
+    return np.linspace(1000.0, 20000.0, n)
+
+
+@pytest.mark.parametrize("sigma", [0.5, 5.0, 50.0])
+def test_second_difference_noise_estimates_white_noise(sigma):
+    rng = np.random.default_rng(1)
+    force = _straight_line() + rng.normal(0.0, sigma, 400)
+    # 400 samples: the MAD-based estimate scatters by about 6 %.
+    assert _second_difference_noise(force) == pytest.approx(sigma, rel=0.2)
+
+
+def test_second_difference_noise_ignores_a_trend_and_a_bend():
+    rng = np.random.default_rng(2)
+    noise = rng.normal(0.0, 5.0, 400)
+    x = np.arange(400.0)
+    bent = _straight_line() + 0.05 * x**2 + noise
+    assert _second_difference_noise(bent) == pytest.approx(_second_difference_noise(_straight_line() + noise), rel=1e-6)
+
+
+def test_second_difference_noise_needs_ten_second_differences():
+    assert math.isnan(_second_difference_noise(_straight_line(11)))
+    assert _second_difference_noise(_straight_line(12)) == pytest.approx(0.0, abs=1e-9)
+
+
+def test_window_sensitivity_flag_only_on_a_curved_elastic_part():
+    assert "e:window_sensitive" in result("ro5").flags
+    assert "e:window_sensitive" not in result("a").flags
+    assert "e:window_sensitive" not in result("ro15").flags
+
+
+def test_no_drop_in_valid_strain_when_the_extensometer_ends_at_the_peak():
+    # Strain undefined from the sample after the upper yield peak: the drop is
+    # never seen while the extensometer measures.
+    a = curve("a")
+    peak = int(np.argmax(a.stress_mpa[: a.segment("plateau").start]))
+    strain = a.strain.copy()
+    strain[peak + 1 :] = np.nan
+    r = analyse_curve(a.force_n, strain, a.crosshead_mm, a.s0_mm2, a.l0_mm)
+    assert r.yield_type == "continuous"
+    assert flag_set(r) >= {"reh:no_drop_in_valid_strain", "reh:no_upper_yield", "rel:no_upper_yield"}
+    assert "reh:extensometer_invalid" not in r.flags
+
+
+def test_no_drop_in_valid_strain_when_the_only_large_drop_is_after_the_extensometer():
+    # A noise level that hides the yield drop, and a force drop at the end of
+    # a record whose extensometer stopped before it: the first qualifying drop
+    # lies beyond the valid strain record, and so does the peak before it.
+    a = curve("a")
+    end = a.segment("plateau").stop
+    strain = a.strain.copy()
+    strain[end:] = np.nan
+    force = np.concatenate([a.force_n, np.linspace(a.force_n[-1], 0.0, 20)[1:]])
+    strain = np.concatenate([strain, np.full(19, np.nan)])
+    k_ext = int(np.flatnonzero(np.isfinite(strain))[-1]) + 1
+    bootstrap, _ = bootstrap_fit(force, strain, a.s0_mm2, k_ext)
+    loud = dataclasses.replace(bootstrap, noise_n=10.0 * a.s0_mm2, noise_mpa=10.0)
+    yielding, *_ = yield_analysis(force, strain, a.s0_mm2, k_ext, loud)
+    assert yielding.yield_type == "continuous"
+    assert set(yielding.flags) == {"reh:no_drop_in_valid_strain", "reh:no_upper_yield", "rel:no_upper_yield"}

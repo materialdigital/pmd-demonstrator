@@ -705,9 +705,13 @@ def spec_reh(curve: SyntheticCurve) -> tuple[float, int]:
     My own evaluation of the definitions, for curves with finite channels:
     "Rm" is the maximum stress; the provisional OLS uses the samples before
     the stress first reaches 0.5*Rm within [0.10, 0.40]*0.5*Rm;
-    s_n = 1.4826 * MAD (about the median) of its residuals;
+    s_n = 1.4826 * MAD (about the median) of the second differences of the
+    stress over the same samples, divided by sqrt(6);
     d(j) = max(0.005*M(j), 5*s_n); j* is the first j with s(j) > 0.5*Rm and
-    s(j) <= M(j) - d(j); i_p = argmax s[0..j*]. Raises if there is no j*.
+    s(j) <= M(j) - d(j); i_p = argmax s[0..j*]. The peak is an upper yield
+    point only if the plastic strain (strain minus stress over the provisional
+    line) grows by at least 0.05 % after it before the stress exceeds it;
+    otherwise ReH is NaN (continuous yielding). Raises if there is no j*.
     """
     s = curve.force_n / curve.s0_mm2
     e = curve.strain
@@ -716,12 +720,17 @@ def spec_reh(curve: SyntheticCurve) -> tuple[float, int]:
     s_b, e_b = s[:first], e[:first]
     keep = (s_b >= 0.10 * ref) & (s_b <= 0.40 * ref)
     slope, intercept = ols(s_b[keep], e_b[keep])
-    resid = s_b[keep] - (slope * e_b[keep] + intercept)
-    s_n = 1.4826 * float(np.median(np.abs(resid - np.median(resid))))
+    second = np.diff(s_b[keep], 2)
+    s_n = 1.4826 * float(np.median(np.abs(second - np.median(second)))) / np.sqrt(6.0)
     running_max = np.maximum.accumulate(s)
     d = np.maximum(0.005 * running_max, 5.0 * s_n)
     j_star = int(np.nonzero((s > ref) & (s <= running_max - d))[0][0])
     i_p = int(np.argmax(s[: j_star + 1]))
+    plastic = e - (s - intercept) / slope
+    exceeded = np.flatnonzero(s[i_p + 1 :] > s[i_p])
+    stop = i_p + 1 + (int(exceeded[0]) if len(exceeded) else len(s))
+    if plastic[i_p + 1 : stop].max() - plastic[i_p] < 0.0005:
+        return NAN, i_p
     return float(s[i_p]), i_p
 
 

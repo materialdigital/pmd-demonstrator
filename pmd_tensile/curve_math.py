@@ -151,11 +151,39 @@ def _window_ols(
     lo, hi = f_lo * reference_n, f_hi * reference_n
     if not math.isfinite(reference_n):
         return _Ols(n=0, **_OLS_UNDEFINED), lo, hi
+    mask = _window_mask(force, valid, reference_n, f_lo, f_hi)
+    return _ols(eps[mask], force[mask], min_points), lo, hi
+
+
+def _window_mask(force: np.ndarray, valid: np.ndarray, reference_n: float, f_lo: float, f_hi: float) -> np.ndarray:
+    """Strain-valid samples of the first loading branch with ``f_lo*ref <= F <= f_hi*ref``.
+
+    The first loading branch is every sample before the force first reaches the reference.
+    """
     reached = _first(np.isfinite(force) & (force >= reference_n))
     branch = np.zeros(len(force), dtype=bool)
     branch[: len(force) if reached < 0 else reached] = True
-    mask = valid & branch & (force >= lo) & (force <= hi)
-    return _ols(eps[mask], force[mask], min_points), lo, hi
+    return valid & branch & (force >= f_lo * reference_n) & (force <= f_hi * reference_n)
+
+
+_MIN_SECOND_DIFFERENCES = 10
+"""Fewer second differences leave the noise level undefined."""
+
+
+def _second_difference_noise(values: np.ndarray) -> float:
+    """Noise level of a sampled signal from its second differences.
+
+    For independent noise of standard deviation sigma, a second difference
+    x[i+1] - 2 x[i] + x[i-1] has variance 6 sigma**2, while a straight trend
+    contributes nothing and a smooth bend almost nothing. The estimate is
+    1.4826 * MAD(second differences) / sqrt(6), robust to single outliers.
+    It assumes uncorrelated noise; correlated (filtered) noise is
+    underestimated. NaN with fewer than ten second differences.
+    """
+    second = np.diff(np.asarray(values, dtype=float), 2)
+    if len(second) < _MIN_SECOND_DIFFERENCES:
+        return NAN
+    return _MAD_TO_SD * float(np.median(np.abs(second - np.median(second)))) / math.sqrt(6.0)
 
 
 

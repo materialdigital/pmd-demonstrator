@@ -167,7 +167,7 @@ Known method limitations (method-spec v2.6; documented, not corrected)
   such a tail, as unreliable for records with a gradual tail. S355 is expected
   never to enter it. Follow-up F9 is a better rule.
 - **R8-7, M7 under noise.** A noisy plateau without an upper peak (M9 case
-  (iv)) can be classified as discontinuous, which reports a spurious ReH: 44 %
+  (iv)) can be classified as discontinuous, which reports a spurious ReH: 65 %
   of 1000 seeds at 0.5 MPa noise on the synthetic case. The opt-in statistical
   test ``test_r8_7_...`` records the rate. Follow-up F7 is a prominence
   criterion.

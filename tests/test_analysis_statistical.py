@@ -165,7 +165,7 @@ def m8_agreement() -> dict:
     equal = below = above = 0
     for seed, r in zip(range(first, first + SEEDS), results):
         reh, _ = sy.spec_reh(sy.noisy(base, seed))
-        equal += math.isclose(r.reh_mpa, reh, rel_tol=1e-12)
+        equal += (math.isnan(r.reh_mpa) and math.isnan(reh)) or math.isclose(r.reh_mpa, reh, rel_tol=1e-12)
         below += r.reh_mpa < base.truth.reh_mpa
         above += r.reh_mpa > base.truth.reh_mpa + 1.5
     return {"equal": equal, "below": below, "above": above}
