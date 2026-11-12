@@ -1,0 +1,386 @@
+"""Two-stage workflow: exploration, per-specimen workflow, batch.
+
+Offline: the graphs are the local pmdco2 Turtle files (and, for the pmdco3
+parity, the structural pmdco3 fixture); curve downloads are stubbed with
+synthetic CSV bytes (see ``workflow_helpers``).
+
+Parity: the per-specimen workflow must give exactly the numbers of
+``analyse_curve`` on the same parsed arrays, compared
+NaN-aware.
+"""
+
+from __future__ import annotations
+
+import dataclasses
+import hashlib
+import math
+import operator
+import re
+
+import numpy as np
+import pandas as pd
+import pytest
+from workflow_helpers import (
+    PMDCO2,
+    PMDCO2_SOURCE,
+    PMDCO3,
+    curve_bytes_for,
+    pmdco3_twin_of_pmdco2,
+    run_with_stubbed_curves,
+    stub_fetch,
+)
+
+from pmd_tensile import orchestration, sources
+from pmd_tensile.nodes import acquisition, exploration, workflows
+from pmd_tensile.nodes.analysis.geometry import (
+    elongation_after_fracture,
+    reduction_of_area,
+    s0_scatter,
+)
+from pmd_tensile.orchestration import SpecimenAnalysis, analyse_curve
+from pmd_tensile.parameters import parameter_values
+from pmd_tensile.profiles import pmdco3_tto
+
+SPECIMENS = ("Zx1", "Zy1", "Zd2")  # one per orientation
+
+# ---------------------------------------------------------------------------
+# NaN-aware equality
+# ---------------------------------------------------------------------------
+
+
+def same(a, b) -> bool:
+    if isinstance(a, float) and isinstance(b, float):
+        return a == b or (math.isnan(a) and math.isnan(b))
+    if isinstance(a, np.ndarray) or isinstance(b, np.ndarray):
+        return np.array_equal(np.asarray(a), np.asarray(b), equal_nan=True)
+    if isinstance(a, (tuple, list)) and isinstance(b, (tuple, list)):
+        return len(a) == len(b) and all(same(x, y) for x, y in zip(a, b))
+    if isinstance(a, dict) and isinstance(b, dict):
+        return a.keys() == b.keys() and all(same(a[k], b[k]) for k in a)
+    if dataclasses.is_dataclass(a) and dataclasses.is_dataclass(b):
+        return type(a) is type(b) and all(same(getattr(a, f.name), getattr(b, f.name)) for f in dataclasses.fields(a))
+    return a == b
+
+
+def differing_fields(a: SpecimenAnalysis, b: SpecimenAnalysis) -> list[str]:
+    return [f.name for f in dataclasses.fields(SpecimenAnalysis) if not same(getattr(a, f.name), getattr(b, f.name))]
+
+
+def reference_analysis(profile_id: str, source: dict, specimen_id: str, data: bytes):
+    """``analyse_curve`` and the metadata results on the parsed arrays, outside any workflow."""
+    record = acquisition.get_specimen_record(profile_id, source, specimen_id)
+    curve = sources.parse_curve_csv(data, record.curve_columns, source_url=record.curve_url)
+    a = elongation_after_fracture(record.l0_mm, record.lu_mm)
+    z = reduction_of_area(record.s0_mm2, record.su_mm2)
+    scatter = s0_scatter(record.s0_mm2, record.cross_section_measurements_mm2)
+    analysis = analyse_curve(
+        curve.force_n,
+        curve.strain,
+        curve.crosshead_mm,
+        record.s0_mm2,
+        record.l0_mm,
+        a_percent=a[0],
+        rate_switch_strain=record.rate_switch_strain,
+    )
+    return record, curve, analysis, a, z, scatter
+
+
+SUMMARY_FIELDS = {
+    "yield_type": "yield_type",
+    "e_gpa": "e_gpa",
+    "reh_mpa": "reh_mpa",
+    "rel_mpa": "rel_mpa",
+    "rp02_mpa": "rp02_mpa",
+    "fm_n": "fm_n",
+    "rm_mpa": "rm_mpa",
+    "ag_percent": "ag_percent",
+    "agt_percent": "agt_percent",
+    "e_stderr_gpa": "elastic.stderr_gpa",
+    "ag_location_halfwidth_percent": "elongation.halfwidth_percent",
+    "ag_window_range_percent": "sensitivity.ag_range_percent",
+    "agt_window_range_percent": "sensitivity.agt_range_percent",
+    "e_window_min_gpa": "e_min_gpa",
+    "e_window_max_gpa": "e_max_gpa",
+    "rp02_window_min_mpa": "rp02_min_mpa",
+    "rp02_window_max_mpa": "rp02_max_mpa",
+    "e_linearity_rel_diff": "sensitivity.linearity_rel_diff",
+    "e_lag1_rho": "elastic.lag1_rho",
+    "e_n_eff": "elastic.n_eff",
+    "e_n": "elastic.n",
+    "e_r2": "elastic.r2",
+    "e_window_mpa": "elastic.window_mpa",
+    "rel_incl_transient_mpa": "yielding.rel_incl_transient_mpa",
+    "reh_sample_increment_mpa": "yielding.reh_sample_increment_mpa",
+    "strain_origin": "strain_origin",
+}
+
+
+# ---------------------------------------------------------------------------
+# Fixtures: one pmdco2 run over three specimens, shared by the tests below
+# ---------------------------------------------------------------------------
+
+
+@pytest.fixture(scope="module")
+def pmdco2_curves() -> dict:
+    return curve_bytes_for(SPECIMENS)
+
+
+@pytest.fixture(scope="module")
+def pmdco2_run(pmdco2_curves):
+    result, fetched = run_with_stubbed_curves(pmdco2_curves, PMDCO2, PMDCO2_SOURCE, specimen_ids=SPECIMENS)
+    return result, fetched
+
+
+# ---------------------------------------------------------------------------
+# Stage 1: exploration
+# ---------------------------------------------------------------------------
+
+
+def test_exploration_lists_the_ten_specimens():
+    run = orchestration.build_exploration_workflow().run(profile_id=PMDCO2, source=PMDCO2_SOURCE)
+    assert run.outputs.checked_profile_id == PMDCO2
+    ids = run.outputs.specimen_ids
+    assert len(ids) == 10
+    prefixes = [re.match(r"Z[xyd]", sid).group(0) for sid in ids]
+    assert {p: prefixes.count(p) for p in set(prefixes)} == {"Zx": 4, "Zy": 4, "Zd": 2}
+
+
+def test_exploration_fails_early_on_a_profile_mismatch():
+    with pytest.raises(exploration.ConformanceError, match=PMDCO3):
+        orchestration.build_exploration_workflow().run(profile_id=PMDCO3, source=PMDCO2_SOURCE)
+
+
+# ---------------------------------------------------------------------------
+# Stage 2: batch, end to end
+# ---------------------------------------------------------------------------
+
+
+def test_batch_runs_end_to_end(pmdco2_run, pmdco2_curves):
+    result, fetched = pmdco2_run
+    assert result.batch_run.status == "finished"
+    assert result.specimen_ids == SPECIMENS
+    assert sorted(url.rsplit("/", 1)[-1] for url in fetched) == sorted(f"{s}.csv" for s in SPECIMENS)
+
+    table = result.results
+    assert list(table["specimen_id"]) == list(SPECIMENS)
+    assert table["orientation"].nunique() == 3
+    for sid in SPECIMENS:
+        row = table.set_index("specimen_id").loc[sid]
+        record = acquisition.get_specimen_record(PMDCO2, PMDCO2_SOURCE, sid)
+        assert row["curve_sha256"] == hashlib.sha256(pmdco2_curves[sid]).hexdigest()
+        assert isinstance(row["curve_sha256"], str) and isinstance(row["curve_url"], str)
+        assert row["curve_url"] == record.curve_url
+        assert row["orientation"] == record.orientation
+        assert row["yield_type"] == "discontinuous"
+
+
+def test_orientation_summary_and_comparison_tables(pmdco2_run):
+    result, _ = pmdco2_run
+    summary = result.orientation_summary
+    assert list(summary.columns) == [workflows.GROUP_COLUMN, "quantity", "n", "mean", "sd", "min", "max"]
+    assert len(summary) == 3 * len(workflows.SUMMARY_QUANTITIES)
+    reh = summary[summary["quantity"] == "reh_mpa"].set_index(workflows.GROUP_COLUMN)
+    table = result.results.set_index(workflows.GROUP_COLUMN)
+    for orientation, row in reh.iterrows():
+        assert row["n"] == 1 and math.isnan(row["sd"])
+        assert row["mean"] == table.loc[orientation, "reh_mpa"]
+
+    comparison = result.comparison
+    assert list(comparison.columns[:2]) == ["specimen_id", "orientation"]
+    assert len(comparison) == 7 * len(SPECIMENS)
+    assert set(comparison["outcome"]) <= {"within", "outside", "not_comparable"}
+    assert set(comparison["quantity"]) == {"fm_n", "rm_mpa", "reh_mpa", "rp02_mpa", "e_gpa", "a_percent", "z_percent"}
+
+
+def test_batch_results_equal_analyse_curve(pmdco2_run, pmdco2_curves):
+    result, _ = pmdco2_run
+    rows = result.results.set_index("specimen_id")
+    for sid in SPECIMENS:
+        record, _, expected, a, z, scatter = reference_analysis(PMDCO2, PMDCO2_SOURCE, sid, pmdco2_curves[sid])
+        row = rows.loc[sid]
+        for column, field in SUMMARY_FIELDS.items():
+            assert same(row[column], operator.attrgetter(field)(expected)), (sid, column)
+        assert row["dropped_samples"] == dataclasses.asdict(expected.dropped)
+        assert same(row["a_percent"], a[0]) and same(row["z_percent"], z[0])
+        assert same(row["s0_u_rel"], scatter[0])
+        assert same(row["e_window_min_gpa"], expected.e_min_gpa)
+        assert same(row["rp02_window_max_mpa"], expected.rp02_max_mpa)
+        flags = set(row["flags"].split("; ")) - {""}
+        assert set(expected.flags) <= flags
+
+
+def test_result_carries_the_curves_and_analyses_the_run_used(pmdco2_run, pmdco2_curves):
+    """Each specimen's Curve and SpecimenAnalysis come from the run itself."""
+    result, fetched = pmdco2_run
+    assert list(result.curves) == list(SPECIMENS) == list(result.specimen_analyses)
+    # One download per specimen, all during the run; reading the result fetches nothing.
+    assert len(set(fetched)) == len(fetched) == len(SPECIMENS)
+    rows = result.results.set_index("specimen_id")
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(sources, "fetch_bytes", lambda url: pytest.fail(f"second download of {url}"))
+        for i, sid in enumerate(SPECIMENS):
+            curve, analysis = result.curves[sid], result.specimen_analyses[sid]
+            record, parsed, expected, _, _, _ = reference_analysis(PMDCO2, PMDCO2_SOURCE, sid, pmdco2_curves[sid])
+            # The bytes that were analysed: hash and URL as in the result row and the stub.
+            assert curve.sha256 == rows.loc[sid, "curve_sha256"] == hashlib.sha256(pmdco2_curves[sid]).hexdigest()
+            assert curve.source_url == rows.loc[sid, "curve_url"] == record.curve_url
+            for channel in ("time_s", "crosshead_mm", "force_n", "strain"):
+                assert np.array_equal(getattr(curve, channel), getattr(parsed, channel), equal_nan=True), channel
+            # The very objects of the run: the curve fed the analysis steps, the analysis holds their outputs.
+            specimen = result.batch_run.result.nodes[f"specimen_{i}"]
+            assert specimen.nodes["curve_channels_0"].input_ports["curve"].value is curve
+            assert specimen.nodes["provisional_elastic_line_0"].input_ports["force_n"].value is curve.force_n
+            assert specimen.nodes["yield_points_0"].output_ports["diagnostics"].value is analysis.yielding
+            assert differing_fields(analysis, expected) == []
+            for column in ("e_gpa", "reh_mpa", "rp02_mpa", "fm_n", "rm_mpa"):
+                assert same(rows.loc[sid, column], getattr(analysis, column)), (sid, column)
+
+
+def test_specimen_analyses_of_a_batch_run_built_by_hand(pmdco2_curves):
+    """The same extraction works for a batch built with build_batch_workflow and batch_inputs."""
+    ids = ("Zd2", "Zx1")
+    fetch = stub_fetch(pmdco2_curves)
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(sources, "fetch_bytes", fetch)
+        batch = orchestration.build_batch_workflow(ids)
+        run = batch.run(**orchestration.batch_inputs(PMDCO2, PMDCO2_SOURCE, ids))
+    curves, analyses = orchestration.specimen_analyses(run, ids)
+    assert list(curves) == list(ids) == list(analyses)
+    assert sorted(curve.source_url for curve in curves.values()) == sorted(fetch.fetched)
+    assert [curves[sid].sha256 for sid in ids] == [hashlib.sha256(pmdco2_curves[sid]).hexdigest() for sid in ids]
+    with pytest.raises(RuntimeError, match="ran for 'Zd2', expected 'Zx1'"):
+        orchestration.specimen_analyses(run, ("Zx1", "Zd2"))  # wrong order is detected
+
+
+def test_per_specimen_workflow_equals_analyse_curve(pmdco2_curves):
+    """Every SpecimenAnalysis field of the step-node composition equals analyse_curve (NaN-aware)."""
+    sid = "Zx1"
+    fetch = stub_fetch(pmdco2_curves)
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(sources, "fetch_bytes", fetch)
+        run = orchestration.build_specimen_node().run(
+            profile_id=PMDCO2, source=PMDCO2_SOURCE, specimen_id=sid, curve_locator=None
+        )
+    record, curve, expected, _, _, _ = reference_analysis(PMDCO2, PMDCO2_SOURCE, sid, pmdco2_curves[sid])
+    assert record.rate_switch_strain is not None  # the flag input is exercised
+    from_run = SpecimenAnalysis.from_outputs(orchestration._step_outputs(run.result))
+    assert differing_fields(from_run, expected) == []
+    for port in ("e_gpa", "reh_mpa", "rel_mpa", "rp02_mpa", "fm_n", "rm_mpa", "ag_percent", "agt_percent"):
+        assert same(getattr(run.outputs, port), getattr(expected, port)), port
+    assert run.outputs.curve_sha256 == curve.sha256 == hashlib.sha256(pmdco2_curves[sid]).hexdigest()
+    assert run.outputs.curve_url == record.curve_url
+    assert run.outputs.n_samples == len(curve.force_n)
+    assert isinstance(run.outputs.comparison, pd.DataFrame)
+
+
+# ---------------------------------------------------------------------------
+# Structure: flat recipes, JSON-able inputs
+# ---------------------------------------------------------------------------
+
+FLAT_RECIPE_TYPES = {"AtomicRecipe", "WorkflowRecipe", "ConstantRecipe"}
+
+
+def _recipe_types(recipe) -> list[str]:
+    types = []
+    for node in recipe.nodes.values():
+        types.append(type(node).__name__)
+        if hasattr(node, "nodes"):
+            types += _recipe_types(node)
+    return types
+
+
+def test_recipes_contain_no_flow_controllers():
+    batch = orchestration.build_batch_workflow(SPECIMENS)
+    for recipe in (batch.recipe, workflows.exploration_workflow.flowrep_recipe):
+        assert set(_recipe_types(recipe)) <= FLAT_RECIPE_TYPES
+
+
+def test_batch_structure_and_inputs():
+    batch = orchestration.build_batch_workflow(SPECIMENS)
+    specimen_nodes = [label for label in batch.nodes if re.fullmatch(r"specimen_\d+", label)]
+    assert specimen_nodes == [f"specimen_{i}" for i in range(len(SPECIMENS))]
+    assert {"gather_rows", "gather_comparisons", "results", "orientation_summary", "comparison"} <= set(
+        batch.nodes
+    )
+    inputs = orchestration.batch_inputs(PMDCO2, PMDCO2_SOURCE, SPECIMENS)
+    assert set(inputs) == set(batch.inputs.keys())
+    assert inputs == {
+        "profile_id": PMDCO2,
+        "source": PMDCO2_SOURCE,
+        "curve_locator": None,
+        "parameters": parameter_values(),  # all method defaults, recorded in the run graph
+        "specimen_id_0": "Zx1",
+        "specimen_id_1": "Zy1",
+        "specimen_id_2": "Zd2",
+    }
+    assert set(batch.outputs.keys()) == {"results", "orientation_summary", "comparison", "rows"}
+
+
+def test_builders_reject_bad_specimen_lists(pmdco2_curves):
+    with pytest.raises(ValueError, match="at least one"):
+        orchestration.build_batch_workflow([])
+    with pytest.raises(LookupError, match="Zq9"):
+        run_with_stubbed_curves(pmdco2_curves, PMDCO2, PMDCO2_SOURCE, specimen_ids=["Zx1", "Zq9"])
+
+
+def test_repeated_specimen_ids_are_rejected(pmdco2_curves):
+    """Curves and analyses are keyed by specimen ID, so a repeated ID would silently merge two branches."""
+    message = r"duplicate specimen IDs \['Zx1'\]"
+    with pytest.raises(ValueError, match=message):
+        orchestration.build_batch_workflow(["Zx1", "Zd2", "Zx1"])
+    with pytest.raises(ValueError, match=message):
+        orchestration.batch_inputs(PMDCO2, PMDCO2_SOURCE, ["Zx1", "Zd2", "Zx1"])
+    with pytest.raises(ValueError, match=message):
+        orchestration.specimen_analyses(object(), ("Zx1", "Zx1"))  # checked before the run data is read
+    fetch = stub_fetch(pmdco2_curves)
+    with pytest.MonkeyPatch.context() as mp:
+        mp.setattr(sources, "fetch_bytes", fetch)
+        mp.setattr(sources, "select", lambda *args, **kwargs: pytest.fail("graph queried"))
+        mp.setattr(sources, "ask", lambda *args, **kwargs: pytest.fail("graph queried"))
+        with pytest.raises(ValueError, match=message):
+            orchestration.run_tensile_analysis(PMDCO2, PMDCO2_SOURCE, specimen_ids=["Zx1", "Zx1"])
+    assert fetch.fetched == []  # rejected before any work
+
+
+# ---------------------------------------------------------------------------
+# pmdco2 versus pmdco3 (offline)
+# ---------------------------------------------------------------------------
+#
+# The structural pmdco3 fixture (workflow_helpers.py) has the PMDco3/TTO
+# modelling pattern but made-up numbers. Here its values are set to the pmdco2
+# values of the same specimens, so both profiles describe the same specimens;
+# the curve bytes are identical by construction.
+
+PARITY_SPECIMENS = ("Zx1", "Zd2")
+
+
+@pytest.mark.slow
+def test_pmdco2_and_pmdco3_give_identical_analysis_for_identical_curve_bytes(tmp_path):
+    curves = curve_bytes_for(PARITY_SPECIMENS)
+    pmdco3_source = pmdco3_twin_of_pmdco2(PARITY_SPECIMENS, tmp_path)
+    # The fixture, like the original graph, has no curve tables: explicit locator.
+    locator = pmdco3_tto.CURVE_LOCATOR.as_dict()
+    for sid in PARITY_SPECIMENS:  # the neutral records agree on what the analysis sees
+        r2 = acquisition.get_specimen_record(PMDCO2, PMDCO2_SOURCE, sid)
+        r3 = acquisition.get_specimen_record(PMDCO3, pmdco3_source, sid, curve_locator=locator)
+        for field in ("s0_mm2", "cross_section_measurements_mm2", "l0_mm", "lu_mm", "su_mm2", "orientation"):
+            assert getattr(r2, field) == getattr(r3, field), (sid, field)
+        assert r2.rate_switch_strain == pytest.approx(r3.rate_switch_strain, rel=1e-12)
+
+    run2, fetched2 = run_with_stubbed_curves(curves, PMDCO2, PMDCO2_SOURCE, specimen_ids=PARITY_SPECIMENS)
+    run3, fetched3 = run_with_stubbed_curves(curves, PMDCO3, pmdco3_source, curve_locator=locator)
+
+    # Only the profile ID and the source differ; the recipe is the same.
+    assert run2.batch_workflow.recipe == run3.batch_workflow.recipe
+    assert sorted(run3.specimen_ids) == sorted(PARITY_SPECIMENS)
+    assert all(url.startswith("https://raw.githubusercontent.com/") for url in fetched3)  # non-semantic locator
+    assert all(url.startswith("https://data.pmds-mpcdf-2.pyiron.com/") for url in fetched2)
+
+    t2 = run2.results.set_index("specimen_id")
+    t3 = run3.results.set_index("specimen_id")
+    compared = [*SUMMARY_FIELDS, "a_percent", "z_percent", "s0_u_rel", "e_window_min_gpa", "e_window_max_gpa",
+                "rp02_window_min_mpa", "rp02_window_max_mpa", "curve_sha256"]
+    for sid in PARITY_SPECIMENS:
+        for column in compared:
+            assert same(t2.loc[sid, column], t3.loc[sid, column]), (sid, column)
+        assert t2.loc[sid, "curve_url"] != t3.loc[sid, "curve_url"]

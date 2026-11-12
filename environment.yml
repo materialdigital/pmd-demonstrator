@@ -1,0 +1,28 @@
+name: pmd-demonstrator
+channels:
+  - conda-forge
+  - nodefaults
+dependencies:
+  - python =3.12
+  - pip
+  - git
+  - jupyterlab
+  - ipykernel
+  - praeco =0.2.0
+  - pyiron_workflow =0.20.3
+  - semantikon =1.4.4
+  - flowrep =0.6.7
+  - numpy
+  - pandas
+  - scipy
+  - matplotlib-base
+  - pint
+  - rdflib
+  - python-graphviz
+  - pip:
+      # pmd_tensile (pyproject.toml next to this file), editable. "." is
+      # pip's working directory. conda runs pip in this file's directory only
+      # if the file is given as a local path and its directory is writable;
+      # otherwise pip runs where the command is started, so start it from
+      # this directory in that case.
+      - -e .
