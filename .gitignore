@@ -16,13 +16,5 @@ Untitled.ipynb
 tests.ipynb
 *.egg-info
 partners.json
-*.~undo-tree~
-.#*
-\#*#
-.dir-locals.el
 _version.py
 jupyterlab.log
-.ai.code.files/
-AGENTS.md
-.codex
-.codex/
