@@ -33,14 +33,13 @@ There is one environment file, [`environment.yml`](environment.yml), for the env
 mamba env create -f environment.yml                       # a new environment
 mamba env update -n pmd-demonstrator -f environment.yml   # or: update an existing one
 conda activate pmd-demonstrator
-python -m ipykernel install --user --name pmd-demonstrator --display-name "Python 3.12 (pmd-demonstrator)"
 cd notebooks
 jupyter lab
 ```
 
 `conda` works in place of `mamba`. An update without `--prune` keeps packages installed locally in addition, such as `pytest` or `papermill`. With mamba 2.3.3, `mamba env update --dry-run` still runs the pip step of the file, so it is not free of side effects.
 
-Select the kernel "Python 3.12 (pmd-demonstrator)". The notebooks import `pmd_tensile` like any installed package and find the repository's files through it, so they do not depend on the working directory.
+Jupyter, started from the activated environment, runs the notebooks with that environment's default kernel, "Python 3 (ipykernel)" (`python3`); no kernel needs to be registered. The notebooks import `pmd_tensile` like any installed package and find the repository's files through it, so they do not depend on the working directory.
 
 The environment installs `praeco` 0.2.0 from conda-forge, which brings the required pandas, RDFLib, Pydantic, Requests and SPARQLWrapper versions. For the tensile series it pins the workflow stack (`pyiron_workflow` 0.20.3, `semantikon` 1.4.4, `flowrep` 0.6.7) and adds NumPy, SciPy, Matplotlib, Pint and python-graphviz. Notebook 03 draws workflows with Graphviz's `dot`, which is on `PATH` in the activated environment; when running notebooks with papermill without activating the environment, put the environment's `bin` directory first on `PATH`. `pip` and `git` stay in the environment, e.g. for the editable install below.
 
@@ -64,7 +63,7 @@ For the tensile notebooks:
 - They only check that `ONTODOCKER_ADDRESS` is set; the package `pmd_tensile` reads `ONTODOCKER_ADDRESS` and `ONTODOCKER_TOKEN` (`pmd_tensile.sources.ontodocker_client()`) and prints neither. Only publishing (notebooks 00 and 06) needs `DATAPORTAL_TOKEN`.
 - Credentials are never workflow inputs, so they cannot enter results or knowledge graphs; [`tests/test_separation.py`](tests/test_separation.py) checks this with a dummy token.
 - Each notebook states its execution class. Notebooks 01–05, and 00 and 06 with their default parameters, are network-read: SPARQL queries and Turtle downloads from Ontodocker and curve CSVs from the public data host. They create, upload or delete no remote resources; notebook 04 writes graph files only to a temporary directory that it creates and removes.
-- Each can be run with papermill, a development tool that is not part of `environment.yml` (install it locally, like `pytest`), e.g. from `notebooks/`: `papermill -k pmd-demonstrator 05-tensile-analysis-overview.ipynb /tmp/05-tensile-analysis-overview.ipynb`.
+- Each can be run with papermill, a development tool that is not part of `environment.yml` (install it locally, like `pytest`), e.g. from `notebooks/`: `papermill -k python3 05-tensile-analysis-overview.ipynb /tmp/05-tensile-analysis-overview.ipynb`. `-k python3` names the kernel of the environment papermill runs in, so the run does not depend on the kernel recorded in the notebook.
 
 ## What is hosted where
 
